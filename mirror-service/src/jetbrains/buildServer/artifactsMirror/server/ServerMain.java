@@ -12,7 +12,8 @@ public class ServerMain {
     String confFile = args[0];
 
     try {
-      new ServerConfiguration(new File(confFile));
+      MirrorServer srv = new MirrorServer(new ServerConfiguration(new File(confFile)));
+      srv.startAndWait();
     } catch (IOException e) {
       System.err.println("Input/output error accessing properties file: " + confFile + ", error: " + e.toString());
       exit();
