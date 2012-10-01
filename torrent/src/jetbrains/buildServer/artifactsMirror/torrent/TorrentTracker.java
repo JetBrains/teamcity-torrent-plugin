@@ -64,27 +64,50 @@ public class TorrentTracker {
   }
 
   /**
-   * Creates torrent for the given file and announces it in the tracker.
+   * Creates the torrent file for the specified <code>srcFile</code>.
    *
-   * @param torrentsStore file to create torrent for
-   * @param srcFile file to create torrent for
-   * @return true if Torrent announced
+   * @param srcFile file to distribute
+   * @param torrentsStore the directory (store) where to create the file
+   * @return true if successful
    */
-  public boolean announceTorrent(File torrentsStore, @NotNull File srcFile) {
-    if (myTracker == null) return false;
-
-    File torrentFile = new File(torrentsStore, srcFile.getName() + ".torrent");
+  public boolean createTorrent(@NotNull File srcFile, @NotNull File torrentsStore) {
+    if (myTracker == null) {
+      return false;
+    }
 
     try {
-      Torrent t;
+      File torrentFile = new File(torrentsStore, srcFile.getName() + ".torrent");
       if (torrentFile.isFile()) {
-        t = Torrent.load(torrentFile, null);
+        Torrent.load(torrentFile, null);
       } else {
-        // Here can be localhost...
-        t = Torrent.create(srcFile, myTracker.getAnnounceUrl().toURI(), "TeamCity");
+        Torrent t = Torrent.create(srcFile, myTracker.getAnnounceUrl().toURI(), "TeamCity");
         t.save(torrentFile);
+        LOG.info("Torrent file created: " + torrentFile);
       }
 
+      return true;
+    } catch (Exception e) {
+      LOG.warn("Failed to create torrent file: " + e.toString());
+      LOG.debug(e.getMessage(), e);
+      return false;
+    }
+  }
+
+  /**
+   * Announces a torrent file in the tracker and starts a seeder thread.
+   *
+   * @param srcFile file to distribute
+   * @param torrentFile the torrent file corresponding to the <code>srcFile</code>.
+   * @return true if successful
+   */
+  public boolean announceAndSeedTorrent(@NotNull File srcFile, @NotNull File torrentFile) {
+    if (myTracker == null) {
+      return false;
+    }
+
+    try {
+      assert torrentFile.isFile();
+      Torrent t = Torrent.load(torrentFile, null);
       myTracker.announce(new TrackedTorrent(t));
       mySeeder.seedTorrent(t, srcFile);
       LOG.info("Torrent announced in tracker: " + srcFile.getAbsolutePath());

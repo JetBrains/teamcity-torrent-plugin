@@ -56,7 +56,7 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
           File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
           myGuard.lockReading(artifactFile);
           try {
-            myTorrentTracker.announceTorrent(torrentsStore, artifactFile);
+            myTorrentTracker.createTorrent(artifactFile, torrentsStore);
           } finally {
             myGuard.unlockReading(artifactFile);
           }
