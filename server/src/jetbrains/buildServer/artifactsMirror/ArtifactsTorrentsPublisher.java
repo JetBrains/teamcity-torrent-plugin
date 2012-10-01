@@ -4,6 +4,7 @@
  */
 package jetbrains.buildServer.artifactsMirror;
 
+import jetbrains.buildServer.ArtifactsConstants;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker;
 import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.serverSide.artifacts.ArtifactsGuard;
@@ -46,7 +47,7 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
 
   private void announceBuildArtifacts(@NotNull SBuild build) {
     final File artifactsDirectory = build.getArtifactsDirectory();
-    final File torrentsStore = new File(artifactsDirectory, ".teamcity");
+    final File torrentsStore = new File(artifactsDirectory, ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR);
 
     BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT);
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
