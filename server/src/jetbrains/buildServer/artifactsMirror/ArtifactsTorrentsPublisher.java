@@ -8,6 +8,7 @@ import jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.serverSide.SRunningBuild;
+import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.serverSide.artifacts.ArtifactsGuard;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
@@ -21,7 +22,8 @@ import java.io.File;
  * @since 8.0
  */
 public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
-  private static final int MIN_ARTIFACT_SIZE = 2 * (1 << 20);              // Temporary: 2 Mb
+  private static final int MIN_ARTIFACT_SIZE = TeamCityProperties.getInteger("teamcity.artifacts.size.for.torrent",
+                                                                             50 * (1 << 20));
 
   private final ArtifactsGuard myGuard;
   private final TorrentTracker myTorrentTracker;
