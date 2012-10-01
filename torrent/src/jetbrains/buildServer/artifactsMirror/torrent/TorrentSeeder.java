@@ -6,6 +6,7 @@ import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.SBuildServer;
+import jetbrains.buildServer.util.Dates;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,6 +17,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -23,11 +25,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class TorrentSeeder {
   private final static Logger LOG = Logger.getInstance(TorrentSeeder.class.getName());
 
-  private final static int MAX_CLIENTS = 10;
+  private final static int MAX_CLIENTS = 8;
 
   private final SBuildServer myServer;
   private volatile boolean myStopped = false;
-  private final List<Client> myClients = new ArrayList<Client>();
+  private final List<TorrentClient> myClients = new ArrayList<TorrentClient>();
   private final LinkedBlockingQueue<SharedTorrent> myTorrentsQueue;
   private final Thread myThread;
 
@@ -89,33 +91,17 @@ public class TorrentSeeder {
     return new Runnable() {
       public void run() {
         while (!myStopped) {
-          Iterator<Client> clIt = myClients.iterator();
-          while (clIt.hasNext()) {
-            Client c = clIt.next();
-            if (c.getState() == Client.ClientState.DONE) {
-              c.stop();
-              clIt.remove();
-            }
-          }
-
           SharedTorrent st = myTorrentsQueue.poll();
-
           if (st != null) {
-            boolean alreadySeeded = false;
-            for (Client client: myClients) {
-              if (st.getHexInfoHash().equals(client.getTorrent().getHexInfoHash())) {
-                // torrent is already seeded
-                alreadySeeded = true;
-                break;
+            if (!isSeedAlreadyExists(st)) {
+              if (myClients.size() == MAX_CLIENTS) {
+                stopExpiredClients();
               }
-            }
 
-            if (!alreadySeeded) {
-              String clientHost = getClientHost();
-              Client client = null;
-              if (clientHost != null && myClients.size() < MAX_CLIENTS) {
+              TorrentClient client = null;
+              if (myClients.size() < MAX_CLIENTS) {
                 try {
-                  client = new Client(InetAddress.getByName(clientHost), st);
+                  client = new TorrentClient(st);
                 } catch (IOException e) {
                   LOG.warn("Failed to create client for torrent: " + e.toString());
                 }
@@ -125,7 +111,7 @@ public class TorrentSeeder {
                 myTorrentsQueue.offer(st); // failed to create client, return torrent in the queue
               } else {
                 myClients.add(client);
-                client.share(-1);
+                client.startSharing();
               }
             }
           }
@@ -139,19 +125,81 @@ public class TorrentSeeder {
           }
         }
 
-        for (Client c: myClients) {
-          c.stop(true);
+        for (TorrentClient c: myClients) {
+          c.stop();
+        }
+      }
+
+      private boolean isSeedAlreadyExists(SharedTorrent st) {
+        boolean alreadySeeded = false;
+        for (TorrentClient client: myClients) {
+          if (st.getHexInfoHash().equals(client.getTorrent().getHexInfoHash())) {
+            // torrent is already seeded
+            alreadySeeded = true;
+            break;
+          }
+        }
+        return alreadySeeded;
+      }
+
+      private void stopExpiredClients() {
+        Iterator<TorrentClient> clIt = myClients.iterator();
+        while (clIt.hasNext()) {
+          TorrentClient tc = clIt.next();
+          if (tc.isClientExpired()) {
+            tc.stop();
+            clIt.remove();
+          }
         }
       }
     };
   }
 
-  @Nullable
-  private String getClientHost() {
-    try {
-      return new URI(myServer.getRootUrl()).getHost();
-    } catch (URISyntaxException e) {
-      return null;
+  private class TorrentClient {
+    private Client myClient;
+    private SharedTorrent myTorrent;
+    private final Date myCreationDate;
+    private final static long TORRENT_CLIENT_EXPIRATION_TIME = 1000 * 60; // 1 minute
+
+    private TorrentClient(@NotNull SharedTorrent torrent) throws IOException {
+      myTorrent = torrent;
+
+      String clientHost = getClientHost();
+      myClient = new Client(InetAddress.getByName(clientHost), torrent);
+      myCreationDate = Dates.now();
+    }
+
+    public boolean isClientExpired() {
+      return isTorrentDownloaded() ||
+              (Dates.now().getTime() - myCreationDate.getTime() > TORRENT_CLIENT_EXPIRATION_TIME) &&
+                      (myClient.getState() == Client.ClientState.WAITING || myClient.getState() == Client.ClientState.ERROR);
+
+    }
+
+    @NotNull
+    public SharedTorrent getTorrent() {
+      return myTorrent;
+    }
+
+    public void startSharing() {
+      myClient.share();
+    }
+
+    public void stop() {
+      myClient.stop(true);
+    }
+
+    private boolean isTorrentDownloaded() {
+      return myClient.getState() == Client.ClientState.DONE;
+    }
+
+    @Nullable
+    private String getClientHost() {
+      try {
+        return new URI(myServer.getRootUrl()).getHost();
+      } catch (URISyntaxException e) {
+        return null;
+      }
     }
   }
 
