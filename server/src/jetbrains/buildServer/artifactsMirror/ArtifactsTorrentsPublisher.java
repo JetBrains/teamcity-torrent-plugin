@@ -11,6 +11,7 @@ import jetbrains.buildServer.serverSide.artifacts.ArtifactsGuard;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
+import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -23,21 +24,34 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
 
   private final ArtifactsGuard myGuard;
   private final TorrentTracker myTorrentTracker;
+  private final ExecutorServices myExecutors;
+  private final SBuildServer myServer;
 
   public ArtifactsTorrentsPublisher(@NotNull SBuildServer buildServer,
                                     @NotNull ArtifactsGuard guard,
-                                    @NotNull TorrentTracker torrentTracker) {
+                                    @NotNull TorrentTracker torrentTracker,
+                                    @NotNull ExecutorServices executorServices) {
     myGuard = guard;
     myTorrentTracker = torrentTracker;
+    myExecutors = executorServices;
+    myServer = buildServer;
     buildServer.addListener(this);
+  }
 
-    ProjectManager projectManager = buildServer.getProjectManager();
-    for (SBuildType buildType : projectManager.getActiveBuildTypes()) {
-      SFinishedBuild build = buildType.getLastChangesFinished();
-      if (build != null) {
-        announceBuildArtifacts(build);
+  @Override
+  public void serverStartup() {
+    super.serverStartup();
+    myExecutors.getLowPriorityExecutorService().submit(new Runnable() {
+      public void run() {
+        ProjectManager projectManager = myServer.getProjectManager();
+        for (SBuildType buildType : projectManager.getActiveBuildTypes()) {
+          SFinishedBuild build = buildType.getLastChangesFinished();
+          if (build != null) {
+            announceBuildArtifacts(build);
+          }
+        }
       }
-    }
+    });
   }
 
   @Override
