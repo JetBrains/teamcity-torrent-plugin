@@ -21,7 +21,7 @@ import java.io.File;
  * @since 8.0
  */
 public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
-  private static final int MIN_ARTIFACT_SIZE = 10 * (1 << 20);              // 10 Mb
+  private static final int MIN_ARTIFACT_SIZE = 2 * (1 << 20);              // Temporary: 2 Mb
 
   private final ArtifactsGuard myGuard;
   private final TorrentTracker myTorrentTracker;

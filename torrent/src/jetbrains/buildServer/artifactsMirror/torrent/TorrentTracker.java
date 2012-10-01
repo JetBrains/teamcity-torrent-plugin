@@ -62,7 +62,8 @@ public class TorrentTracker {
       if (torrentFile.isFile()) {
         t = Torrent.load(torrentFile, null);
       } else {
-        t = Torrent.create(srcFile, new URI(myServer.getRootUrl()), "TeamCity");
+        // Here can be localhost...
+        t = Torrent.create(srcFile, myTracker.getAnnounceUrl().toURI(), "TeamCity");
         t.save(torrentFile);
       }
 

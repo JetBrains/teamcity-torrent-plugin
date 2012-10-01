@@ -11,12 +11,14 @@
       <element id="directory" name="server">
         <element id="archive" name="artifacts-mirror-server.jar">
           <element id="module-output" name="server" />
+          <element id="module-output" name="torrent" />
         </element>
         <element id="archive" name="artifacts-mirror-resources.jar">
           <element id="directory" name="buildServerResources">
             <element id="dir-copy" path="$PROJECT_DIR$/server/resources" />
           </element>
         </element>
+        <element id="library" level="project" name="ttorrent" />
       </element>
       <element id="file-copy" path="$PROJECT_DIR$/server/teamcity-server-plugin.xml" output-file-name="teamcity-plugin.xml" />
     </root>
