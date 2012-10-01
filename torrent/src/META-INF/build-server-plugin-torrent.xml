@@ -8,7 +8,7 @@
   <!-- declare all beans you like Spring Dependency Injection to create -->
   <!-- see http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/html/beans.html -->
 
-  <bean class="jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker" init-method="start"/>
-  <bean class="jetbrains.buildServer.artifactsMirror.torrent.TorrentSeeder" init-method="start"/>
+  <bean class="jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker" />
+  <bean class="jetbrains.buildServer.artifactsMirror.torrent.TorrentSeeder"/>
 
 </beans>

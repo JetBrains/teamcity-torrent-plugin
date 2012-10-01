@@ -38,6 +38,12 @@ public class TorrentSeeder {
     myThread.setDaemon(true);
     myServer.addListener(new BuildServerAdapter() {
       @Override
+      public void serverStartup() {
+        super.serverStartup();
+        start();
+      }
+
+      @Override
       public void serverShutdown() {
         super.serverShutdown();
         stop();
@@ -63,7 +69,7 @@ public class TorrentSeeder {
     if (myStopped) return false;
 
     try {
-      SharedTorrent sharedTorrent = new SharedTorrent(torrent, srcFile, true);
+      SharedTorrent sharedTorrent = new SharedTorrent(torrent, srcFile.getParentFile(), true);
       myTorrentsQueue.add(sharedTorrent);
 
       synchronized (myTorrentsQueue) {
@@ -93,8 +99,8 @@ public class TorrentSeeder {
           }
 
           SharedTorrent st = myTorrentsQueue.poll();
-          if (st != null) {
 
+          if (st != null) {
             boolean alreadySeeded = false;
             for (Client client: myClients) {
               if (st.getHexInfoHash().equals(client.getTorrent().getHexInfoHash())) {
@@ -119,7 +125,7 @@ public class TorrentSeeder {
                 myTorrentsQueue.offer(st); // failed to create client, return torrent in the queue
               } else {
                 myClients.add(client);
-                client.share(0);
+                client.share(-1);
               }
             }
           }

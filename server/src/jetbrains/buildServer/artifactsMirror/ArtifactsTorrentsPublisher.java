@@ -5,10 +5,7 @@
 package jetbrains.buildServer.artifactsMirror;
 
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker;
-import jetbrains.buildServer.serverSide.BuildServerAdapter;
-import jetbrains.buildServer.serverSide.SBuildServer;
-import jetbrains.buildServer.serverSide.SRunningBuild;
-import jetbrains.buildServer.serverSide.TeamCityProperties;
+import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.serverSide.artifacts.ArtifactsGuard;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
@@ -22,8 +19,6 @@ import java.io.File;
  * @since 8.0
  */
 public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
-  private static final int MIN_ARTIFACT_SIZE = TeamCityProperties.getInteger("teamcity.artifacts.size.for.torrent",
-                                                                             50 * (1 << 20));
 
   private final ArtifactsGuard myGuard;
   private final TorrentTracker myTorrentTracker;
@@ -34,11 +29,24 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
     myGuard = guard;
     myTorrentTracker = torrentTracker;
     buildServer.addListener(this);
+
+    ProjectManager projectManager = buildServer.getProjectManager();
+    for (SBuildType buildType : projectManager.getActiveBuildTypes()) {
+      SFinishedBuild build = buildType.getLastChangesFinished();
+      if (build != null) {
+        announceBuildArtifacts(build);
+      }
+    }
   }
 
   @Override
   public void buildFinished(SRunningBuild build) {
+    announceBuildArtifacts(build);
+  }
+
+  private void announceBuildArtifacts(@NotNull SBuild build) {
     final File artifactsDirectory = build.getArtifactsDirectory();
+    final File torrentsStore = new File(artifactsDirectory, ".teamcity");
 
     BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT);
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
@@ -48,7 +56,7 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
           File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
           myGuard.lockReading(artifactFile);
           try {
-            myTorrentTracker.announceTorrent(artifactFile);
+            myTorrentTracker.announceTorrent(torrentsStore, artifactFile);
           } finally {
             myGuard.unlockReading(artifactFile);
           }
@@ -60,6 +68,7 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
 
   private static boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {
     long size = artifact.getSize();
-    return size > MIN_ARTIFACT_SIZE;
+    return !artifact.isDirectory() &&
+            size > TeamCityProperties.getInteger("teamcity.artifacts.size.for.torrent", 50 * (1 << 20));
   }
 }

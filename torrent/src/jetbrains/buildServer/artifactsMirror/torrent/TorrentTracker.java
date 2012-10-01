@@ -25,6 +25,12 @@ public class TorrentTracker {
     myServer = server;
     myServer.addListener(new BuildServerAdapter() {
       @Override
+      public void serverStartup() {
+        super.serverStartup();
+        start();
+      }
+
+      @Override
       public void serverShutdown() {
         super.serverShutdown();
         stop();
@@ -59,14 +65,15 @@ public class TorrentTracker {
 
   /**
    * Creates torrent for the given file and announces it in the tracker.
+   *
+   * @param torrentsStore file to create torrent for
    * @param srcFile file to create torrent for
    * @return true if Torrent announced
    */
-  public boolean announceTorrent(@NotNull File srcFile) {
+  public boolean announceTorrent(File torrentsStore, @NotNull File srcFile) {
     if (myTracker == null) return false;
 
-    File parentDir = srcFile.getParentFile();
-    File torrentFile = new File(parentDir, srcFile.getName() + ".torrent");
+    File torrentFile = new File(torrentsStore, srcFile.getName() + ".torrent");
 
     try {
       Torrent t;
