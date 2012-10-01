@@ -49,7 +49,7 @@ public class TorrentTracker {
         List<Torrent> removedTorrents = new ArrayList<Torrent>();
         synchronized (myAnnouncedTorrents) {
           for (TorrentInfo ti: myAnnouncedTorrents) {
-            if (ti.getSrcFile().isFile()) continue;
+            if (ti.getSrcFile().isFile() && ti.getTorrentFile().isFile()) continue;
 
             FileUtil.delete(ti.getTorrentFile());
             removedTorrents.add(ti.getTorrent());
