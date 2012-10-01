@@ -8,8 +8,6 @@
   <!-- declare all beans you like Spring Dependency Injection to create -->
   <!-- see http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/html/beans.html -->
 
-  <!-- sample: 
-  <bean class="bean class fully qualified name"/>
-  -->
+  <bean class="jetbrains.buildServer.artifactsMirror.ArtifactsTorrentsPublisher"/>
 
 </beans>
