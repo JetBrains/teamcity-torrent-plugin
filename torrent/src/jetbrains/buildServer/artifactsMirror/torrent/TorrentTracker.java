@@ -75,7 +75,7 @@ public class TorrentTracker {
       InetAddress serverAddress = InetAddress.getByName(serverUrl.getHost());
       myTracker = new Tracker(new InetSocketAddress(serverAddress, freePort));
       myTracker.start();
-      LOG.info("Torrent tracker started on url: " + rootUrl + ":" + freePort);
+      LOG.info("Torrent tracker started on url: " + myTracker.getAnnounceUrl().toString());
     } catch (Exception e) {
       LOG.error("Failed to start torrent tracker, server URL is invalid: " + e.toString());
     }
