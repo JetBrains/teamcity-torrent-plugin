@@ -21,6 +21,7 @@ import java.util.List;
 
 public class TorrentTracker {
   private final static Logger LOG = Logger.getInstance(TorrentTracker.class.getName());
+  public static final String TORRENT_FILE_SUFFIX = ".torrent";
 
   private SBuildServer myServer;
   private Tracker myTracker;
@@ -100,7 +101,7 @@ public class TorrentTracker {
     }
 
     try {
-      File torrentFile = new File(torrentsStore, srcFile.getName() + ".torrent");
+      File torrentFile = new File(torrentsStore, srcFile.getName() + TORRENT_FILE_SUFFIX);
       if (torrentFile.isFile()) {
         LOG.info("Torrent file already exists: " + torrentFile);
         return true;

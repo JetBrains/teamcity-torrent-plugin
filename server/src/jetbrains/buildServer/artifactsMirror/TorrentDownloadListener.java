@@ -37,14 +37,14 @@ public class TorrentDownloadListener implements RepositoryDownloadController.Rep
 
   public void artifactDownloaded(@NotNull SBuild build, @NotNull BuildArtifact torrentArtifact) {
     final String torrentRelativePath = torrentArtifact.getRelativePath();
-    if (!torrentRelativePath.endsWith(".torrent") ||
+    if (!torrentRelativePath.endsWith(TorrentTracker.TORRENT_FILE_SUFFIX) ||
         !torrentRelativePath.startsWith(ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR)) {
       return;
     }
 
     final File artifactsDirectory = build.getArtifactsDirectory();
     final String torrentName = new File(torrentRelativePath).getName();
-    final String srcName = torrentName.substring(0, torrentName.length() - ".torrent".length());
+    final String srcName = torrentName.substring(0, torrentName.length() - TorrentTracker.TORRENT_FILE_SUFFIX.length());
 
     BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT);
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
