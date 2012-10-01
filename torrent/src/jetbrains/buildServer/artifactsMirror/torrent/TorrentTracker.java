@@ -5,6 +5,7 @@ import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.NetworkUtil;
+import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.SBuildServer;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,6 +22,13 @@ public class TorrentTracker {
 
   public TorrentTracker(@NotNull SBuildServer server) {
     myServer = server;
+    myServer.addListener(new BuildServerAdapter() {
+      @Override
+      public void serverShutdown() {
+        super.serverShutdown();
+        stop();
+      }
+    });
   }
 
   public void start() {
@@ -49,10 +57,10 @@ public class TorrentTracker {
   /**
    * Creates torrent for the given file and announces it in the tracker.
    * @param srcFile file to create torrent for
-   * @return true if operation is successful or false otherwise
+   * @return announced Torrent
    */
-  public boolean announceTorrent(@NotNull File srcFile) {
-    if (myTracker == null) return false;
+  public Torrent announceTorrent(@NotNull File srcFile) {
+    if (myTracker == null) return null;
 
     File parentDir = srcFile.getParentFile();
     File torrentFile = new File(parentDir, srcFile.getName() + ".torrent");
@@ -69,11 +77,11 @@ public class TorrentTracker {
 
       myTracker.announce(new TrackedTorrent(t));
       LOG.info("Torrent announced in tracker: " + srcFile.getAbsolutePath());
+
+      return t;
     } catch (Exception e) {
       LOG.warn("Failed to announce file in torrent tracker: " + e.toString());
-      return false;
+      return null;
     }
-
-    return true;
   }
 }
