@@ -12,9 +12,7 @@ import jetbrains.buildServer.util.Dates;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -69,11 +67,7 @@ public class TorrentTracker {
     int freePort = NetworkUtil.getFreePort(6969);
 
     try {
-      String rootUrl = myServer.getRootUrl();
-      if (rootUrl.endsWith("/")) rootUrl = rootUrl.substring(0, rootUrl.length()-1);
-      URI serverUrl = new URI(rootUrl);
-      InetAddress serverAddress = InetAddress.getByName(serverUrl.getHost());
-      myTracker = new Tracker(new InetSocketAddress(serverAddress, freePort));
+      myTracker = new Tracker(new InetSocketAddress(freePort));
       myTracker.start();
       LOG.info("Torrent tracker started on url: " + myTracker.getAnnounceUrl().toString());
     } catch (Exception e) {
@@ -103,8 +97,7 @@ public class TorrentTracker {
     try {
       File torrentFile = new File(torrentsStore, srcFile.getName() + TORRENT_FILE_SUFFIX);
       if (torrentFile.isFile()) {
-        LOG.info("Torrent file already exists: " + torrentFile);
-        return true;
+        FileUtil.delete(torrentFile);
       }
 
       Torrent t = Torrent.create(srcFile, myTracker.getAnnounceUrl().toURI(), "TeamCity");
