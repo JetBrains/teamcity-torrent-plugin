@@ -6,6 +6,7 @@
       <module fileurl="file://$PROJECT_DIR$/mirror-service/mirror-service.iml" filepath="$PROJECT_DIR$/mirror-service/mirror-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/server/server.iml" filepath="$PROJECT_DIR$/server/server.iml" />
       <module fileurl="file://$PROJECT_DIR$/server-tests/server-tests.iml" filepath="$PROJECT_DIR$/server-tests/server-tests.iml" />
+      <module fileurl="file://$PROJECT_DIR$/torrent/torrent.iml" filepath="$PROJECT_DIR$/torrent/torrent.iml" />
     </modules>
   </component>
 </project>
