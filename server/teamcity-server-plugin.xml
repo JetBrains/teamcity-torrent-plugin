@@ -6,8 +6,8 @@
     <display-name>Artifacts Mirror &amp; Torrent Tracker</display-name>
     <version>snapshot</version> <!-- will be replaced from script -->
     <vendor>
-      <name>JetBrains, Inc</name>  <!-- will be replaced from script -->
-      <url>http://www.jetbrains.com</url> <!-- will be replaced from script -->
+      <name>@Plugin_Vendor@</name>  <!-- will be replaced from script -->
+      <url>@Plugin_Vendor_Url@</url> <!-- will be replaced from script -->
     </vendor>
   </info>
   <deployment use-separate-classloader="true"/>
