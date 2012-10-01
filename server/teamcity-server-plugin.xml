@@ -4,7 +4,7 @@
   <info>
     <name>artifacts-mirror</name>
     <display-name>Artifacts Mirror &amp; Torrent Tracker</display-name>
-    <version>snapshot</version> <!-- will be replaced from script -->
+    <version>@Plugin_Version@</version> <!-- will be replaced from script -->
     <vendor>
       <name>@Plugin_Vendor@</name>  <!-- will be replaced from script -->
       <url>@Plugin_Vendor_Url@</url> <!-- will be replaced from script -->
