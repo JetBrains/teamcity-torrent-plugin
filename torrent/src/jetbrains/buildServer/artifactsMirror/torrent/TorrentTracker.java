@@ -78,13 +78,13 @@ public class TorrentTracker {
     try {
       File torrentFile = new File(torrentsStore, srcFile.getName() + ".torrent");
       if (torrentFile.isFile()) {
-        Torrent.load(torrentFile, null);
-      } else {
-        Torrent t = Torrent.create(srcFile, myTracker.getAnnounceUrl().toURI(), "TeamCity");
-        t.save(torrentFile);
-        LOG.info("Torrent file created: " + torrentFile);
+        LOG.info("Torrent file already exists: " + torrentFile);
+        return true;
       }
 
+      Torrent t = Torrent.create(srcFile, myTracker.getAnnounceUrl().toURI(), "TeamCity");
+      t.save(torrentFile);
+      LOG.info("Torrent file created: " + torrentFile);
       return true;
     } catch (Exception e) {
       LOG.warn("Failed to create torrent file: " + e.toString());
