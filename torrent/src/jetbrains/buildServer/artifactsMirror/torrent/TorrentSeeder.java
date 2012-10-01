@@ -3,6 +3,7 @@ package jetbrains.buildServer.artifactsMirror.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.client.peer.SharingPeer;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.SBuildServer;
@@ -190,7 +191,12 @@ public class TorrentSeeder {
     }
 
     private boolean isTorrentDownloaded() {
-      return myClient.getState() == Client.ClientState.DONE;
+      Client.ClientState state = myClient.getState();
+      if (state == Client.ClientState.DONE) return true;
+      for (SharingPeer p: myClient.getPeers()) {
+        if (p.isConnected()) return false;
+      }
+      return state == Client.ClientState.SEEDING;
     }
 
     @Nullable
