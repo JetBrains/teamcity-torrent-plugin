@@ -127,7 +127,7 @@ public class TorrentSeeder {
         }
 
         for (TorrentClient c: myClients) {
-          c.stop();
+          c.stopIfIdle();
         }
       }
 
@@ -147,8 +147,7 @@ public class TorrentSeeder {
         Iterator<TorrentClient> clIt = myClients.iterator();
         while (clIt.hasNext()) {
           TorrentClient tc = clIt.next();
-          if (tc.isClientExpired()) {
-            tc.stop();
+          if (tc.stopIfIdle()) {
             clIt.remove();
           }
         }
@@ -170,13 +169,6 @@ public class TorrentSeeder {
       myCreationDate = Dates.now();
     }
 
-    public boolean isClientExpired() {
-      return isTorrentDownloaded() ||
-              (Dates.now().getTime() - myCreationDate.getTime() > TORRENT_CLIENT_EXPIRATION_TIME) &&
-                      (myClient.getState() == Client.ClientState.WAITING || myClient.getState() == Client.ClientState.ERROR);
-
-    }
-
     @NotNull
     public SharedTorrent getTorrent() {
       return myTorrent;
@@ -186,17 +178,21 @@ public class TorrentSeeder {
       myClient.share();
     }
 
-    public void stop() {
-      myClient.stop(true);
+    public boolean stopIfIdle() {
+      if (canBeStopped()) {
+        myClient.stop(true);
+        return true;
+      }
+      return false;
     }
 
-    private boolean isTorrentDownloaded() {
+    private boolean canBeStopped() {
       Client.ClientState state = myClient.getState();
       if (state == Client.ClientState.DONE) return true;
       for (SharingPeer p: myClient.getPeers()) {
-        if (p.isConnected()) return false;
+        if (p.isDownloading()) return false;
       }
-      return state == Client.ClientState.SEEDING;
+      return state != Client.ClientState.WAITING || Dates.now().getTime() - myCreationDate.getTime() > TORRENT_CLIENT_EXPIRATION_TIME;
     }
 
     @Nullable
