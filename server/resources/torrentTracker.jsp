@@ -1,5 +1,5 @@
 <%@ include file="/include.jsp" %>
-<jsp:useBean id="announcedTorrentsNum" type="java.util.List" scope="request"/>
+<jsp:useBean id="announcedTorrentsNum" type="java.lang.Integer" scope="request"/>
 <jsp:useBean id="allClients" type="java.util.List" scope="request"/>
 
 <c:if test="${announcedTorrentsNum > 0 or not empty allClients}">

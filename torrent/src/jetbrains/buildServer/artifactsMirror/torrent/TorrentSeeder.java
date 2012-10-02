@@ -130,7 +130,7 @@ public class TorrentSeeder {
         }
 
         for (TorrentClient c: myClients) {
-          c.stopIfIdle();
+          c.myClient.stop(true);
         }
       }
 
