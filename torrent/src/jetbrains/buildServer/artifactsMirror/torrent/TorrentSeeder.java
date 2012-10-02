@@ -69,10 +69,12 @@ public class TorrentSeeder {
     return new ArrayList<TorrentClient>(myClients);
   }
 
-  public boolean seedTorrent(@NotNull Torrent torrent, @NotNull File srcFile) {
+  public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) {
     if (myStopped) return false;
 
     try {
+      Torrent torrent = TorrentUtil.loadTorrent(torrentFile);
+
       SharedTorrent sharedTorrent = new SharedTorrent(torrent, srcFile.getParentFile(), true);
       myTorrentsQueue.add(sharedTorrent);
 

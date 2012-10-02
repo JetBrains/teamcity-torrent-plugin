@@ -6,7 +6,7 @@ package jetbrains.buildServer.artifactsMirror.web;
 
 import jetbrains.buildServer.ArtifactsConstants;
 import jetbrains.buildServer.artifactsMirror.TorrentTrackerManager;
-import jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker;
+import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.controllers.artifacts.RepositoryDownloadController;
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.artifacts.ArtifactsGuard;
@@ -38,14 +38,14 @@ public class TorrentDownloadListener implements RepositoryDownloadController.Rep
 
   public void artifactDownloaded(@NotNull SBuild build, @NotNull BuildArtifact torrentArtifact) {
     final String torrentRelativePath = torrentArtifact.getRelativePath();
-    if (!torrentRelativePath.endsWith(TorrentTracker.TORRENT_FILE_SUFFIX) ||
+    if (!torrentRelativePath.endsWith(TorrentUtil.TORRENT_FILE_SUFFIX) ||
         !torrentRelativePath.startsWith(ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR)) {
       return;
     }
 
     final File artifactsDirectory = build.getArtifactsDirectory();
     final String torrentName = new File(torrentRelativePath).getName();
-    final String srcName = torrentName.substring(0, torrentName.length() - TorrentTracker.TORRENT_FILE_SUFFIX.length());
+    final String srcName = torrentName.substring(0, torrentName.length() - TorrentUtil.TORRENT_FILE_SUFFIX.length());
 
     BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT);
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
@@ -57,7 +57,7 @@ public class TorrentDownloadListener implements RepositoryDownloadController.Rep
           try {
             File currentFile = new File(artifactsDirectory, artifact.getRelativePath());
             File torrentFile = new File(artifactsDirectory, torrentRelativePath);
-            myTorrentTrackerManager.announceAndSeedTorrent(currentFile, torrentFile);
+            myTorrentTrackerManager.seedTorrent(torrentFile, currentFile);
             return Continuation.BREAK;
           } finally {
             myGuard.unlockReading(artifactsDirectory);

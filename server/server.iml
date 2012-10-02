@@ -45,6 +45,7 @@
     <orderEntry type="library" name="spring" level="project" />
     <orderEntry type="module" module-name="torrent" />
     <orderEntry type="library" name="TeamCity server runtime" level="project" />
+    <orderEntry type="library" name="ttorrent" level="project" />
   </component>
 </module>
 

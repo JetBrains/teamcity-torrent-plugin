@@ -1,35 +1,14 @@
 <%@ include file="/include.jsp" %>
-<jsp:useBean id="announcedTorrents" type="java.util.List" scope="request"/>
+<jsp:useBean id="announcedTorrentsNum" type="java.util.List" scope="request"/>
 <jsp:useBean id="allClients" type="java.util.List" scope="request"/>
 
-<c:if test="${empty announcedTorrents and empty allClients}">
-  No torrents have been announced yet.
-</c:if>
-<c:if test="${not empty announcedTorrents or not empty allClients}">
+<c:if test="${announcedTorrentsNum > 0 or not empty allClients}">
   <table class="runnerFormTable">
     <tr class="groupingTitle">
       <td colspan="2">
-        Announced Torrents: ${fn:length(announcedTorrents)}
+        Number of announced torrents: <strong>${announcedTorrentsNum}</strong>
       </td>
     </tr>
-    <c:if test="${not empty announcedTorrents}">
-      <tr>
-        <th>Artifact name</th>
-        <th>Announce time</th>
-      </tr>
-
-      <c:forEach items="${announcedTorrents}" var="torrent">
-        <%--@elvariable id="torrent" type="jetbrains.buildServer.artifactsMirror.torrent.AnnouncedTorrent"--%>
-        <tr>
-          <td>
-            <c:out value="${torrent.torrent}"/> (${torrent.fileSize})
-          </td>
-          <td>
-            <bs:elapsedTime time="${torrent.announceDate}"/>
-          </td>
-        </tr>
-      </c:forEach>
-    </c:if>
 
     <tr class="groupingTitle">
       <td colspan="2">
