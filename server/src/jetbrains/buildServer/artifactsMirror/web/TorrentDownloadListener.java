@@ -2,9 +2,10 @@
  * Copyright (c) 2000-2012 by JetBrains s.r.o. All Rights Reserved.
  * Use is subject to license terms.
  */
-package jetbrains.buildServer.artifactsMirror;
+package jetbrains.buildServer.artifactsMirror.web;
 
 import jetbrains.buildServer.ArtifactsConstants;
+import jetbrains.buildServer.artifactsMirror.TorrentTrackerManager;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker;
 import jetbrains.buildServer.controllers.artifacts.RepositoryDownloadController;
 import jetbrains.buildServer.serverSide.SBuild;
@@ -25,13 +26,13 @@ import java.io.File;
  */
 public class TorrentDownloadListener implements RepositoryDownloadController.RepositoryListener {
   private final ArtifactsGuard myGuard;
-  private final TorrentTracker myTorrentTracker;
+  private final TorrentTrackerManager myTorrentTrackerManager;
 
   public TorrentDownloadListener(@NotNull RepositoryDownloadController controller,
                                  @NotNull ArtifactsGuard guard,
-                                 @NotNull TorrentTracker torrentTracker) {
+                                 @NotNull TorrentTrackerManager torrentTrackerManager) {
     myGuard = guard;
-    myTorrentTracker = torrentTracker;
+    myTorrentTrackerManager = torrentTrackerManager;
     controller.addListener(this);
   }
 
@@ -56,7 +57,7 @@ public class TorrentDownloadListener implements RepositoryDownloadController.Rep
           try {
             File currentFile = new File(artifactsDirectory, artifact.getRelativePath());
             File torrentFile = new File(artifactsDirectory, torrentRelativePath);
-            myTorrentTracker.announceAndSeedTorrent(currentFile, torrentFile);
+            myTorrentTrackerManager.announceAndSeedTorrent(currentFile, torrentFile);
             return Continuation.BREAK;
           } finally {
             myGuard.unlockReading(artifactsDirectory);

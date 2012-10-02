@@ -2,6 +2,7 @@ package jetbrains.buildServer.artifactsMirror.torrent;
 
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import jetbrains.buildServer.util.Dates;
+import jetbrains.buildServer.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -42,5 +43,10 @@ public class AnnouncedTorrent implements Comparable<AnnouncedTorrent> {
 
   public int compareTo(AnnouncedTorrent o) {
     return myAnnounceDate.compareTo(o.getAnnounceDate());
+  }
+
+  @NotNull
+  public String getFileSize() {
+    return StringUtil.formatFileSize(myTorrent.getSize());
   }
 }

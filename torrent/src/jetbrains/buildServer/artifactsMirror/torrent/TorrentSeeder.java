@@ -64,6 +64,11 @@ public class TorrentSeeder {
     return num;
   }
 
+  @NotNull
+  public List<TorrentClient> getTorrentClients() {
+    return new ArrayList<TorrentClient>(myClients);
+  }
+
   public boolean seedTorrent(@NotNull Torrent torrent, @NotNull File srcFile) {
     if (myStopped) return false;
 
@@ -151,7 +156,7 @@ public class TorrentSeeder {
     };
   }
 
-  private class TorrentClient {
+  public class TorrentClient {
     private Client myClient;
     private SharedTorrent myTorrent;
     private final Date myCreationDate;
@@ -168,6 +173,11 @@ public class TorrentSeeder {
     @NotNull
     public SharedTorrent getTorrent() {
       return myTorrent;
+    }
+
+    @NotNull
+    public Client getClient() {
+      return myClient;
     }
 
     public void startSharing() {

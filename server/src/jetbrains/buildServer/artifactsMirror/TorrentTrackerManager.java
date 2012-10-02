@@ -10,6 +10,7 @@ import jetbrains.buildServer.serverSide.BuildServerListener;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,11 +56,29 @@ public class TorrentTrackerManager {
     });
   }
 
+  public void announceAndSeedTorrent(@NotNull File srcFile, @NotNull File torrentFile) {
+    myTorrentTracker.announceAndSeedTorrent(srcFile, torrentFile);
+  }
+
+  public boolean createTorrent(@NotNull File srcFile, @NotNull File torrentsStore) {
+    return myTorrentTracker.createTorrent(srcFile, torrentsStore);
+  }
+
   public int getActiveClientsNum() {
     return myTorrentSeeder.getDownloadingClientsNum();
   }
 
+  @NotNull
+  public List<TorrentSeeder.TorrentClient> getAllClients() {
+    return myTorrentSeeder.getTorrentClients();
+  }
+
   public int getAnnouncedTorrentsNum() {
     return myTorrentTracker.getAnnouncedTorrents().size();
+  }
+
+  @NotNull
+  public List<AnnouncedTorrent> getAnnouncedTorrents() {
+    return myTorrentTracker.getAnnouncedTorrents();
   }
 }

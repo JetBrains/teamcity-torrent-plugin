@@ -10,6 +10,7 @@
 
   <bean class="jetbrains.buildServer.artifactsMirror.TorrentTrackerManager"/>
   <bean class="jetbrains.buildServer.artifactsMirror.ArtifactsTorrentsPublisher"/>
-  <bean class="jetbrains.buildServer.artifactsMirror.TorrentDownloadListener"/>
 
+  <bean class="jetbrains.buildServer.artifactsMirror.web.TorrentDownloadListener"/>
+  <bean class="jetbrains.buildServer.artifactsMirror.web.TrackerStatisticsAdminPage"/>
 </beans>

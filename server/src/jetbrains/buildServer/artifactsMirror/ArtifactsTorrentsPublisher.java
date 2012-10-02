@@ -5,7 +5,6 @@
 package jetbrains.buildServer.artifactsMirror;
 
 import jetbrains.buildServer.ArtifactsConstants;
-import jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker;
 import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.serverSide.artifacts.ArtifactsGuard;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
@@ -21,18 +20,17 @@ import java.io.File;
  * @since 8.0
  */
 public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
-
   private final ArtifactsGuard myGuard;
-  private final TorrentTracker myTorrentTracker;
+  private final TorrentTrackerManager myTorrentTrackerManager;
   private final ExecutorServices myExecutors;
   private final SBuildServer myServer;
 
   public ArtifactsTorrentsPublisher(@NotNull SBuildServer buildServer,
                                     @NotNull ArtifactsGuard guard,
-                                    @NotNull TorrentTracker torrentTracker,
+                                    @NotNull TorrentTrackerManager torrentTrackerManager,
                                     @NotNull ExecutorServices executorServices) {
     myGuard = guard;
-    myTorrentTracker = torrentTracker;
+    myTorrentTrackerManager = torrentTrackerManager;
     myExecutors = executorServices;
     myServer = buildServer;
     buildServer.addListener(this);
@@ -71,7 +69,7 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
           File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
           myGuard.lockReading(artifactFile);
           try {
-            myTorrentTracker.createTorrent(artifactFile, torrentsStore);
+            myTorrentTrackerManager.createTorrent(artifactFile, torrentsStore);
           } finally {
             myGuard.unlockReading(artifactFile);
           }
