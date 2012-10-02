@@ -5,8 +5,6 @@ import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.client.peer.SharingPeer;
 import com.turn.ttorrent.common.Torrent;
-import jetbrains.buildServer.serverSide.BuildServerAdapter;
-import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.util.Dates;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -28,33 +26,20 @@ public class TorrentSeeder {
 
   private final static int MAX_CLIENTS = 8;
 
-  private final SBuildServer myServer;
   private volatile boolean myStopped = false;
   private final List<TorrentClient> myClients = new ArrayList<TorrentClient>();
   private final LinkedBlockingQueue<SharedTorrent> myTorrentsQueue;
   private final Thread myThread;
+  private String myRootUrl;
 
-  public TorrentSeeder(@NotNull SBuildServer server) {
-    myServer = server;
+  public TorrentSeeder() {
     myTorrentsQueue = new LinkedBlockingQueue<SharedTorrent>();
     myThread = new Thread(createRunnable(), "Torrent seeders processing thread");
     myThread.setDaemon(true);
-    myServer.addListener(new BuildServerAdapter() {
-      @Override
-      public void serverStartup() {
-        super.serverStartup();
-        start();
-      }
-
-      @Override
-      public void serverShutdown() {
-        super.serverShutdown();
-        stop();
-      }
-    });
   }
 
-  public void start() {
+  public void start(@NotNull String rootUrl) {
+    myRootUrl = rootUrl;
     myThread.start();
   }
 
@@ -198,7 +183,7 @@ public class TorrentSeeder {
     @Nullable
     private String getClientHost() {
       try {
-        return new URI(myServer.getRootUrl()).getHost();
+        return new URI(myRootUrl).getHost();
       } catch (URISyntaxException e) {
         return null;
       }

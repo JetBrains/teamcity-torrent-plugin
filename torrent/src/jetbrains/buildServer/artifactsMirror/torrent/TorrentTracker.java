@@ -6,9 +6,6 @@ import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.NetworkUtil;
-import jetbrains.buildServer.serverSide.BuildServerAdapter;
-import jetbrains.buildServer.serverSide.SBuildServer;
-import jetbrains.buildServer.util.Dates;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -16,60 +13,25 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Collections;
 import java.util.List;
 
 public class TorrentTracker {
   private final static Logger LOG = Logger.getInstance(TorrentTracker.class.getName());
   public static final String TORRENT_FILE_SUFFIX = ".torrent";
 
-  private SBuildServer myServer;
   private Tracker myTracker;
   private final TorrentSeeder mySeeder;
-  private final List<TorrentInfo> myAnnouncedTorrents = new ArrayList<TorrentInfo>();
+  private final List<AnnouncedTorrent> myAnnouncedTorrents = new ArrayList<AnnouncedTorrent>();
 
-  public TorrentTracker(@NotNull SBuildServer server, @NotNull TorrentSeeder seeder) {
-    myServer = server;
-    myServer.addListener(new BuildServerAdapter() {
-      @Override
-      public void serverStartup() {
-        super.serverStartup();
-        start();
-      }
-
-      @Override
-      public void serverShutdown() {
-        super.serverShutdown();
-        stop();
-      }
-
-      @Override
-      public void cleanupFinished() {
-        super.cleanupFinished();
-        List<Torrent> removedTorrents = new ArrayList<Torrent>();
-        synchronized (myAnnouncedTorrents) {
-          for (TorrentInfo ti: myAnnouncedTorrents) {
-            if (ti.getSrcFile().isFile() && ti.getTorrentFile().isFile()) continue;
-
-            FileUtil.delete(ti.getTorrentFile());
-            removedTorrents.add(ti.getTorrent());
-          }
-        }
-
-        for (Torrent removed: removedTorrents) {
-          myTracker.remove(removed);
-        }
-      }
-    });
-
+  public TorrentTracker(@NotNull TorrentSeeder seeder) {
     mySeeder = seeder;
   }
 
-  public void start() {
+  public void start(@NotNull String rootUrl) {
     int freePort = NetworkUtil.getFreePort(6969);
 
     try {
-      String rootUrl = myServer.getRootUrl();
       if (rootUrl.endsWith("/")) rootUrl = rootUrl.substring(0, rootUrl.length()-1);
       URI serverUrl = new URI(rootUrl);
       InetAddress serverAddress = InetAddress.getByName(serverUrl.getHost());
@@ -136,7 +98,7 @@ public class TorrentTracker {
       myTracker.announce(trackedTorrent);
 
       synchronized (myAnnouncedTorrents) {
-        myAnnouncedTorrents.add(new TorrentInfo(srcFile, torrentFile, trackedTorrent));
+        myAnnouncedTorrents.add(new AnnouncedTorrent(srcFile, torrentFile, trackedTorrent));
       }
 
       mySeeder.seedTorrent(t, srcFile);
@@ -149,41 +111,17 @@ public class TorrentTracker {
     }
   }
 
-  private static class TorrentInfo implements Comparable<TorrentInfo> {
-    private final TrackedTorrent myTorrent;
-    private final File mySrcFile;
-    private final Date myAnnounceDate;
-    private final File myTorrentFile;
-
-    private TorrentInfo(@NotNull File srcFile, @NotNull File torrentFile, @NotNull TrackedTorrent torrent) {
-      mySrcFile = srcFile;
-      myTorrentFile = torrentFile;
-      myTorrent = torrent;
-      myAnnounceDate = Dates.now();
+  @NotNull
+  public List<AnnouncedTorrent> getAnnouncedTorrents() {
+    synchronized (myAnnouncedTorrents) {
+      return Collections.unmodifiableList(new ArrayList<AnnouncedTorrent>(myAnnouncedTorrents));
     }
+  }
 
-    @NotNull
-    public TrackedTorrent getTorrent() {
-      return myTorrent;
-    }
-
-    @NotNull
-    public File getTorrentFile() {
-      return myTorrentFile;
-    }
-
-    @NotNull
-    public File getSrcFile() {
-      return mySrcFile;
-    }
-
-    @NotNull
-    public Date getAnnounceDate() {
-      return myAnnounceDate;
-    }
-
-    public int compareTo(TorrentInfo o) {
-      return myAnnounceDate.compareTo(o.getAnnounceDate());
+  public void removeAnnouncedTorrent(@NotNull AnnouncedTorrent torrent) {
+    myTracker.remove(torrent.getTorrent());
+    synchronized (myAnnouncedTorrents) {
+      myAnnouncedTorrents.remove(torrent);
     }
   }
 }
