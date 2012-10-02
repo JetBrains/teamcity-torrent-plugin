@@ -38,6 +38,8 @@ public class TorrentUtil {
    */
   @Nullable
   public static Torrent getOrCreateTorrent(@NotNull File srcFile, @NotNull File torrentsStore, @NotNull URI announceURI) {
+    Torrent.setHashingThreadsCount(2); // limit number of threads generating hashes for a file
+
     File torrentFile = new File(torrentsStore, srcFile.getName() + TORRENT_FILE_SUFFIX);
     if (torrentFile.isFile()) {
       try {
