@@ -54,4 +54,12 @@ public class TorrentTrackerManager {
       }
     });
   }
+
+  public int getActiveClientsNum() {
+    return myTorrentSeeder.getDownloadingClientsNum();
+  }
+
+  public int getAnnouncedTorrentsNum() {
+    return myTorrentTracker.getAnnouncedTorrents().size();
+  }
 }

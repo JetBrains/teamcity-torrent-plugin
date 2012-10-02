@@ -53,6 +53,17 @@ public class TorrentSeeder {
     }
   }
 
+  public int getDownloadingClientsNum() {
+    int num = 0;
+    for (TorrentClient cl: myClients) {
+      for (SharingPeer peer: cl.myClient.getPeers()) {
+        if (peer.isDownloading()) num++;
+      }
+    }
+
+    return num;
+  }
+
   public boolean seedTorrent(@NotNull Torrent torrent, @NotNull File srcFile) {
     if (myStopped) return false;
 
@@ -73,7 +84,7 @@ public class TorrentSeeder {
   }
 
   @NotNull
-  public Runnable createRunnable() {
+  private Runnable createRunnable() {
     return new Runnable() {
       public void run() {
         while (!myStopped) {
