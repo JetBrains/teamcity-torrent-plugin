@@ -16,11 +16,17 @@ BS.Torrents = {
   },
 
   _injectTorrentLinks: function(treeRoot, buildId) {
-    var elements = $j(treeRoot).find("span.c").not(".hasTorrent");
+    // Exclude already handled elements.
+    var elements = $j(treeRoot).find("span.c").not(".torrent-handled");
     var names = [];
     elements.each(function() {
-      var name = $j(this).children("a").text();
-      names.push(name);
+      var link = $j(this).children("a");
+      var href = link.attr("href");
+
+      // Do not ask for files inside archives and directories.
+      if (href != "#" && href.indexOf("!") == -1 && href.indexOf("%21") == -1) {
+        names.push(link.text());
+      }
     });
     if (names.length == 0) {
       return;
@@ -62,8 +68,9 @@ BS.Torrents = {
               });
 
               a.append(img).appendTo(self);
-              self.addClass("hasTorrent");
+              self.addClass("has-torrent");
             }
+            self.addClass("torrent-handled");
           });
         }
       }
