@@ -12,6 +12,9 @@ import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.Element;
+import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.web.servlet.ModelAndView;
@@ -20,23 +23,34 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Maxim Podkolzine (maxim.podkolzine@jetbrains.com)
  * @since 8.0
  */
 public class TorrentLinksController extends BaseController {
-  private static final int MAX_BUILDS_IN_CACHE = 1000;
-  private final ConcurrentHashMap<Long, List<String>> myTorrentsCache;
+  private static final int MAX_ELEMENTS_IN_MEMORY = 1024;
+
+  private static final int SMALL_TIME_TO_LIVE_SECONDS = 120;        // 2 minutes
+  private static final int DEFAULT_TIME_TO_LIVE_SECONDS = 1800;     // 30 minutes
+  private static final int BIG_TIME_TO_LIVE_SECONDS = 7200;         // 2 hours
+
+  private static final int SMALL_DELTA = 60 * 1000;                 // 1 minute
+  private static final int NORMAL_DELTA = 600 * 1000;               // 10 minutes
+
+  private final Cache myTorrentsCache;
 
   public TorrentLinksController(@NotNull SBuildServer server,
                                 @NotNull WebControllerManager webControllerManager) {
     super(server);
-    myTorrentsCache = new ConcurrentHashMap<Long, List<String>>();
     webControllerManager.registerController("/torrentLinks.html", this);
+    myTorrentsCache = new Cache("torrents-in-builds-cache", MAX_ELEMENTS_IN_MEMORY,
+                                MemoryStoreEvictionPolicy.LRU, false, "/tmp",
+                                false, DEFAULT_TIME_TO_LIVE_SECONDS, DEFAULT_TIME_TO_LIVE_SECONDS,
+                                false, 1000, null);
+    myTorrentsCache.initialise();
   }
 
   @Nullable
@@ -57,13 +71,19 @@ public class TorrentLinksController extends BaseController {
         return null;
       }
 
-      List<String> torrents = myTorrentsCache.get(buildId);
+      Element element = myTorrentsCache.get(buildId);
+      @SuppressWarnings("unchecked")
+      List<String> torrents = element != null ? (List<String>) element.getObjectValue() : null;
       if (torrents == null) {
-        torrents = getTorrentsFor(buildId);
-        synchronized (this) {
-          compactCacheIfNeeded();
-          myTorrentsCache.put(buildId, torrents);
+        torrents = new ArrayList<String>();
+        CachePolicy policy = getTorrentsFor(buildId, torrents);
+        int ttl = DEFAULT_TIME_TO_LIVE_SECONDS;
+        switch (policy) {
+          case SMALL_TTL:  ttl = SMALL_TIME_TO_LIVE_SECONDS; break;
+          case NORMAL_TTL: ttl = DEFAULT_TIME_TO_LIVE_SECONDS; break;
+          case BIG_TTL:    ttl = BIG_TIME_TO_LIVE_SECONDS; break;
         }
+        myTorrentsCache.put(new Element(buildId, torrents, false, ttl, ttl));
       }
 
       names.retainAll(torrents);
@@ -86,13 +106,17 @@ public class TorrentLinksController extends BaseController {
   }
 
   @NotNull
-  private List<String> getTorrentsFor(long buildId) {
+  private CachePolicy getTorrentsFor(long buildId, @NotNull final List<String> result) {
     SBuild build = myServer.findBuildInstanceById(buildId);
     if (build == null) {
-      return Collections.emptyList();
+      return CachePolicy.NORMAL_TTL;
     }
 
-    final ArrayList<String> result = new ArrayList<String>();
+    Date finishDate = build.getFinishDate();
+    if (finishDate == null) {
+      return CachePolicy.SMALL_TTL;             // running build
+    }
+
     BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_HIDDEN_ONLY);
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
       @NotNull
@@ -107,16 +131,15 @@ public class TorrentLinksController extends BaseController {
         return Continuation.CONTINUE;
       }
     });
-    return result;
+
+    long delta = System.currentTimeMillis() - finishDate.getTime();
+    return delta < SMALL_DELTA ? CachePolicy.SMALL_TTL :
+           delta < NORMAL_DELTA ? CachePolicy.NORMAL_TTL : CachePolicy.BIG_TTL;
   }
 
-  private void compactCacheIfNeeded() {
-    if (myTorrentsCache.size() > MAX_BUILDS_IN_CACHE) {
-      List<Long> keys = new ArrayList<Long>(myTorrentsCache.keySet());
-      Collections.sort(keys);
-      for (int i = 0; i < MAX_BUILDS_IN_CACHE / 2; ++i) {
-        myTorrentsCache.remove(keys.get(i));
-      }
-    }
+  private static enum CachePolicy {
+    SMALL_TTL,
+    NORMAL_TTL,
+    BIG_TTL
   }
 }
