@@ -11,6 +11,7 @@ import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
+import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -28,12 +29,14 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
   public ArtifactsTorrentsPublisher(@NotNull SBuildServer buildServer,
                                     @NotNull ArtifactsGuard guard,
                                     @NotNull TorrentTrackerManager torrentTrackerManager,
-                                    @NotNull ExecutorServices executorServices) {
+                                    @NotNull ExecutorServices executorServices,
+                                    @NotNull EventDispatcher<BuildServerListener> eventDispatcher) {
     myGuard = guard;
     myTorrentTrackerManager = torrentTrackerManager;
     myExecutors = executorServices;
     myServer = buildServer;
-    buildServer.addListener(this);
+
+    eventDispatcher.addListener(this);
   }
 
   @Override
