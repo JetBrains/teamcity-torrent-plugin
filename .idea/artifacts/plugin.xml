@@ -8,6 +8,15 @@
       </options>
     </properties>
     <root id="root">
+      <element id="directory" name="agent">
+        <element id="archive" name="artifacts-mirror.zip">
+          <element id="archive" name="artifacts-mirror-agent.jar">
+            <element id="module-output" name="agent" />
+            <element id="module-output" name="torrent" />
+          </element>
+          <element id="file-copy" path="$PROJECT_DIR$/agent/teamcity-agent-plugin.xml" output-file-name="teamcity-plugin.xml" />
+        </element>
+      </element>
       <element id="directory" name="server">
         <element id="archive" name="artifacts-mirror-server.jar">
           <element id="module-output" name="server" />
