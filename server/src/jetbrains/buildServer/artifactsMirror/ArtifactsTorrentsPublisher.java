@@ -21,7 +21,6 @@ import java.io.File;
  * @since 8.0
  */
 public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
-  private final ArtifactsGuard myGuard;
   private final TorrentTrackerManager myTorrentTrackerManager;
   private final ExecutorServices myExecutors;
   private final SBuildServer myServer;
@@ -31,7 +30,6 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
                                     @NotNull TorrentTrackerManager torrentTrackerManager,
                                     @NotNull ExecutorServices executorServices,
                                     @NotNull EventDispatcher<BuildServerListener> eventDispatcher) {
-    myGuard = guard;
     myTorrentTrackerManager = torrentTrackerManager;
     myExecutors = executorServices;
     myServer = buildServer;
@@ -70,12 +68,7 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
       public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
         if (shouldCreateTorrentFor(artifact)) {
           File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
-          myGuard.lockReading(artifactFile);
-          try {
-            myTorrentTrackerManager.createTorrent(artifactFile, torrentsStore);
-          } finally {
-            myGuard.unlockReading(artifactFile);
-          }
+          myTorrentTrackerManager.createTorrent(artifactFile, torrentsStore);
         }
         return Continuation.CONTINUE;
       }

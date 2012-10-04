@@ -9,7 +9,6 @@ import jetbrains.buildServer.artifactsMirror.TorrentTrackerManager;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.controllers.artifacts.RepositoryDownloadController;
 import jetbrains.buildServer.serverSide.SBuild;
-import jetbrains.buildServer.serverSide.artifacts.ArtifactsGuard;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
@@ -25,13 +24,10 @@ import java.io.File;
  * @since 8.0
  */
 public class TorrentDownloadListener implements RepositoryDownloadController.RepositoryListener {
-  private final ArtifactsGuard myGuard;
   private final TorrentTrackerManager myTorrentTrackerManager;
 
   public TorrentDownloadListener(@NotNull RepositoryDownloadController controller,
-                                 @NotNull ArtifactsGuard guard,
                                  @NotNull TorrentTrackerManager torrentTrackerManager) {
-    myGuard = guard;
     myTorrentTrackerManager = torrentTrackerManager;
     controller.addListener(this);
   }
@@ -53,15 +49,10 @@ public class TorrentDownloadListener implements RepositoryDownloadController.Rep
       public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
         String currentArtifact = new File(artifact.getRelativePath()).getName();
         if (!artifact.isDirectory() && srcName.equals(currentArtifact)) {
-          myGuard.lockReading(artifactsDirectory);
-          try {
-            File currentFile = new File(artifactsDirectory, artifact.getRelativePath());
-            File torrentFile = new File(artifactsDirectory, torrentRelativePath);
-            myTorrentTrackerManager.seedTorrent(torrentFile, currentFile);
-            return Continuation.BREAK;
-          } finally {
-            myGuard.unlockReading(artifactsDirectory);
-          }
+          File currentFile = new File(artifactsDirectory, artifact.getRelativePath());
+          File torrentFile = new File(artifactsDirectory, torrentRelativePath);
+          myTorrentTrackerManager.seedTorrent(torrentFile, currentFile);
+          return Continuation.BREAK;
         }
         return Continuation.CONTINUE;
       }
