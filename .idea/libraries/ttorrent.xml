@@ -1,11 +1,11 @@
 <component name="libraryTable">
   <library name="ttorrent">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/torrent/lib/ttorrent-1.1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/torrent/lib/ttorrent-1.1.2-snapshot.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
-      <root url="jar://$PROJECT_DIR$/torrent/lib/src/ttorrent-1.1.2-src.jar!/" />
+      <root url="jar://$PROJECT_DIR$/torrent/lib/src/ttorrent-1.1.2-snapshot-src.jar!/" />
     </SOURCES>
   </library>
 </component>
