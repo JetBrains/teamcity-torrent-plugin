@@ -1,8 +1,8 @@
 <%@ include file="/include.jsp" %>
 <jsp:useBean id="announcedTorrentsNum" type="java.lang.Integer" scope="request"/>
-<jsp:useBean id="allClients" type="java.util.List" scope="request"/>
+<jsp:useBean id="downloadingClientsNum" type="java.lang.Integer" scope="request"/>
 
-<c:if test="${announcedTorrentsNum > 0 or not empty allClients}">
+<c:if test="${announcedTorrentsNum > 0 or allClientsNum > 0}">
   <table class="runnerFormTable">
     <tr class="groupingTitle">
       <td colspan="2">
@@ -12,9 +12,10 @@
 
     <tr class="groupingTitle">
       <td colspan="2">
-        Running clients: ${fn:length(allClients)}
+        Downloading clients: <strong>${downloadingClientsNum}</strong>
       </td>
     </tr>
+<%--
     <c:if test="${not empty allClients}">
       <tr>
         <th>Seeded artifact</th>
@@ -22,7 +23,7 @@
       </tr>
 
       <c:forEach items="${allClients}" var="client">
-        <%--@elvariable id="client" type="jetbrains.buildServer.artifactsMirror.torrent.TorrentSeeder.TorrentClient"--%>
+        &lt;%&ndash;@elvariable id="client" type="jetbrains.buildServer.artifactsMirror.torrent.TorrentSeeder.TorrentClient"&ndash;%&gt;
         <tr>
           <td>
             <c:out value="${client.torrent}"/>
@@ -43,5 +44,6 @@
         </tr>
       </c:forEach>
     </c:if>
+--%>
   </table>
 </c:if>

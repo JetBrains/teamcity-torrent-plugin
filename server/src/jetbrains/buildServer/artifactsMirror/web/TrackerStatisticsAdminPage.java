@@ -34,7 +34,7 @@ public class TrackerStatisticsAdminPage extends AdminPage {
   public void fillModel(@NotNull Map<String, Object> model, @NotNull HttpServletRequest request) {
     super.fillModel(model, request);
     model.put("announcedTorrentsNum", myTorrentTrackerManager.getAnnouncedTorrentsNum());
-    model.put("allClients", myTorrentTrackerManager.getAllClients());
+    model.put("downloadingClientsNum", myTorrentTrackerManager.getDownloadingClientsNum());
   }
 
   @NotNull
