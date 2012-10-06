@@ -4,7 +4,6 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.client.peer.SharingPeer;
-import com.turn.ttorrent.common.Torrent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,10 +55,7 @@ public class TorrentSeeder {
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) {
     try {
-      Torrent torrent = TorrentUtil.loadTorrent(torrentFile);
-
-      SharedTorrent sharedTorrent = new SharedTorrent(torrent, srcFile.getParentFile(), true);
-      myClient.addTorrent(sharedTorrent);
+      myClient.addTorrent(SharedTorrent.fromFile(torrentFile, srcFile.getParentFile(), true));
     } catch (IOException e) {
       return false;
     } catch (NoSuchAlgorithmException e) {
