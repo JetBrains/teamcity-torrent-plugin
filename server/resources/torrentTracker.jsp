@@ -2,7 +2,7 @@
 <jsp:useBean id="announcedTorrentsNum" type="java.lang.Integer" scope="request"/>
 <jsp:useBean id="downloadingClientsNum" type="java.lang.Integer" scope="request"/>
 
-<c:if test="${announcedTorrentsNum > 0 or allClientsNum > 0}">
+<c:if test="${announcedTorrentsNum > 0 or downloadingClientsNum > 0}">
   <table class="runnerFormTable">
     <tr class="groupingTitle">
       <td colspan="2">
