@@ -15,6 +15,7 @@
             <element id="module-output" name="torrent" />
           </element>
           <element id="file-copy" path="$PROJECT_DIR$/agent/teamcity-agent-plugin.xml" output-file-name="teamcity-plugin.xml" />
+          <element id="library" level="project" name="ttorrent" />
         </element>
       </element>
       <element id="directory" name="server">
