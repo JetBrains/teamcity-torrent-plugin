@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 
 public class TorrentSeeder {
@@ -22,11 +23,19 @@ public class TorrentSeeder {
   public TorrentSeeder() {
   }
 
-  public void start(@NotNull String rootUrl) {
+  public void start(@NotNull InetAddress inetAddress) {
     try {
-      myClient = new Client(InetAddress.getByName(getClientHost(rootUrl)));
+      myClient = new Client(inetAddress);
       myClient.share();
     } catch (IOException e) {
+      LOG.warn("Failed to start torrent client: " + e.toString());
+    }
+  }
+
+  public void start(@NotNull String rootUrl) {
+    try {
+      start(InetAddress.getByName(getClientHost(rootUrl)));
+    } catch (UnknownHostException e) {
       LOG.warn("Failed to start torrent client: " + e.toString());
     }
   }
@@ -65,5 +74,15 @@ public class TorrentSeeder {
     }
 
     return true;
+  }
+
+  public void stopSeeding(@NotNull File torrentFile) {
+    try {
+      myClient.removeTorrent(SharedTorrent.fromFile(torrentFile, torrentFile.getParentFile(), true));
+    } catch (IOException e) {
+      LOG.warn(e.toString());
+    } catch (NoSuchAlgorithmException e) {
+      LOG.warn(e.toString());
+    }
   }
 }
