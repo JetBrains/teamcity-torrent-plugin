@@ -45,10 +45,10 @@ public class TorrentSeeder {
     myClient.stop(true);
   }
 
-  public int getDownloadingClientsNum() {
+  public int getConnectedClientsNum() {
     int num = 0;
     for (SharingPeer peer: myClient.getPeers()) {
-      if (peer.isDownloading()) num++;
+      if (peer.isDownloading() || peer.isConnected()) num++;
     }
 
     return num;

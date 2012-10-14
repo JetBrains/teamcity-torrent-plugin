@@ -1,8 +1,8 @@
 <%@ include file="/include.jsp" %>
 <jsp:useBean id="announcedTorrentsNum" type="java.lang.Integer" scope="request"/>
-<jsp:useBean id="downloadingClientsNum" type="java.lang.Integer" scope="request"/>
+<jsp:useBean id="connectedClientsNum" type="java.lang.Integer" scope="request"/>
 
-<c:if test="${announcedTorrentsNum > 0 or downloadingClientsNum > 0}">
+<c:if test="${announcedTorrentsNum > 0 or connectedClientsNum > 0}">
   <table class="runnerFormTable">
     <tr class="groupingTitle">
       <td colspan="2">
@@ -12,7 +12,7 @@
 
     <tr class="groupingTitle">
       <td colspan="2">
-        Downloading clients: <strong>${downloadingClientsNum}</strong>
+        Connected clients: <strong>${connectedClientsNum}</strong>
       </td>
     </tr>
 <%--

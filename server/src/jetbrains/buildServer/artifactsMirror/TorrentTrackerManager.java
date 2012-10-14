@@ -63,8 +63,8 @@ public class TorrentTrackerManager {
     myTorrentSeeder.seedTorrent(torrentFile, srcFile);
   }
 
-  public int getDownloadingClientsNum() {
-    return myTorrentSeeder.getDownloadingClientsNum();
+  public int getConnectedClientsNum() {
+    return myTorrentSeeder.getConnectedClientsNum();
   }
 
   public int getAnnouncedTorrentsNum() {
