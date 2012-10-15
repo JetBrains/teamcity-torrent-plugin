@@ -6,6 +6,7 @@ import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.util.ExceptionUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -44,10 +45,10 @@ public class TorrentTracker {
     }
   }
 
-  @NotNull
+  @Nullable
   public URI getAnnounceURI() {
     try {
-      return myTracker.getAnnounceUrl().toURI();
+      return myTracker == null ? null : myTracker.getAnnounceUrl().toURI();
     } catch (URISyntaxException e) {
       ExceptionUtil.rethrowAsRuntimeException(e);
     }

@@ -5,5 +5,7 @@
         xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd"
         default-autowire="constructor"
         >
-  <bean class="jetbrains.buildServer.artifactsMirror.AgentArtifactsTorrentsPublisher"/>
+  <bean class="jetbrains.buildServer.artifactsMirror.TrackerManagerProxy"/>
+  <bean class="jetbrains.buildServer.artifactsMirror.AgentTorrentsManager"/>
+  <bean class="jetbrains.buildServer.artifactsMirror.AgentTorrentsArtifactsPublisher"/>
 </beans>
