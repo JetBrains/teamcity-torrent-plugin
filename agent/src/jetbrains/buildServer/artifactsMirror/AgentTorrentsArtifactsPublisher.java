@@ -6,7 +6,7 @@ package jetbrains.buildServer.artifactsMirror;
 
 import com.intellij.openapi.diagnostic.Logger;
 import jetbrains.buildServer.agent.*;
-import jetbrains.buildServer.serverSide.TeamCityProperties;
+import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -19,14 +19,22 @@ import java.util.Map;
  * Date: 10/3/12
  * Time: 6:15 PM
  */
-public class AgentTorrentsArtifactsPublisher implements ArtifactsPublisher {
+public class AgentTorrentsArtifactsPublisher extends AgentLifeCycleAdapter implements ArtifactsPublisher {
   private final static Logger LOG = Logger.getInstance(AgentTorrentsArtifactsPublisher.class.getName());
 
   @NotNull
   private final AgentTorrentsManager myTorrentsManager;
+  private String myBuildTypeId;
 
-  public AgentTorrentsArtifactsPublisher(@NotNull AgentTorrentsManager torrentsManager) {
+  public AgentTorrentsArtifactsPublisher(@NotNull EventDispatcher<AgentLifeCycleListener> eventDispatcher,
+                                         @NotNull AgentTorrentsManager torrentsManager) {
+    eventDispatcher.addListener(this);
     myTorrentsManager = torrentsManager;
+  }
+
+  @Override
+  public void buildStarted(@NotNull AgentRunningBuild runningBuild) {
+    myBuildTypeId = runningBuild.getBuildTypeId();
   }
 
   public int publishFiles(@NotNull Map<File, String> fileStringMap) throws ArtifactPublishingFailedException {
@@ -44,7 +52,7 @@ public class AgentTorrentsArtifactsPublisher implements ArtifactsPublisher {
   private boolean announceBuildArtifact(@NotNull File artifact) {
     if (shouldCreateTorrentFor(artifact)) {
       try {
-        myTorrentsManager.seedTorrent(artifact);
+        myTorrentsManager.seedTorrent(artifact, myBuildTypeId);
         return true;
       } catch (IOException e) {
         LOG.warn(e.toString(), e);
@@ -53,8 +61,8 @@ public class AgentTorrentsArtifactsPublisher implements ArtifactsPublisher {
     return false;
   }
 
-  private static boolean shouldCreateTorrentFor(@NotNull File artifact) {
+  private boolean shouldCreateTorrentFor(@NotNull File artifact) {
     return artifact.isFile() &&
-           artifact.length() >= TeamCityProperties.getInteger("teamcity.artifactsTorrent.sizeThresholdMb", 50) * 1024 * 1024;
+           artifact.length() >= myTorrentsManager.getFileSizeThresholdMb() * 1024 * 1024;
   }
 }

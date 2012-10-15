@@ -75,9 +75,8 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
     });
   }
 
-  private static boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {
+  private boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {
     long size = artifact.getSize();
-    return !artifact.isDirectory() &&
-            size >= TeamCityProperties.getInteger("teamcity.artifactsTorrent.sizeThresholdMb", 50) * 1024 * 1024;
+    return !artifact.isDirectory() && size >= myTorrentTrackerManager.getFileSizeThresholdMb() * 1024 * 1024;
   }
 }
