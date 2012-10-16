@@ -33,8 +33,8 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements LinkW
   private final TrackerManager myTrackerManager;
   @NotNull
   private final TorrentSeeder myTorrentSeeder = new TorrentSeeder();
-
-  private LinkWatcher myLinkWatcher;
+  @NotNull
+  private final LinkWatcher myLinkWatcher;
   private URI myTrackerAnnounceUrl;
   private int myFileSizeThresholdMb;
 
@@ -45,6 +45,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements LinkW
 
     myTorrentStorage = agentConfiguration.getCacheDirectory(TORRENT_FOLDER_NAME);
     myTrackerManager = trackerManager;
+    myLinkWatcher = new LinkWatcher(myTorrentStorage, this);
   }
 
   @Override
@@ -122,7 +123,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements LinkW
   }
 
   private void init() {
-    if (myLinkWatcher == null) {
+    if (!myLinkWatcher.isStarted()) {
       try {
         myTrackerAnnounceUrl = new URI(myTrackerManager.getAnnounceUrl());
       } catch (URISyntaxException e) {
@@ -130,7 +131,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements LinkW
       }
       myFileSizeThresholdMb = myTrackerManager.getFileSizeThresholdMb();
 
-      myLinkWatcher = new LinkWatcher(myTorrentStorage, this);
       myLinkWatcher.start();
     }
   }

@@ -21,6 +21,7 @@ public class LinkWatcher implements FilesWatcher.WatchedFilesProvider, ChangeLis
   private final FilesWatcher myFilesWatcher;
   @NotNull
   private final LinkWatcherListener myListener;
+  private boolean myStarted;
 
   public LinkWatcher(@NotNull File root, @NotNull LinkWatcherListener listener) {
     myRoot = root;
@@ -32,10 +33,12 @@ public class LinkWatcher implements FilesWatcher.WatchedFilesProvider, ChangeLis
     myFilesWatcher.setSleepingPeriod(5000L);
     myFilesWatcher.registerListener(this);
     myFilesWatcher.start();
+    myStarted = true;
   }
 
   public void stop() {
     myFilesWatcher.stop();
+    myStarted = false;
   }
 
   public File[] getWatchedFiles() throws IOException {
@@ -51,6 +54,10 @@ public class LinkWatcher implements FilesWatcher.WatchedFilesProvider, ChangeLis
       if (linkFile == null) continue;
       myListener.targetFileChanged(linkFile, srcFile);
     }
+  }
+
+  public boolean isStarted() {
+    return myStarted;
   }
 
   public static interface LinkWatcherListener {
