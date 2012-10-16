@@ -37,6 +37,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements LinkW
   private final LinkWatcher myLinkWatcher;
 
   private URI myTrackerAnnounceUrl;
+  private int myFileSizeThresholdMb;
 
   public AgentTorrentsManager(@NotNull BuildAgentConfiguration agentConfiguration,
                               @NotNull EventDispatcher<AgentLifeCycleListener> eventDispatcher,
@@ -64,6 +65,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements LinkW
     } catch (URISyntaxException e) {
       LOG.warn(e.toString(), e);
     }
+    myFileSizeThresholdMb = myTrackerManager.getFileSizeThresholdMb();
     myLinkWatcher.start();
   }
 
@@ -124,6 +126,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements LinkW
   }
 
   public int getFileSizeThresholdMb() {
-    return myTrackerManager.getFileSizeThresholdMb();
+    return myFileSizeThresholdMb;
   }
 }
