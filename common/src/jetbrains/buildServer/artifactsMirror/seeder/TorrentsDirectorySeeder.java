@@ -53,11 +53,11 @@ public class TorrentsDirectorySeeder {
     });
     myNewLinksWatcher.registerListener(new ChangeListener() {
       public void changeOccured(String requestor) {
-        for (File newLink : CollectionsUtil.join(myNewLinksWatcher.getNewFiles(), myNewLinksWatcher.getModifiedFiles())) {
-          processChangedLink(newLink);
+        for (File link : CollectionsUtil.join(myNewLinksWatcher.getNewFiles(), myNewLinksWatcher.getModifiedFiles())) {
+          processChangedLink(link);
         }
-        for (File newLink : myNewLinksWatcher.getRemovedFiles()) {
-          processRemovedLink(newLink);
+        for (File link : myNewLinksWatcher.getRemovedFiles()) {
+          processRemovedLink(link);
         }
       }
     });
@@ -72,7 +72,15 @@ public class TorrentsDirectorySeeder {
   private Collection<File> findAllLinks() {
     return FileUtil.findFiles(new FileFilter() {
       public boolean accept(File file) {
-        return FileLink.isLink(file);
+        if (!FileLink.isLink(file)) return false;
+
+        File targetFile;
+        try {
+          targetFile = FileLink.getTargetFile(file);
+          return targetFile.isFile();
+        } catch (IOException e) {
+          return false; // cannot read content of the link
+        }
       }
     }, myTorrentStorage);
   }
@@ -84,10 +92,13 @@ public class TorrentsDirectorySeeder {
     }
 
     stopSeedingTorrent(torrentFile);
-    cleanupAfterLinkRemoval(removedLink);
+    cleanupBrokenLink(removedLink);
   }
 
-  private void cleanupAfterLinkRemoval(File linkDir) {
+  private void cleanupBrokenLink(@NotNull File linkFile) {
+    File linkDir = linkFile.getParentFile();
+    FileUtil.delete(linkFile);
+
     if (linkDir.equals(myTorrentStorage)) return;
     FileUtil.deleteIfEmpty(linkDir);
   }
@@ -107,8 +118,7 @@ public class TorrentsDirectorySeeder {
           myTorrentSeeder.seedTorrent(torrentFile, targetFile);
         }
       } else {
-        FileUtil.delete(changedLink); // broken link
-        cleanupAfterLinkRemoval(linkDir);
+        cleanupBrokenLink(changedLink);
       }
     } catch (IOException e) {
       Loggers.AGENT.warn("Exception during new link processing: " + e.toString(), e);
@@ -131,6 +141,10 @@ public class TorrentsDirectorySeeder {
   }
 
   public void start(@NotNull InetAddress address) {
+    start(address, 30);
+  }
+
+  public void start(@NotNull InetAddress address, int directoryScanIntervalSeconds) {
     myTorrentSeeder.start(address);
 
     // initialization: scan all existing links and start seeding them
@@ -138,6 +152,7 @@ public class TorrentsDirectorySeeder {
       processChangedLink(linkFile);
     }
 
+    myNewLinksWatcher.setSleepingPeriod(directoryScanIntervalSeconds * 1000);
     myNewLinksWatcher.start();
 
     myStopped = false;

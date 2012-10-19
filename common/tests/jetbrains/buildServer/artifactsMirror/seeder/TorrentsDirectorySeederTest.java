@@ -54,7 +54,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
         return torrentFile;
       }
     });
-    myDirectorySeeder.start(InetAddress.getLocalHost());
+    myDirectorySeeder.start(InetAddress.getLocalHost(), 3);
   }
 
   public void new_link() throws IOException, NoSuchAlgorithmException {
@@ -83,6 +83,46 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
     };
 
     assertFalse(torrentFile.isFile());
+  }
+
+  public void target_file_removed() throws IOException, NoSuchAlgorithmException {
+    File srcFile = createTempFile();
+    final File linkFile = FileLink.createLink(srcFile, myStorageDir);
+    final File torrentFile = waitForTorrentFile(linkFile);
+
+    assertTrue(torrentFile.isFile());
+    assertTrue(myDirectorySeeder.isSeeding(torrentFile));
+
+    FileUtil.delete(srcFile);
+    new WaitFor() {
+      @Override
+      protected boolean condition() {
+        return !torrentFile.isFile() && !linkFile.isFile();
+      }
+    };
+
+    assertFalse(torrentFile.isFile());
+    assertFalse(linkFile.isFile());
+  }
+
+  public void empty_dirs_removed() throws IOException, NoSuchAlgorithmException {
+    File srcFile = createTempFile();
+    final File linkDir = new File(myStorageDir, "subdir");
+    final File linkFile = FileLink.createLink(srcFile, linkDir);
+    final File torrentFile = waitForTorrentFile(linkFile);
+
+    assertTrue(torrentFile.isFile());
+    assertTrue(myDirectorySeeder.isSeeding(torrentFile));
+
+    FileUtil.delete(linkFile);
+    new WaitFor() {
+      @Override
+      protected boolean condition() {
+        return !linkDir.isDirectory();
+      }
+    };
+
+    assertFalse(linkDir.isDirectory());
   }
 
   private File waitForTorrentFile(File linkFile) {
