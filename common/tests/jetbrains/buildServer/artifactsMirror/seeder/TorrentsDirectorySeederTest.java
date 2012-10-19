@@ -27,6 +27,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
@@ -53,12 +54,12 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
         return torrentFile;
       }
     });
-    myDirectorySeeder.start();
+    myDirectorySeeder.start(InetAddress.getLocalHost());
   }
 
   public void new_link() throws IOException, NoSuchAlgorithmException {
     File srcFile = createTempFile();
-    final File linkFile = LinkFile.createLink(srcFile, myStorageDir);
+    final File linkFile = FileLink.createLink(srcFile, myStorageDir);
     final File torrentFile = waitForTorrentFile(linkFile);
 
     assertTrue(torrentFile.isFile());
@@ -67,7 +68,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
 
   public void link_removed() throws IOException, NoSuchAlgorithmException {
     File srcFile = createTempFile();
-    final File linkFile = LinkFile.createLink(srcFile, myStorageDir);
+    final File linkFile = FileLink.createLink(srcFile, myStorageDir);
     final File torrentFile = waitForTorrentFile(linkFile);
 
     assertTrue(torrentFile.isFile());

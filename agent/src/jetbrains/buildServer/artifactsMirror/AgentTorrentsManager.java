@@ -2,25 +2,30 @@ package jetbrains.buildServer.artifactsMirror;
 
 import com.intellij.openapi.diagnostic.Logger;
 import jetbrains.buildServer.agent.*;
-import jetbrains.buildServer.artifactsMirror.seeder.LinkFile;
+import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentFileFactory;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
+import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * User: Victory.Bedrosova
  * Date: 10/9/12
  * Time: 5:12 PM
  */
-public class AgentTorrentsManager extends AgentLifeCycleAdapter {
+public class AgentTorrentsManager extends AgentLifeCycleAdapter implements ArtifactsPublisher {
   private final static Logger LOG = Logger.getInstance(AgentTorrentsManager.class.getName());
 
   private static final String TORRENT_FOLDER_NAME = "torrents";
@@ -30,6 +35,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   private volatile URI myTrackerAnnounceUrl;
   private volatile Integer myFileSizeThresholdMb;
   private TorrentsDirectorySeeder myTorrentsDirectorySeeder;
+  private AgentRunningBuild myBuild;
 
   public AgentTorrentsManager(@NotNull BuildAgentConfiguration agentConfiguration,
                               @NotNull EventDispatcher<AgentLifeCycleListener> eventDispatcher,
@@ -73,12 +79,17 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
 
   @Override
   public void agentStarted(@NotNull BuildAgent agent) {
-    myTorrentsDirectorySeeder.start();
+    try {
+      myTorrentsDirectorySeeder.start(InetAddress.getByName(agent.getConfiguration().getOwnAddress()));
+    } catch (UnknownHostException e) {
+      Loggers.AGENT.error("Failed to start torrent seeder, error: " + e.toString());
+    }
   }
 
   @Override
   public void buildStarted(@NotNull AgentRunningBuild runningBuild) {
     initSettings();
+    myBuild = runningBuild;
   }
 
   @Override
@@ -86,19 +97,31 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     myTorrentsDirectorySeeder.stop();
   }
 
-  public boolean announceNewFile(@NotNull File srcFile, @NotNull String namespace) {
+  private boolean announceNewFile(@NotNull File srcFile, @NotNull String namespace) {
     if (!settingsInited()) return false;
     if (srcFile.length() >= myFileSizeThresholdMb) {
       File linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), namespace);
       linkDir.mkdirs();
       if (!linkDir.isDirectory()) return false;
       try {
-        LinkFile.createLink(srcFile, linkDir);
+        FileLink.createLink(srcFile, linkDir);
       } catch (IOException e) {
         return false;
       }
     }
 
     return true;
+  }
+
+  public int publishFiles(@NotNull Map<File, String> fileStringMap) throws ArtifactPublishingFailedException {
+    return announceBuildArtifacts(fileStringMap.keySet());
+  }
+
+  private int announceBuildArtifacts(@NotNull Collection<File> artifacts) {
+    int num = 0;
+    for (File artifact : artifacts) {
+      if (announceNewFile(artifact, myBuild.getBuildTypeId())) ++num;
+    }
+    return num;
   }
 }

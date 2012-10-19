@@ -8,10 +8,7 @@ import jetbrains.buildServer.util.ExceptionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.*;
 import java.util.Collection;
 
 public class TorrentTracker {
@@ -26,9 +23,7 @@ public class TorrentTracker {
     int freePort = NetworkUtil.getFreePort(6969);
 
     try {
-      if (rootUrl.endsWith("/")) rootUrl = rootUrl.substring(0, rootUrl.length()-1);
-      URI serverUrl = new URI(rootUrl);
-      InetAddress serverAddress = InetAddress.getByName(serverUrl.getHost());
+      InetAddress serverAddress = getServerAddress(rootUrl);
       myTracker = new Tracker(new InetSocketAddress(serverAddress, freePort));
       myTracker.setAcceptForeignTorrents(true);
       myTracker.start();
@@ -36,6 +31,13 @@ public class TorrentTracker {
     } catch (Exception e) {
       LOG.error("Failed to start torrent tracker, server URL is invalid: " + e.toString());
     }
+  }
+
+  @NotNull
+  public static InetAddress getServerAddress(@NotNull String rootUrl) throws URISyntaxException, UnknownHostException {
+    if (rootUrl.endsWith("/")) rootUrl = rootUrl.substring(0, rootUrl.length()-1);
+    URI serverUrl = new URI(rootUrl);
+    return InetAddress.getByName(serverUrl.getHost());
   }
 
   public void stop() {
