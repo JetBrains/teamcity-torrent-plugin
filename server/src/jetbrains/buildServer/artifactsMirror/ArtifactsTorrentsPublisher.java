@@ -4,17 +4,18 @@
  */
 package jetbrains.buildServer.artifactsMirror;
 
-import jetbrains.buildServer.ArtifactsConstants;
+import jetbrains.buildServer.artifactsMirror.seeder.LinkFile;
+import jetbrains.buildServer.artifactsMirror.seeder.TorrentFileFactory;
+import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.serverSide.*;
-import jetbrains.buildServer.serverSide.artifacts.ArtifactsGuard;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
-import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * @author Maxim Podkolzine (maxim.podkolzine@jetbrains.com)
@@ -22,35 +23,21 @@ import java.io.File;
  */
 public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
   private final TorrentTrackerManager myTorrentTrackerManager;
-  private final ExecutorServices myExecutors;
-  private final SBuildServer myServer;
+  private final TorrentsDirectorySeeder myTorrentsDirectorySeeder;
 
-  public ArtifactsTorrentsPublisher(@NotNull SBuildServer buildServer,
-                                    @NotNull ArtifactsGuard guard,
+  public ArtifactsTorrentsPublisher(@NotNull ServerPaths serverPaths,
                                     @NotNull TorrentTrackerManager torrentTrackerManager,
-                                    @NotNull ExecutorServices executorServices,
                                     @NotNull EventDispatcher<BuildServerListener> eventDispatcher) {
     myTorrentTrackerManager = torrentTrackerManager;
-    myExecutors = executorServices;
-    myServer = buildServer;
-
-    eventDispatcher.addListener(this);
-  }
-
-  @Override
-  public void serverStartup() {
-    super.serverStartup();
-    myExecutors.getLowPriorityExecutorService().submit(new Runnable() {
-      public void run() {
-        ProjectManager projectManager = myServer.getProjectManager();
-        for (SBuildType buildType : projectManager.getActiveBuildTypes()) {
-          SFinishedBuild build = buildType.getLastChangesFinished();
-          if (build != null) {
-            announceBuildArtifacts(build);
-          }
-        }
+    File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
+    torrentsStorage.mkdirs();
+    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, new TorrentFileFactory() {
+      public File createTorrentFile(@NotNull File sourceFile, @NotNull File parentDir) throws IOException {
+        return myTorrentTrackerManager.createTorrent(sourceFile, parentDir);
       }
     });
+
+    eventDispatcher.addListener(this);
   }
 
   @Override
@@ -58,9 +45,20 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
     announceBuildArtifacts(build);
   }
 
-  private void announceBuildArtifacts(@NotNull SBuild build) {
+  @Override
+  public void serverStartup() {
+    super.serverStartup();
+    myTorrentsDirectorySeeder.start();
+  }
+
+  @Override
+  public void serverShutdown() {
+    super.serverShutdown();
+    myTorrentsDirectorySeeder.stop();
+  }
+
+  private void announceBuildArtifacts(@NotNull final SBuild build) {
     final File artifactsDirectory = build.getArtifactsDirectory();
-    final File torrentsStore = new File(artifactsDirectory, ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR);
 
     BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT);
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
@@ -68,7 +66,12 @@ public class ArtifactsTorrentsPublisher extends BuildServerAdapter {
       public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
         if (shouldCreateTorrentFor(artifact)) {
           File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
-          myTorrentTrackerManager.createTorrent(artifactFile, torrentsStore);
+          File linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), build.getBuildTypeId());
+          try {
+            LinkFile.createLink(artifactFile, linkDir);
+          } catch (IOException e) {
+            //
+          }
         }
         return Continuation.CONTINUE;
       }

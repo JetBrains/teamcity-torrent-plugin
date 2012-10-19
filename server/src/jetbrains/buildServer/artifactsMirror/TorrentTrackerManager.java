@@ -3,7 +3,6 @@ package jetbrains.buildServer.artifactsMirror;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
-import jetbrains.buildServer.artifactsMirror.torrent.TorrentSeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
@@ -20,12 +19,10 @@ import java.util.List;
 
 public class TorrentTrackerManager implements TrackerManager {
   private TorrentTracker myTorrentTracker;
-  private TorrentSeeder myTorrentSeeder;
 
   public TorrentTrackerManager(@NotNull final RootUrlHolder rootUrlHolder,
                                @NotNull EventDispatcher<BuildServerListener> dispatcher,
                                @NotNull XmlRpcHandlerManager xmlRpcHandlerManager) {
-    myTorrentSeeder = new TorrentSeeder();
     myTorrentTracker = new TorrentTracker();
 
     dispatcher.addListener(new BuildServerAdapter() {
@@ -33,14 +30,12 @@ public class TorrentTrackerManager implements TrackerManager {
       public void serverStartup() {
         super.serverStartup();
         myTorrentTracker.start(rootUrlHolder.getRootUrl());
-        myTorrentSeeder.start(rootUrlHolder.getRootUrl());
       }
 
       @Override
       public void serverShutdown() {
         super.serverShutdown();
         myTorrentTracker.stop();
-        myTorrentSeeder.stop();
       }
 
       @Override
@@ -62,16 +57,13 @@ public class TorrentTrackerManager implements TrackerManager {
     xmlRpcHandlerManager.addHandler(XmlRpcConstants.TORRENT_TRACKER_MANAGER_HANDLER, this);
   }
 
-  public void createTorrent(@NotNull File srcFile, @NotNull File torrentsStore) {
-    TorrentUtil.getOrCreateTorrent(srcFile, torrentsStore, myTorrentTracker.getAnnounceURI());
-  }
-
-  public void seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) {
-    myTorrentSeeder.seedTorrent(torrentFile, srcFile);
+  @NotNull
+  public File createTorrent(@NotNull File srcFile, @NotNull File torrentsStore) {
+    return TorrentUtil.getOrCreateTorrent(srcFile, torrentsStore, myTorrentTracker.getAnnounceURI());
   }
 
   public int getConnectedClientsNum() {
-    return myTorrentSeeder.getConnectedClientsNum();
+    return 0;
   }
 
   public int getAnnouncedTorrentsNum() {

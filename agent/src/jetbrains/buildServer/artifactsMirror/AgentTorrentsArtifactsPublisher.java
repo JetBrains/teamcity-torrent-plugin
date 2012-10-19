@@ -10,7 +10,6 @@ import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
@@ -50,19 +49,6 @@ public class AgentTorrentsArtifactsPublisher extends AgentLifeCycleAdapter imple
   }
 
   private boolean announceBuildArtifact(@NotNull File artifact) {
-    if (shouldCreateTorrentFor(artifact)) {
-      try {
-        myTorrentsManager.seedTorrent(artifact, myBuildTypeId);
-        return true;
-      } catch (IOException e) {
-        LOG.warn(e.toString(), e);
-      }
-    }
-    return false;
-  }
-
-  private boolean shouldCreateTorrentFor(@NotNull File artifact) {
-    return artifact.isFile() &&
-           artifact.length() >= myTorrentsManager.getFileSizeThresholdMb() * 1024 * 1024;
+    return myTorrentsManager.announceNewFile(artifact, myBuildTypeId);
   }
 }

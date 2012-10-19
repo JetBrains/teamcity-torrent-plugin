@@ -23,13 +23,13 @@ import java.io.File;
  * @author Maxim Podkolzine (maxim.podkolzine@jetbrains.com)
  * @since 8.0
  */
-public class TorrentDownloadListener implements RepositoryDownloadController.RepositoryListener {
+public class TorrentDownloadListener /*implements RepositoryDownloadController.RepositoryListener*/ {
   private final TorrentTrackerManager myTorrentTrackerManager;
 
   public TorrentDownloadListener(@NotNull RepositoryDownloadController controller,
                                  @NotNull TorrentTrackerManager torrentTrackerManager) {
     myTorrentTrackerManager = torrentTrackerManager;
-    controller.addListener(this);
+//    controller.addListener(this);
   }
 
   public void artifactDownloaded(@NotNull SBuild build, @NotNull BuildArtifact torrentArtifact) {
@@ -51,7 +51,7 @@ public class TorrentDownloadListener implements RepositoryDownloadController.Rep
         if (!artifact.isDirectory() && srcName.equals(currentArtifact)) {
           File currentFile = new File(artifactsDirectory, artifact.getRelativePath());
           File torrentFile = new File(artifactsDirectory, torrentRelativePath);
-          myTorrentTrackerManager.seedTorrent(torrentFile, currentFile);
+//          myTorrentTrackerManager.seedTorrent(torrentFile, currentFile);
           return Continuation.BREAK;
         }
         return Continuation.CONTINUE;

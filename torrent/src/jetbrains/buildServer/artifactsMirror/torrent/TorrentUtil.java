@@ -41,8 +41,8 @@ public class TorrentUtil {
    * Creates the torrent file for the specified <code>srcFile</code> and announce URI.
    * If such torrent already exists, loads and returns it.
    */
-  @Nullable
-  public static Torrent getOrCreateTorrent(@NotNull File srcFile, @NotNull File torrentsStore, @NotNull URI announceURI) {
+  @NotNull
+  public static File getOrCreateTorrent(@NotNull File srcFile, @NotNull File torrentsStore, @NotNull URI announceURI) {
     setHashingThreadsCount();
 
     File torrentFile = new File(torrentsStore, srcFile.getName() + TORRENT_FILE_SUFFIX);
@@ -50,14 +50,15 @@ public class TorrentUtil {
       try {
         Torrent t =  loadTorrent(torrentFile);
         for (List<URI> uris: t.getAnnounceList()) {
-          if (uris.contains(announceURI)) return t;
+          if (uris.contains(announceURI)) return torrentFile;
         }
       } catch (IOException e) {
         LOG.warn("Failed to load existing torrent file: " + torrentFile.getAbsolutePath() + ", error: " + e.toString() + ". Will create new torrent file instead.");
       }
     }
 
-    return createTorrent(srcFile, torrentFile, announceURI);
+    createTorrent(srcFile, torrentFile, announceURI);
+    return torrentFile;
   }
 
   /**

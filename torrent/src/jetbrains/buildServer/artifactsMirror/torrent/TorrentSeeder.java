@@ -64,8 +64,9 @@ public class TorrentSeeder {
   }
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) {
+    if (myClient == null) return false;
     try {
-      Torrent t = Torrent.load(torrentFile, null);
+      Torrent t = loadTorrent(torrentFile);
       myClient.addTorrent(new SharedTorrent(t, srcFile.getParentFile(), false, true));
     } catch (IOException e) {
       return false;
@@ -79,12 +80,26 @@ public class TorrentSeeder {
   }
 
   public void stopSeeding(@NotNull File torrentFile) {
+    if (myClient == null) return;
     try {
-      myClient.removeTorrent(SharedTorrent.fromFile(torrentFile, torrentFile.getParentFile(), true));
+      Torrent t = loadTorrent(torrentFile);
+      myClient.removeTorrent(t);
     } catch (IOException e) {
       LOG.warn(e.toString());
     } catch (NoSuchAlgorithmException e) {
       LOG.warn(e.toString());
     }
+  }
+
+  private Torrent loadTorrent(File torrentFile) throws IOException, NoSuchAlgorithmException {
+    return Torrent.load(torrentFile, null);
+  }
+
+  public boolean isSeeding(@NotNull File torrentFile) throws IOException, NoSuchAlgorithmException {
+    Torrent t = loadTorrent(torrentFile);
+    for (SharedTorrent st: myClient.getTorrents()) {
+      if (st.getHexInfoHash().equals(t.getHexInfoHash())) return true;
+    }
+    return false;
   }
 }
