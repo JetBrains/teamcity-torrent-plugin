@@ -2,6 +2,7 @@
 <jsp:useBean id="torrentConfigurator" type="jetbrains.buildServer.artifactsMirror.TorrentConfigurator" scope="request"/>
 <jsp:useBean id="announcedTorrentsNum" type="java.lang.Integer" scope="request"/>
 <jsp:useBean id="connectedClientsNum" type="java.lang.Integer" scope="request"/>
+<jsp:useBean id="seededTorrentsNum" type="java.lang.Integer" scope="request"/>
 <form method="post" action="<c:url value='/admin/torrentTrackerSettings.html'/>">
 <table class="runnerFormTable">
 <tr>
@@ -22,7 +23,14 @@
 </tr>
 <tr>
   <th><label for="seederEnabled">Torrent seeder:</label></th>
-  <td><forms:checkbox name="seederEnabled" checked="${torrentConfigurator.seederEnabled}"/><label for="seederEnabled"> enable torrent seeder</label></td>
+  <td>
+    <forms:checkbox name="seederEnabled" checked="${torrentConfigurator.seederEnabled}"/><label for="seederEnabled"> enable torrent seeder</label>
+    <c:if test="${torrentConfigurator.seederEnabled}">
+    <ul style="margin-top:0; padding-left: 1em;">
+      <li>seeded torrents: <strong>${seededTorrentsNum}</strong></li>
+    </ul>
+    </c:if>
+  </td>
 </tr>
 <tr>
   <th><label for="fileSizeThresholdMb">Artifact size threshold:</label></th>

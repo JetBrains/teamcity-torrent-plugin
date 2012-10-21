@@ -102,6 +102,10 @@ public class ServerTorrentsDirectorySeeder {
     return new File(getTorrentFilesBaseDir(build), torrentPath);
   }
 
+  public int getNumberOfSeededTorrents() {
+    return myTorrentsDirectorySeeder.getNumberOfSeededTorrents();
+  }
+
   private void announceBuildArtifacts(@NotNull final SBuild build) {
     final File artifactsDirectory = build.getArtifactsDirectory();
 

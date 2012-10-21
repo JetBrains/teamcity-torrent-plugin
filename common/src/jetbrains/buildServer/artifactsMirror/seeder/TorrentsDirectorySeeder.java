@@ -167,5 +167,9 @@ public class TorrentsDirectorySeeder {
   public boolean isStopped() {
     return myStopped;
   }
+
+  public int getNumberOfSeededTorrents() {
+    return myTorrentSeeder.getNumberOfSeededTorrents();
+  }
 }
 

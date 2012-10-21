@@ -4,6 +4,7 @@
  */
 package jetbrains.buildServer.artifactsMirror.web;
 
+import jetbrains.buildServer.artifactsMirror.ServerTorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.TorrentConfigurator;
 import jetbrains.buildServer.artifactsMirror.TorrentTrackerManager;
 import jetbrains.buildServer.controllers.BaseController;
@@ -27,15 +28,18 @@ public class TrackerAdminPage extends AdminPage {
   private static final String TAB_ID = "torrentTracker";
   private final TorrentTrackerManager myTorrentTrackerManager;
   private final TorrentConfigurator myTorrentConfigurator;
+  private final ServerTorrentsDirectorySeeder myTorrentSeeder;
 
   protected TrackerAdminPage(@NotNull PagePlaces pagePlaces,
                              @NotNull WebControllerManager controllerManager,
                              @NotNull PluginDescriptor descriptor,
                              @NotNull TorrentTrackerManager torrentTrackerManager,
-                             @NotNull TorrentConfigurator torrentConfigurator) {
+                             @NotNull TorrentConfigurator torrentConfigurator,
+                             @NotNull ServerTorrentsDirectorySeeder torrentSeeder) {
     super(pagePlaces, TAB_ID, descriptor.getPluginResourcesPath("torrentTracker.jsp"), "Torrent Tracker");
     myTorrentTrackerManager = torrentTrackerManager;
     myTorrentConfigurator = torrentConfigurator;
+    myTorrentSeeder = torrentSeeder;
     register();
 
     controllerManager.registerController("/admin/torrentTrackerSettings.html", new BaseController() {
@@ -65,6 +69,7 @@ public class TrackerAdminPage extends AdminPage {
     model.put("torrentConfigurator", myTorrentConfigurator);
     model.put("announcedTorrentsNum", myTorrentTrackerManager.getAnnouncedTorrentsNum());
     model.put("connectedClientsNum", myTorrentTrackerManager.getConnectedClientsNum());
+    model.put("seededTorrentsNum", myTorrentSeeder.getNumberOfSeededTorrents());
   }
 
   @NotNull

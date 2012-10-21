@@ -3,17 +3,12 @@ package jetbrains.buildServer.artifactsMirror.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.client.SharedTorrent;
-import com.turn.ttorrent.client.peer.SharingPeer;
 import com.turn.ttorrent.common.Torrent;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 
 public class TorrentSeeder {
@@ -33,34 +28,8 @@ public class TorrentSeeder {
     }
   }
 
-  public void start(@NotNull String rootUrl) {
-    try {
-      start(InetAddress.getByName(getClientHost(rootUrl)));
-    } catch (UnknownHostException e) {
-      LOG.warn("Failed to start torrent client: " + e.toString());
-    }
-  }
-
-  @Nullable
-  private String getClientHost(@NotNull String rootUrl) {
-    try {
-      return new URI(rootUrl).getHost();
-    } catch (URISyntaxException e) {
-      return null;
-    }
-  }
-
   public void stop() {
     myClient.stop(true);
-  }
-
-  public int getConnectedClientsNum() {
-    int num = 0;
-    for (SharingPeer peer: myClient.getPeers()) {
-      if (peer.isDownloading() || peer.isConnected()) num++;
-    }
-
-    return num;
   }
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) {
@@ -101,5 +70,9 @@ public class TorrentSeeder {
       if (st.getHexInfoHash().equals(t.getHexInfoHash())) return true;
     }
     return false;
+  }
+
+  public int getNumberOfSeededTorrents() {
+    return myClient.getTorrents().size();
   }
 }
