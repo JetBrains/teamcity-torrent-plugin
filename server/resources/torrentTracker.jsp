@@ -2,20 +2,34 @@
 <jsp:useBean id="torrentConfigurator" type="jetbrains.buildServer.artifactsMirror.TorrentConfigurator" scope="request"/>
 <jsp:useBean id="announcedTorrentsNum" type="java.lang.Integer" scope="request"/>
 <jsp:useBean id="connectedClientsNum" type="java.lang.Integer" scope="request"/>
-
-<div>
-Torrent tracker <strong>${torrentConfigurator.trackerEnabled ? 'enabled' : 'disabled'}</strong>
-<ul>
-<li>announced torrents: <strong>${announcedTorrentsNum}</strong></li>
-<li>announce URL: <strong>${torrentConfigurator.announceUrl}</strong></li>
-</ul>
-</div>
-<div>
-Torrent seeder <strong>${torrentConfigurator.seederEnabled ? 'enabled' : 'disabled'}</strong>
-<ul>
-<li>connected/downloading clients: <strong>${connectedClientsNum}</strong></li>
-</ul>
-</div>
-<div>
-Torrent files will be created for artifacts bigger than <strong>${torrentConfigurator.fileSizeThresholdMb}</strong> Mb.
-</div>
+<form method="post" action="<c:url value='/admin/torrentTrackerSettings.html'/>">
+<table class="runnerFormTable">
+<tr>
+  <th>Torrent tracker announce URL:</th>
+  <td><c:out value="${torrentConfigurator.announceUrl}"/></td>
+</tr>
+<tr>
+  <th><label for="trackerEnabled">Torrent tracker:</label></th>
+  <td>
+    <forms:checkbox name="trackerEnabled" checked="${torrentConfigurator.trackerEnabled}"/><label for="trackerEnabled"> enable torrent tracker</label>
+    <c:if test="${torrentConfigurator.trackerEnabled}">
+    <ul style="margin-top:0; padding-left: 1em;">
+      <li>announced torrents: <strong>${announcedTorrentsNum}</strong></li>
+      <li>connected/downloading clients: <strong>${connectedClientsNum}</strong></li>
+    </ul>
+    </c:if>
+  </td>
+</tr>
+<tr>
+  <th><label for="seederEnabled">Torrent seeder:</label></th>
+  <td><forms:checkbox name="seederEnabled" checked="${torrentConfigurator.seederEnabled}"/><label for="seederEnabled"> enable torrent seeder</label></td>
+</tr>
+<tr>
+  <th><label for="fileSizeThresholdMb">Artifact size threshold:</label></th>
+  <td><forms:textField name="fileSizeThresholdMb" style="width: 5em" value="${torrentConfigurator.fileSizeThresholdMb}"/> Mb</td>
+</tr>
+<tr>
+  <td colspan="2"><forms:submit label="Save" name="save"/></td>
+</tr>
+</table>
+</form>
