@@ -7,7 +7,7 @@ import org.jetbrains.annotations.Nullable;
  * Date: 10/12/12
  * Time: 4:02 PM
  */
-public interface TrackerManager {
+public interface TorrentTrackerConfiguration {
   /**
    * Returns announce URL of the tracker or null if tracker isn't started
    * @return see above

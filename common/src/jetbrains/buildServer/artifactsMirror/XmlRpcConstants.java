@@ -6,5 +6,5 @@ package jetbrains.buildServer.artifactsMirror;
  * Time: 4:04 PM
  */
 final class XmlRpcConstants {
-  static final String TORRENT_TRACKER_MANAGER_HANDLER = "TorrentTrackerManager";
+  static final String TORRENT_TRACKER_CONFIGURATION = "TorrentTrackerConfiguration";
 }

@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
  * Date: 10/12/12
  * Time: 4:06 PM
  */
-public class TrackerManagerProxy implements TrackerManager {
+public class TrackerManagerProxy implements TorrentTrackerConfiguration {
   @NotNull
   private final XmlRpcTarget myXmlRpcTarget;
 
@@ -31,7 +31,7 @@ public class TrackerManagerProxy implements TrackerManager {
 
   private Object call(@NotNull String methodName) {
     try {
-      return myXmlRpcTarget.call(XmlRpcConstants.TORRENT_TRACKER_MANAGER_HANDLER + "." + methodName, new Object[0]);
+      return myXmlRpcTarget.call(XmlRpcConstants.TORRENT_TRACKER_CONFIGURATION + "." + methodName, new Object[0]);
     } catch (RemoteCallException e) {
       return null;
     }

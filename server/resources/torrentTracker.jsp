@@ -1,49 +1,21 @@
 <%@ include file="/include.jsp" %>
+<jsp:useBean id="torrentConfigurator" type="jetbrains.buildServer.artifactsMirror.TorrentConfigurator" scope="request"/>
 <jsp:useBean id="announcedTorrentsNum" type="java.lang.Integer" scope="request"/>
 <jsp:useBean id="connectedClientsNum" type="java.lang.Integer" scope="request"/>
 
-<c:if test="${announcedTorrentsNum > 0 or connectedClientsNum > 0}">
-  <table class="runnerFormTable">
-    <tr class="groupingTitle">
-      <td colspan="2">
-        Number of announced torrents: <strong>${announcedTorrentsNum}</strong>
-      </td>
-    </tr>
-
-    <tr class="groupingTitle">
-      <td colspan="2">
-        Connected clients: <strong>${connectedClientsNum}</strong>
-      </td>
-    </tr>
-<%--
-    <c:if test="${not empty allClients}">
-      <tr>
-        <th>Seeded artifact</th>
-        <th>Peers</th>
-      </tr>
-
-      <c:forEach items="${allClients}" var="client">
-        &lt;%&ndash;@elvariable id="client" type="jetbrains.buildServer.artifactsMirror.torrent.TorrentSeeder.TorrentClient"&ndash;%&gt;
-        <tr>
-          <td>
-            <c:out value="${client.torrent}"/>
-          </td>
-          <td>
-            <c:set var="peers" value="${client.client.peers}"/>
-            <c:choose>
-              <c:when test="${empty peers}">0</c:when>
-              <c:otherwise>
-                ${fn:length(peers)} peer<bs:s val="${fn:length(peers)}"/>
-
-                <c:set var="seeds" value="0"/>
-                <c:forEach var="peer" items="${peers}"><c:set var="seeds" value="${peer.seed ? 1 : 0}"/></c:forEach>
-                (${seeds} seed<bs:s val="${seeds}"/>)
-              </c:otherwise>
-            </c:choose>
-          </td>
-        </tr>
-      </c:forEach>
-    </c:if>
---%>
-  </table>
-</c:if>
+<div>
+Torrent tracker <strong>${torrentConfigurator.trackerEnabled ? 'enabled' : 'disabled'}</strong>
+<ul>
+<li>announced torrents: <strong>${announcedTorrentsNum}</strong></li>
+<li>announce URL: <strong>${torrentConfigurator.announceUrl}</strong></li>
+</ul>
+</div>
+<div>
+Torrent seeder <strong>${torrentConfigurator.seederEnabled ? 'enabled' : 'disabled'}</strong>
+<ul>
+<li>connected/downloading clients: <strong>${connectedClientsNum}</strong></li>
+</ul>
+</div>
+<div>
+Torrent files will be created for artifacts bigger than <strong>${torrentConfigurator.fileSizeThresholdMb}</strong> Mb.
+</div>

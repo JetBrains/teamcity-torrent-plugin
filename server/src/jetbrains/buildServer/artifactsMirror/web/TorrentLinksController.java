@@ -4,7 +4,7 @@
  */
 package jetbrains.buildServer.artifactsMirror.web;
 
-import jetbrains.buildServer.artifactsMirror.ServerTorrentsManager;
+import jetbrains.buildServer.artifactsMirror.ServerTorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.SBuild;
@@ -28,14 +28,14 @@ import java.util.List;
  * @since 8.0
  */
 public class TorrentLinksController extends BaseController {
-  private final ServerTorrentsManager myTorrentsManager;
+  private final ServerTorrentsDirectorySeeder myTorrentsManager;
 
   public TorrentLinksController(@NotNull SBuildServer server,
                                 @NotNull WebControllerManager webControllerManager,
-                                @NotNull ServerTorrentsManager torrentsManager) {
+                                @NotNull ServerTorrentsDirectorySeeder torrentsDirectorySeeder) {
     super(server);
     webControllerManager.registerController("/torrentLinks.html", this);
-    myTorrentsManager = torrentsManager;
+    myTorrentsManager = torrentsDirectorySeeder;
   }
 
   @Nullable

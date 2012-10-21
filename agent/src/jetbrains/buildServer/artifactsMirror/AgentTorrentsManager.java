@@ -31,7 +31,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   private static final String TORRENT_FOLDER_NAME = "torrents";
 
   @NotNull
-  private final TrackerManager myTrackerManager;
+  private final TorrentTrackerConfiguration myTrackerManager;
   private volatile URI myTrackerAnnounceUrl;
   private volatile Integer myFileSizeThresholdMb;
   private TorrentsDirectorySeeder myTorrentsDirectorySeeder;
@@ -39,7 +39,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
 
   public AgentTorrentsManager(@NotNull BuildAgentConfiguration agentConfiguration,
                               @NotNull EventDispatcher<AgentLifeCycleListener> eventDispatcher,
-                              @NotNull TrackerManager trackerManager) throws Exception {
+                              @NotNull TorrentTrackerConfiguration trackerManager) throws Exception {
     eventDispatcher.addListener(this);
 
     File torrentsStorage = agentConfiguration.getCacheDirectory(TORRENT_FOLDER_NAME);
@@ -54,7 +54,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
 
   private File createTorrentFile(File sourceFile, File parentDir) {
     if (!settingsInited()) return null;
-    if (sourceFile.length() >= myFileSizeThresholdMb) {
+    if (shouldCreateTorrentFileFor(sourceFile)) {
       File torrentFile = new File(parentDir, sourceFile.getName() + TorrentUtil.TORRENT_FILE_SUFFIX);
       TorrentUtil.createTorrent(sourceFile, torrentFile, myTrackerAnnounceUrl);
       return torrentFile;
@@ -99,7 +99,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
 
   private boolean announceNewFile(@NotNull File srcFile, @NotNull String namespace) {
     if (!settingsInited()) return false;
-    if (srcFile.length() >= myFileSizeThresholdMb) {
+    if (shouldCreateTorrentFileFor(srcFile)) {
       File linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), namespace);
       linkDir.mkdirs();
       if (!linkDir.isDirectory()) return false;
@@ -111,6 +111,10 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
     }
 
     return true;
+  }
+
+  private boolean shouldCreateTorrentFileFor(File srcFile) {
+    return srcFile.length() >= myFileSizeThresholdMb * 1024 * 1024;
   }
 
   public int publishFiles(@NotNull Map<File, String> fileStringMap) throws ArtifactPublishingFailedException {

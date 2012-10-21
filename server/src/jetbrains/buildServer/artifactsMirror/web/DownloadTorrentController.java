@@ -17,7 +17,7 @@
 package jetbrains.buildServer.artifactsMirror.web;
 
 import com.intellij.openapi.util.io.StreamUtil;
-import jetbrains.buildServer.artifactsMirror.ServerTorrentsManager;
+import jetbrains.buildServer.artifactsMirror.ServerTorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.BuildsManager;
@@ -35,12 +35,12 @@ import java.io.File;
 import java.io.FileInputStream;
 
 public class DownloadTorrentController extends BaseController {
-  private final ServerTorrentsManager myTorrentsManager;
+  private final ServerTorrentsDirectorySeeder myTorrentsManager;
   private final BuildsManager myBuildsManager;
 
-  public DownloadTorrentController(@NotNull WebControllerManager controllerManager, @NotNull ServerTorrentsManager torrentsManager, @NotNull BuildsManager buildsManager) {
+  public DownloadTorrentController(@NotNull WebControllerManager controllerManager, @NotNull ServerTorrentsDirectorySeeder torrentsDirectorySeeder, @NotNull BuildsManager buildsManager) {
     controllerManager.registerController("/downloadTorrent.html", this);
-    myTorrentsManager = torrentsManager;
+    myTorrentsManager = torrentsDirectorySeeder;
     myBuildsManager = buildsManager;
   }
 
