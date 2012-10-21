@@ -8,6 +8,7 @@ import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.util.EventDispatcher;
+import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -97,10 +98,16 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
     myTorrentsDirectorySeeder.stop();
   }
 
-  private boolean announceNewFile(@NotNull File srcFile, @NotNull String namespace) {
+  private boolean announceNewFile(@NotNull File srcFile) {
     if (!settingsInited()) return false;
     if (shouldCreateTorrentFileFor(srcFile)) {
-      File linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), namespace);
+      File linkDir;
+      if (srcFile.getAbsolutePath().startsWith(myBuild.getCheckoutDirectory().getAbsolutePath())) {
+        String relPath = FileUtil.getRelativePath(myBuild.getCheckoutDirectory(), srcFile);
+        linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), myBuild.getBuildTypeId() + File.separator + relPath).getParentFile();
+      } else {
+        linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), myBuild.getBuildTypeId());
+      }
       linkDir.mkdirs();
       if (!linkDir.isDirectory()) return false;
       try {
@@ -124,7 +131,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   private int announceBuildArtifacts(@NotNull Collection<File> artifacts) {
     int num = 0;
     for (File artifact : artifacts) {
-      if (announceNewFile(artifact, myBuild.getBuildTypeId())) ++num;
+      if (announceNewFile(artifact)) ++num;
     }
     return num;
   }
