@@ -18,7 +18,7 @@ package jetbrains.buildServer.artifactsMirror.web;
 
 import com.intellij.openapi.util.io.StreamUtil;
 import jetbrains.buildServer.artifactsMirror.ServerTorrentsManager;
-import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
+import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.BuildsManager;
 import jetbrains.buildServer.serverSide.SBuild;
@@ -48,7 +48,7 @@ public class DownloadTorrentController extends BaseController {
   protected ModelAndView doHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) throws Exception {
     String buildIdParam = request.getParameter("buildId");
     String path = request.getParameter("file");
-    String torrentPath = path + TorrentsDirectorySeeder.TORRENT_FILE_SUFFIX;
+    String torrentPath = path + TorrentUtil.TORRENT_FILE_SUFFIX;
 
     File torrentFile = null;
     long buildId = Long.parseLong(buildIdParam);

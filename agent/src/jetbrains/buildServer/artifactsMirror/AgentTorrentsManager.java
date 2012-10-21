@@ -55,7 +55,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   private File createTorrentFile(File sourceFile, File parentDir) {
     if (!settingsInited()) return null;
     if (sourceFile.length() >= myFileSizeThresholdMb) {
-      File torrentFile = new File(parentDir, sourceFile.getName() + ".torrent");
+      File torrentFile = new File(parentDir, sourceFile.getName() + TorrentUtil.TORRENT_FILE_SUFFIX);
       TorrentUtil.createTorrent(sourceFile, torrentFile, myTrackerAnnounceUrl);
       return torrentFile;
     }

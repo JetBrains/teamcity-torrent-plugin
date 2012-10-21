@@ -45,7 +45,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
     myDirectorySeeder = new TorrentsDirectorySeeder(myStorageDir, new TorrentFileFactory() {
       @NotNull
       public File createTorrentFile(@NotNull File sourceFile, @NotNull File parentDir) throws IOException {
-        File torrentFile = new File(parentDir, sourceFile.getName() + ".torrent");
+        File torrentFile = new File(parentDir, sourceFile.getName() + TorrentUtil.TORRENT_FILE_SUFFIX);
         try {
           TorrentUtil.createTorrent(sourceFile, torrentFile, new URI("http://localhost:6969/announce"));
         } catch (URISyntaxException e) {

@@ -9,6 +9,7 @@ import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentFileFactory;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker;
+import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
@@ -101,7 +102,7 @@ public class ServerTorrentsManager extends BuildServerAdapter {
     try {
       return FileUtil.findFiles(new FileFilter() {
         public boolean accept(File file) {
-          return file.getName().endsWith(TorrentsDirectorySeeder.TORRENT_FILE_SUFFIX);
+          return file.getName().endsWith(TorrentUtil.TORRENT_FILE_SUFFIX);
         }
       }, baseDir);
     } catch (Exception e) {

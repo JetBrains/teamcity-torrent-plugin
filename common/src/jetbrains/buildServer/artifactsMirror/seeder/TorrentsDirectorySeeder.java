@@ -17,6 +17,7 @@
 package jetbrains.buildServer.artifactsMirror.seeder;
 
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentSeeder;
+import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.configuration.ChangeListener;
 import jetbrains.buildServer.configuration.FilesWatcher;
 import jetbrains.buildServer.log.Loggers;
@@ -32,7 +33,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 
 public class TorrentsDirectorySeeder {
-  public static final String TORRENT_FILE_SUFFIX = ".torrent";
   @NotNull
   private final File myTorrentStorage;
 
@@ -92,6 +92,7 @@ public class TorrentsDirectorySeeder {
     }
 
     stopSeedingTorrent(torrentFile);
+    FileUtil.delete(torrentFile);
     cleanupBrokenLink(removedLink);
   }
 
@@ -127,13 +128,12 @@ public class TorrentsDirectorySeeder {
 
   private void stopSeedingTorrent(@NotNull File torrentFile) {
     myTorrentSeeder.stopSeeding(torrentFile);
-    FileUtil.delete(torrentFile);
   }
 
   public static File getTorrentFileByLinkFile(@NotNull File linkFile) {
     String linkFileName = linkFile.getName();
     String name = linkFileName.substring(0, linkFileName.length() - FileLink.LINK_FILE_SUFFIX.length());
-    return new File(linkFile.getParentFile(), name + TORRENT_FILE_SUFFIX);
+    return new File(linkFile.getParentFile(), name + TorrentUtil.TORRENT_FILE_SUFFIX);
   }
 
   public boolean isSeeding(@NotNull File torrentFile) throws IOException, NoSuchAlgorithmException {
@@ -149,17 +149,7 @@ public class TorrentsDirectorySeeder {
 
     // initialization: scan all existing links and start seeding them
     for (File linkFile: findAllLinks()) {
-      try {
-        File targetFile = FileLink.getTargetFile(linkFile);
-        File torrentFile = getTorrentFileByLinkFile(linkFile);
-        if (torrentFile.isFile() && targetFile.isFile()) {
-          myTorrentSeeder.seedTorrent(torrentFile, targetFile);
-        } else {
-          cleanupBrokenLink(linkFile);
-        }
-      } catch (IOException e) {
-        cleanupBrokenLink(linkFile);
-      }
+      processChangedLink(linkFile);
     }
 
     myNewLinksWatcher.setSleepingPeriod(directoryScanIntervalSeconds * 1000);

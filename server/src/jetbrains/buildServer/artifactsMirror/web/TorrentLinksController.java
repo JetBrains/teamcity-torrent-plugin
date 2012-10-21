@@ -5,7 +5,7 @@
 package jetbrains.buildServer.artifactsMirror.web;
 
 import jetbrains.buildServer.artifactsMirror.ServerTorrentsManager;
-import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
+import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.SBuildServer;
@@ -79,7 +79,7 @@ public class TorrentLinksController extends BaseController {
       String path = FileUtil.getRelativePath(baseDir, f);
       if (path == null) continue;
       path = path.replace('\\', '/');
-      names.add(path.substring(0, path.length() - TorrentsDirectorySeeder.TORRENT_FILE_SUFFIX.length()));
+      names.add(path.substring(0, path.length() - TorrentUtil.TORRENT_FILE_SUFFIX.length()));
     }
     return names;
   }
