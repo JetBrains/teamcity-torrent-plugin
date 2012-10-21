@@ -32,7 +32,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 
 public class TorrentsDirectorySeeder {
-  private static final String TORRENT_FILE_SUFFIX = ".torrent";
+  public static final String TORRENT_FILE_SUFFIX = ".torrent";
   @NotNull
   private final File myTorrentStorage;
 
@@ -149,7 +149,17 @@ public class TorrentsDirectorySeeder {
 
     // initialization: scan all existing links and start seeding them
     for (File linkFile: findAllLinks()) {
-      processChangedLink(linkFile);
+      try {
+        File targetFile = FileLink.getTargetFile(linkFile);
+        File torrentFile = getTorrentFileByLinkFile(linkFile);
+        if (torrentFile.isFile() && targetFile.isFile()) {
+          myTorrentSeeder.seedTorrent(torrentFile, targetFile);
+        } else {
+          cleanupBrokenLink(linkFile);
+        }
+      } catch (IOException e) {
+        cleanupBrokenLink(linkFile);
+      }
     }
 
     myNewLinksWatcher.setSleepingPeriod(directoryScanIntervalSeconds * 1000);

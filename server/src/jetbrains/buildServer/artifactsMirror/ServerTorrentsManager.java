@@ -15,10 +15,14 @@ import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.util.EventDispatcher;
+import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * @author Maxim Podkolzine (maxim.podkolzine@jetbrains.com)
@@ -86,6 +90,30 @@ public class ServerTorrentsManager extends BuildServerAdapter {
     stopSeederIfStarted();
   }
 
+  @NotNull
+  public File getTorrentFilesBaseDir(@NotNull SBuild build) {
+    return getLinkDir(build);
+  }
+
+  @NotNull
+  public Collection<File> getTorrentFiles(@NotNull SBuild build) {
+    File baseDir = getTorrentFilesBaseDir(build);
+    try {
+      return FileUtil.findFiles(new FileFilter() {
+        public boolean accept(File file) {
+          return file.getName().endsWith(TorrentsDirectorySeeder.TORRENT_FILE_SUFFIX);
+        }
+      }, baseDir);
+    } catch (Exception e) {
+      return Collections.emptyList();
+    }
+  }
+
+  @NotNull
+  public File getTorrentFile(@NotNull SBuild build, @NotNull String torrentPath) {
+    return new File(getTorrentFilesBaseDir(build), torrentPath);
+  }
+
   private void announceBuildArtifacts(@NotNull final SBuild build) {
     final File artifactsDirectory = build.getArtifactsDirectory();
 
@@ -95,7 +123,10 @@ public class ServerTorrentsManager extends BuildServerAdapter {
       public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
         if (shouldCreateTorrentFor(artifact)) {
           File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
-          File linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), build.getBuildTypeId() + File.separator + build.getBuildId());
+          File baseDir = getTorrentFilesBaseDir(build);
+          File filePath = new File(baseDir, artifact.getRelativePath());
+          File linkDir = filePath.getParentFile();
+
           try {
             FileLink.createLink(artifactFile, linkDir);
           } catch (IOException e) {
@@ -105,6 +136,11 @@ public class ServerTorrentsManager extends BuildServerAdapter {
         return Continuation.CONTINUE;
       }
     });
+  }
+
+  private File getLinkDir(@NotNull SBuild build) {
+    return new File(myTorrentsDirectorySeeder.getStorageDirectory(),
+                    build.getBuildTypeId() + File.separator + build.getBuildId());
   }
 
   private boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {
