@@ -11,6 +11,7 @@
     <orderEntry type="library" name="Idea-OpenApi" level="project" />
     <orderEntry type="library" name="idea annotations.jar" level="project" />
     <orderEntry type="library" name="Common-Api" level="project" />
+    <orderEntry type="library" name="slf4j-api" level="project" />
   </component>
 </module>
 

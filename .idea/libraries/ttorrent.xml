@@ -2,8 +2,6 @@
   <library name="ttorrent">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/torrent/lib/ttorrent-1.1.2-snapshot.jar!/" />
-      <root url="jar://$PROJECT_DIR$/torrent/lib/slf4j-api-1.5.11.jar!/" />
-      <root url="jar://$PROJECT_DIR$/torrent/lib/slf4j-simple-1.5.11.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
