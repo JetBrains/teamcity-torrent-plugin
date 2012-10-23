@@ -1,6 +1,7 @@
 package jetbrains.buildServer.artifactsMirror;
 
 import com.intellij.openapi.diagnostic.Logger;
+import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentFileFactory;
@@ -15,8 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 /**
  * User: Victory.Bedrosova
@@ -78,7 +78,21 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   @Override
   public void agentStarted(@NotNull BuildAgent agent) {
     try {
-      myTorrentsDirectorySeeder.start(InetAddress.getByName("0.0.0.0")); // try to bind to all addresses
+      List<InetAddress> addrs = new ArrayList<InetAddress>();
+      addrs.add(InetAddress.getByName(agent.getConfiguration().getOwnAddress()));
+      addrs.addAll(Arrays.asList(NetworkUtil.getSelfAddresses()));
+      InetAddress found = null;
+      for (InetAddress addr: addrs) {
+        if (addr.isLoopbackAddress() || addr.isAnyLocalAddress()) continue;
+        found = addr; break;
+      }
+      if (found != null) {
+        myTorrentsDirectorySeeder.start(found);
+      } else {
+        Loggers.AGENT.warn("Failed to find inet address to bind seeder to, list of all available addresses: " + addrs);
+      }
+    } catch (SocketException e) {
+      Loggers.AGENT.error("Failed to start torrent seeder, error: " + e.toString());
     } catch (UnknownHostException e) {
       Loggers.AGENT.error("Failed to start torrent seeder, error: " + e.toString());
     }
