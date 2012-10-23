@@ -14,10 +14,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.Collection;
 import java.util.Map;
 
@@ -81,7 +78,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   @Override
   public void agentStarted(@NotNull BuildAgent agent) {
     try {
-      myTorrentsDirectorySeeder.start(InetAddress.getByName(agent.getConfiguration().getOwnAddress()));
+      myTorrentsDirectorySeeder.start(InetAddress.getByName("0.0.0.0")); // try to bind to all addresses
     } catch (UnknownHostException e) {
       Loggers.AGENT.error("Failed to start torrent seeder, error: " + e.toString());
     }
@@ -95,7 +92,9 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
 
   @Override
   public void agentShutdown() {
-    myTorrentsDirectorySeeder.stop();
+    if (!myTorrentsDirectorySeeder.isStopped()) {
+      myTorrentsDirectorySeeder.stop();
+    }
   }
 
   private boolean announceNewFile(@NotNull File srcFile) {

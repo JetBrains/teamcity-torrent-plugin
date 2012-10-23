@@ -19,6 +19,7 @@ package jetbrains.buildServer.artifactsMirror;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.AgentRunningBuild;
+import jetbrains.buildServer.agent.BuildAgent;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -112,6 +113,18 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
     assertTrue(new File(myTorrentCacheDir, "bt1/a/b/f.jar.link").isFile());
     assertTrue(new File(myTorrentCacheDir, "bt1/a/f.jar.link").isFile());
     assertTrue(new File(myTorrentCacheDir, "bt1/f.jar.link").isFile());
+  }
+
+  public void agent_started_event() {
+    Mock buildAgentMock = mock(BuildAgent.class);
+    buildAgentMock.stubs().method("getConfiguration").will(returnValue(myConfigurationMock.proxy()));
+    myConfigurationMock.stubs().method("getOwnAddress").will(returnValue("127.0.0.1"));
+
+    try {
+      myTorrentsManager.agentStarted((BuildAgent) buildAgentMock.proxy());
+    } finally {
+      myTorrentsManager.agentShutdown();
+    }
   }
 
   @NotNull
