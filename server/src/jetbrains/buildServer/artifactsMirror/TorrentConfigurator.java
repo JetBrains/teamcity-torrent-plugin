@@ -21,6 +21,7 @@ import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.BuildServerListener;
 import jetbrains.buildServer.serverSide.ServerPaths;
+import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.PropertiesUtil;
@@ -47,7 +48,8 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
                              @NotNull EventDispatcher<BuildServerListener> dispatcher,
                              @NotNull ServerTorrentsDirectorySeeder torrentsDirectorySeeder,
                              @NotNull TorrentTrackerManager trackerManager,
-                             @NotNull XmlRpcHandlerManager xmlRpcHandlerManager) {
+                             @NotNull XmlRpcHandlerManager xmlRpcHandlerManager,
+                             @NotNull final ExecutorServices executors) {
     mySeederManager = torrentsDirectorySeeder;
     myTrackerManager = trackerManager;
     myServerPaths = serverPaths;
@@ -65,9 +67,13 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
         if (isEnabled(TRACKER_ENABLED)) {
           myTrackerManager.startTracker();
         }
-        if (isEnabled(SEEDER_ENABLED)) {
-          startSeeder();
-        }
+        executors.getLowPriorityExecutorService().submit(new Runnable() {
+          public void run() {
+            if (isEnabled(SEEDER_ENABLED)) {
+              startSeeder();
+            }
+          }
+        });
       }
     });
 
