@@ -26,15 +26,17 @@
   <td>
     <forms:checkbox name="seederEnabled" checked="${torrentConfigurator.seederEnabled}"/><label for="seederEnabled"> enable torrent seeder</label>
     <c:if test="${torrentConfigurator.seederEnabled}">
-    <ul style="margin-top:0; padding-left: 1em;">
-      <li>seeded torrents: <strong>${seededTorrentsNum}</strong></li>
-    </ul>
     </c:if>
   </td>
 </tr>
 <tr>
   <th><label for="maxNumberOfSeededTorrents">Maximum number of seeded torrents:</label></th>
-  <td><forms:textField name="maxNumberOfSeededTorrents" style="width: 5em" value="${torrentConfigurator.maxNumberOfSeededTorrents}"/> (-1 - unlimited)</td>
+  <td>
+    <forms:textField name="maxNumberOfSeededTorrents" style="width: 8em" value="${torrentConfigurator.maxNumberOfSeededTorrents}"/> (-1 - unlimited)
+    <ul style="margin-top:0; margin-bottom: 0; padding-left: 1em;">
+      <li>number of currently seeded torrents: <strong>${seededTorrentsNum}</strong></li>
+    </ul>
+  </td>
 </tr>
 <tr>
   <th><label for="fileSizeThresholdMb">Artifact size threshold:</label></th>
