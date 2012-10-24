@@ -37,11 +37,8 @@ public class TorrentSeeder {
     try {
       Torrent t = loadTorrent(torrentFile);
       myClient.addTorrent(new SharedTorrent(t, srcFile.getParentFile(), false, true));
-    } catch (IOException e) {
-      return false;
-    } catch (NoSuchAlgorithmException e) {
-      return false;
-    } catch (InterruptedException e) {
+    } catch (Exception e) {
+      LOG.warn("Failed to seed file: " + e.toString(), e);
       return false;
     }
 

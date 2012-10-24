@@ -53,9 +53,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   private File createTorrentFile(File sourceFile, File parentDir) {
     if (!settingsInited()) return null;
     if (shouldCreateTorrentFileFor(sourceFile)) {
-      File torrentFile = new File(parentDir, sourceFile.getName() + TorrentUtil.TORRENT_FILE_SUFFIX);
-      TorrentUtil.createTorrent(sourceFile, torrentFile, myTrackerAnnounceUrl);
-      return torrentFile;
+      return TorrentUtil.getOrCreateTorrent(sourceFile, parentDir, myTrackerAnnounceUrl);
     }
     return null;
   }
@@ -77,6 +75,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
 
   @Override
   public void agentStarted(@NotNull BuildAgent agent) {
+    initSettings();
     try {
       List<InetAddress> addrs = new ArrayList<InetAddress>();
       addrs.add(InetAddress.getByName(agent.getConfiguration().getOwnAddress()));
