@@ -30,7 +30,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
+import java.util.*;
 
 public class TorrentsDirectorySeeder {
   @NotNull
@@ -41,6 +41,7 @@ public class TorrentsDirectorySeeder {
   private final FilesWatcher myNewLinksWatcher;
   private final TorrentFileFactory myTorrentFactory;
   private volatile boolean myStopped = true;
+  private volatile int myMaxTorrentsToSeed = -1; // no limit by default
 
   public TorrentsDirectorySeeder(@NotNull File torrentStorage, @NotNull TorrentFileFactory torrentFileFactory) {
     myTorrentStorage = torrentStorage;
@@ -70,7 +71,7 @@ public class TorrentsDirectorySeeder {
 
   @NotNull
   private Collection<File> findAllLinks() {
-    return FileUtil.findFiles(new FileFilter() {
+    Collection<File> links = FileUtil.findFiles(new FileFilter() {
       public boolean accept(File file) {
         if (!FileLink.isLink(file)) return false;
 
@@ -83,6 +84,19 @@ public class TorrentsDirectorySeeder {
         }
       }
     }, myTorrentStorage);
+
+    if (myMaxTorrentsToSeed < 0 || links.size() <= myMaxTorrentsToSeed) {
+      return links;
+    }
+
+    List<File> sorted = new ArrayList<File>(links);
+    Collections.sort(sorted, new Comparator<File>() {
+      public int compare(File o1, File o2) {
+        return (int)(o2.lastModified() - o1.lastModified());
+      }
+    });
+
+    return sorted.subList(0, myMaxTorrentsToSeed);
   }
 
   private void processRemovedLink(@NotNull File removedLink) {
@@ -170,6 +184,14 @@ public class TorrentsDirectorySeeder {
 
   public int getNumberOfSeededTorrents() {
     return myTorrentSeeder.getNumberOfSeededTorrents();
+  }
+
+  public int getMaxTorrentsToSeed() {
+    return myMaxTorrentsToSeed;
+  }
+
+  public void setMaxTorrentsToSeed(int maxTorrentsToSeed) {
+    myMaxTorrentsToSeed = maxTorrentsToSeed;
   }
 }
 

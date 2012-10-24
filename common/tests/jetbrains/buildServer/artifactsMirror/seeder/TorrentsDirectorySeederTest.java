@@ -26,6 +26,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
@@ -123,6 +124,37 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
     };
 
     assertFalse(linkDir.isDirectory());
+  }
+
+  public void max_number_of_seeded_torrents() throws IOException {
+    myDirectorySeeder.setMaxTorrentsToSeed(3);
+
+    for (int i=0; i<5; i++) {
+      File srcFile = createTempFile();
+      File linkFile = FileLink.createLink(srcFile, myStorageDir);
+      waitForTorrentFile(linkFile);
+    }
+
+    new WaitFor() {
+      @Override
+      protected boolean condition() {
+        return myStorageDir.list().length == 2 * myDirectorySeeder.getMaxTorrentsToSeed();
+      }
+    };
+
+    assertEquals(myDirectorySeeder.getMaxTorrentsToSeed(), myStorageDir.listFiles(new FileFilter() {
+      public boolean accept(File pathname) {
+        return FileLink.isLink(pathname);
+      }
+    }).length);
+
+    assertEquals(myDirectorySeeder.getMaxTorrentsToSeed(), myStorageDir.listFiles(new FileFilter() {
+      public boolean accept(File pathname) {
+        return pathname.getName().endsWith(TorrentUtil.TORRENT_FILE_SUFFIX);
+      }
+    }).length);
+
+    assertEquals(myDirectorySeeder.getMaxTorrentsToSeed(), myDirectorySeeder.getNumberOfSeededTorrents());
   }
 
   private File waitForTorrentFile(File linkFile) {
