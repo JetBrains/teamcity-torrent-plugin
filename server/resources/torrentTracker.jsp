@@ -25,8 +25,6 @@
   <th><label for="seederEnabled">Torrent seeder:</label></th>
   <td>
     <forms:checkbox name="seederEnabled" checked="${torrentConfigurator.seederEnabled}"/><label for="seederEnabled"> enable torrent seeder</label>
-    <c:if test="${torrentConfigurator.seederEnabled}">
-    </c:if>
   </td>
 </tr>
 <tr>
