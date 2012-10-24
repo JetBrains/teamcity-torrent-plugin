@@ -33,6 +33,10 @@
   </td>
 </tr>
 <tr>
+  <th><label for="maxNumberOfSeededTorrents">Maximum number of seeded torrents:</label></th>
+  <td><forms:textField name="maxNumberOfSeededTorrents" style="width: 5em" value="${torrentConfigurator.maxNumberOfSeededTorrents}"/> (-1 - unlimited)</td>
+</tr>
+<tr>
   <th><label for="fileSizeThresholdMb">Artifact size threshold:</label></th>
   <td><forms:textField name="fileSizeThresholdMb" style="width: 5em" value="${torrentConfigurator.fileSizeThresholdMb}"/> Mb</td>
 </tr>

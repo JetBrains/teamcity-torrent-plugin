@@ -36,6 +36,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   public final static String TRACKER_ENABLED = "torrent.tracker.enabled";
   public final static String SEEDER_ENABLED = "torrent.seeder.enabled";
   public final static String FILE_SIZE_THRESHOLD = "file.size.threshold.mb";
+  public final static String MAX_NUMBER_OF_SEEDED_TORRENTS = "max.seeded.torrents.number";
 
   private final ServerTorrentsDirectorySeeder mySeederManager;
   private final TorrentTrackerManager myTrackerManager;
@@ -85,6 +86,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
       props.setProperty(TRACKER_ENABLED, "true");
       props.setProperty(SEEDER_ENABLED, "true");
       props.setProperty(FILE_SIZE_THRESHOLD, "10");
+      props.setProperty(MAX_NUMBER_OF_SEEDED_TORRENTS, "1000");
       PropertiesUtil.storeProperties(props, configFile, "");
     } catch (IOException e) {
       Loggers.SERVER.warn("Failed to create configuration file: " + configFile.getAbsolutePath() + ", error: " + e.toString());
@@ -92,20 +94,26 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   public void setTrackerEnabled(boolean enabled) {
+    boolean changed = isTrackerEnabled() != enabled;
     myConfiguration.setProperty(TRACKER_ENABLED, Boolean.toString(enabled));
-    if (enabled) {
-      myTrackerManager.startTracker();
-    } else {
-      myTrackerManager.stopTracker();
+    if (changed) {
+      if (enabled) {
+        myTrackerManager.startTracker();
+      } else {
+        myTrackerManager.stopTracker();
+      }
     }
   }
 
   public void setSeederEnabled(boolean enabled) {
+    boolean changed = isSeederEnabled() != enabled;
     myConfiguration.setProperty(SEEDER_ENABLED, Boolean.toString(enabled));
-    if (enabled) {
-      startSeeder();
-    } else {
-      mySeederManager.stopSeeder();
+    if (changed) {
+      if (enabled) {
+        startSeeder();
+      } else {
+        mySeederManager.stopSeeder();
+      }
     }
   }
 
@@ -114,8 +122,22 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
     mySeederManager.setFileSizeThreshold(threshold);
   }
 
+  public void setMaxNumberOfSeededTorrents(int number) {
+    myConfiguration.setProperty(MAX_NUMBER_OF_SEEDED_TORRENTS, Integer.toString(number));
+    mySeederManager.setMaxNumberOfSeededTorrents(number);
+  }
+
+  public int getMaxNumberOfSeededTorrents() {
+    try {
+      return Integer.parseInt(myConfiguration.getProperty(MAX_NUMBER_OF_SEEDED_TORRENTS));
+    } catch (NumberFormatException e) {
+      return 1000;
+    }
+  }
+
   private void startSeeder() {
     mySeederManager.setFileSizeThreshold(getFileSizeThresholdMb());
+    mySeederManager.setMaxNumberOfSeededTorrents(getFileSizeThresholdMb());
     mySeederManager.startSeeder();
   }
 

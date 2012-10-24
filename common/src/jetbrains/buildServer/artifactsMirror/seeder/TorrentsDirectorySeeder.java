@@ -48,7 +48,7 @@ public class TorrentsDirectorySeeder {
     myTorrentFactory = torrentFileFactory;
     myNewLinksWatcher = new FilesWatcher(new FilesWatcher.WatchedFilesProvider() {
       public File[] getWatchedFiles() throws IOException {
-        Collection<File> links = findAllLinks();
+        Collection<File> links = findAllLinks(myMaxTorrentsToSeed);
         return links.toArray(new File[links.size()]);
       }
     });
@@ -70,7 +70,7 @@ public class TorrentsDirectorySeeder {
   }
 
   @NotNull
-  private Collection<File> findAllLinks() {
+  private Collection<File> findAllLinks(int maxLinksNum) {
     Collection<File> links = FileUtil.findFiles(new FileFilter() {
       public boolean accept(File file) {
         if (!FileLink.isLink(file)) return false;
@@ -85,7 +85,7 @@ public class TorrentsDirectorySeeder {
       }
     }, myTorrentStorage);
 
-    if (myMaxTorrentsToSeed < 0 || links.size() <= myMaxTorrentsToSeed) {
+    if (maxLinksNum < 0 || links.size() <= maxLinksNum) {
       return links;
     }
 
@@ -96,7 +96,7 @@ public class TorrentsDirectorySeeder {
       }
     });
 
-    return sorted.subList(0, myMaxTorrentsToSeed);
+    return sorted.subList(0, maxLinksNum);
   }
 
   private void processRemovedLink(@NotNull File removedLink) {
@@ -162,7 +162,7 @@ public class TorrentsDirectorySeeder {
     myTorrentSeeder.start(address);
 
     // initialization: scan all existing links and start seeding them
-    for (File linkFile: findAllLinks()) {
+    for (File linkFile: findAllLinks(-1)) {
       processChangedLink(linkFile);
     }
 

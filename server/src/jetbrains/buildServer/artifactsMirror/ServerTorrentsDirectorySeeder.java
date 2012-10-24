@@ -139,4 +139,8 @@ public class ServerTorrentsDirectorySeeder {
     long size = artifact.getSize();
     return !artifact.isDirectory() && size >= myFileSizeThreshold * 1024 * 1024;
   }
+
+  public void setMaxNumberOfSeededTorrents(int maxNumberOfSeededTorrents) {
+    myTorrentsDirectorySeeder.setMaxTorrentsToSeed(maxNumberOfSeededTorrents);
+  }
 }

@@ -49,10 +49,16 @@ public class TrackerAdminPage extends AdminPage {
           boolean trackerEnabled = request.getParameter("trackerEnabled") != null;
           boolean seederEnabled = request.getParameter("seederEnabled") != null;
           String threshold = request.getParameter("fileSizeThresholdMb");
+          String maxTorrentsNum = request.getParameter("maxNumberOfSeededTorrents");
           myTorrentConfigurator.setTrackerEnabled(trackerEnabled);
           myTorrentConfigurator.setSeederEnabled(seederEnabled);
           try {
             myTorrentConfigurator.setFileSizeThresholdMb(Integer.parseInt(threshold));
+          } catch (NumberFormatException e) {
+            //
+          }
+          try {
+            myTorrentConfigurator.setMaxNumberOfSeededTorrents(Integer.parseInt(maxTorrentsNum));
           } catch (NumberFormatException e) {
             //
           }
