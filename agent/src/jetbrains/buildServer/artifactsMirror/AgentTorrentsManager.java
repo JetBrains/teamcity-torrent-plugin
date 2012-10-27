@@ -64,7 +64,9 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
 
   private boolean initSettings() {
     try {
-      myTrackerAnnounceUrl = new URI(myTrackerManager.getAnnounceUrl());
+      String announceUrl = myTrackerManager.getAnnounceUrl();
+      if (announceUrl == null) return false;
+      myTrackerAnnounceUrl = new URI(announceUrl);
     } catch (URISyntaxException e) {
       LOG.warn(e.toString(), e);
       return false;
