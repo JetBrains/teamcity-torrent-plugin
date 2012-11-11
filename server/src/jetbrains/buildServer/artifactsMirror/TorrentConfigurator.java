@@ -143,7 +143,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
 
   private void startSeeder() {
     mySeederManager.setFileSizeThreshold(getFileSizeThresholdMb());
-    mySeederManager.setMaxNumberOfSeededTorrents(getFileSizeThresholdMb());
+    mySeederManager.setMaxNumberOfSeededTorrents(getMaxNumberOfSeededTorrents());
     mySeederManager.startSeeder();
   }
 
