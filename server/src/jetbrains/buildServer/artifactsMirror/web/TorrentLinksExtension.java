@@ -18,6 +18,7 @@ public class TorrentLinksExtension extends SimplePageExtension {
   public TorrentLinksExtension(@NotNull PagePlaces pagePlaces,
                                @NotNull PluginDescriptor descriptor) {
     super(pagePlaces, PlaceId.ALL_PAGES_FOOTER, "torrent-links", descriptor.getPluginResourcesPath("torrentLinks.jsp"));
+    addCssFile(descriptor.getPluginResourcesPath("torrentLinks.css"));
     addJsFile(descriptor.getPluginResourcesPath("torrentLinks.js"));
     register();
   }
