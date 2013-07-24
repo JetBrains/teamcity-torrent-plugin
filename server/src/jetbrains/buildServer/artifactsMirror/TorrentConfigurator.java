@@ -38,7 +38,7 @@ import java.util.Properties;
 
 public class TorrentConfigurator implements TorrentTrackerConfiguration {
   public final static String TRACKER_ENABLED = "torrent.tracker.enabled";
-  public final static String TRACKER_HOST = "torrent.tracker.host";
+  public final static String OWN_ADDRESS = "torrent.ownAddress";
   public final static String SEEDER_ENABLED = "torrent.seeder.enabled";
   public final static String FILE_SIZE_THRESHOLD = "file.size.threshold.mb";
   public final static String MAX_NUMBER_OF_SEEDED_TORRENTS = "max.seeded.torrents.number";
@@ -72,7 +72,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
       public void serverStartup() {
         super.serverStartup();
         if (isEnabled(TRACKER_ENABLED)) {
-          myTrackerManager.startTracker(getTrackerAddress());
+          myTrackerManager.startTracker(getOwnAddress());
         }
         executors.getLowPriorityExecutorService().submit(new Runnable() {
           public void run() {
@@ -111,7 +111,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
     myConfiguration.setProperty(TRACKER_ENABLED, Boolean.toString(enabled));
     if (changed) {
       if (enabled) {
-        myTrackerManager.startTracker(getTrackerAddress());
+        myTrackerManager.startTracker(getOwnAddress());
       } else {
         myTrackerManager.stopTracker();
       }
@@ -151,7 +151,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   private void startSeeder() {
     mySeederManager.setFileSizeThreshold(getFileSizeThresholdMb());
     mySeederManager.setMaxNumberOfSeededTorrents(getMaxNumberOfSeededTorrents());
-    mySeederManager.startSeeder();
+    mySeederManager.startSeeder(getOwnAddress());
   }
 
   public int getFileSizeThresholdMb() {
@@ -202,8 +202,8 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   @NotNull
-  private String getTrackerAddress() {
-    String hostName = myConfiguration.getProperty(TRACKER_HOST);
+  private String getOwnAddress() {
+    String hostName = myConfiguration.getProperty(OWN_ADDRESS);
     if (hostName != null) return hostName;
 
     try {
