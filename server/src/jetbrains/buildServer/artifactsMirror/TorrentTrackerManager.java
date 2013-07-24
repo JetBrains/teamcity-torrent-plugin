@@ -1,6 +1,5 @@
 package jetbrains.buildServer.artifactsMirror;
 
-import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import org.jetbrains.annotations.NotNull;
@@ -11,16 +10,14 @@ import java.net.URI;
 
 public class TorrentTrackerManager {
   private final TorrentTracker myTorrentTracker;
-  private final  RootUrlHolder myRootUrlHolder;
 
-  public TorrentTrackerManager(@NotNull final RootUrlHolder rootUrlHolder) {
+  public TorrentTrackerManager() {
     myTorrentTracker = new TorrentTracker();
-    myRootUrlHolder = rootUrlHolder;
   }
 
-  public void startTracker() {
+  public void startTracker(@NotNull String trackerAddress) {
     stopTracker();
-    myTorrentTracker.start(myRootUrlHolder.getRootUrl());
+    myTorrentTracker.start(trackerAddress);
   }
 
   public void stopTracker() {

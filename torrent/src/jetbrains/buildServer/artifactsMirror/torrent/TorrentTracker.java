@@ -19,11 +19,11 @@ public class TorrentTracker {
   public TorrentTracker() {
   }
 
-  public void start(@NotNull String rootUrl) {
+  public void start(@NotNull String trackerAddress) {
     int freePort = NetworkUtil.getFreePort(6969);
 
     try {
-      InetAddress serverAddress = getServerAddress(rootUrl);
+      InetAddress serverAddress = getServerAddress(trackerAddress);
       myTracker = new Tracker(new InetSocketAddress(serverAddress, freePort));
       myTracker.setAcceptForeignTorrents(true);
       myTracker.start();
@@ -34,10 +34,8 @@ public class TorrentTracker {
   }
 
   @NotNull
-  public static InetAddress getServerAddress(@NotNull String rootUrl) throws URISyntaxException, UnknownHostException {
-    if (rootUrl.endsWith("/")) rootUrl = rootUrl.substring(0, rootUrl.length()-1);
-    URI serverUrl = new URI(rootUrl);
-    return InetAddress.getByName(serverUrl.getHost());
+  public static InetAddress getServerAddress(@NotNull String trackerAddress) throws UnknownHostException {
+    return InetAddress.getByName(trackerAddress);
   }
 
   public void stop() {
