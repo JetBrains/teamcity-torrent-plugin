@@ -64,7 +64,8 @@ public class DownloadTorrentController extends BaseController {
       response.sendError(HttpServletResponse.SC_NOT_FOUND);
     } else {
       response.setContentType(WebUtil.getMimeType(request, torrentFile.getName()));
-      WebUtil.setContentDisposition(request, response, torrentFile.getName());
+      // force set content-disposition to attachment
+      WebUtil.setContentDisposition(request, response, torrentFile.getName(), false);
       ServletOutputStream output = response.getOutputStream();
       FileInputStream fis = null;
       try {
