@@ -87,7 +87,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
   }
 
   public void target_file_removed() throws IOException, NoSuchAlgorithmException {
-    File srcFile = createTempFile();
+    final File srcFile = createTempFile();
     final File linkFile = FileLink.createLink(srcFile, myStorageDir);
     final File torrentFile = waitForTorrentFile(linkFile);
 
@@ -95,6 +95,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
     assertTrue(myDirectorySeeder.isSeeding(torrentFile));
 
     FileUtil.delete(srcFile);
+    assertFalse(srcFile.exists());
     new WaitFor() {
       @Override
       protected boolean condition() {

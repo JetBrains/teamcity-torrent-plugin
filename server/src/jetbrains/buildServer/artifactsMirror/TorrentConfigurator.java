@@ -16,6 +16,7 @@
 
 package jetbrains.buildServer.artifactsMirror;
 
+import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
@@ -31,10 +32,13 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Properties;
 
 public class TorrentConfigurator implements TorrentTrackerConfiguration {
   public final static String TRACKER_ENABLED = "torrent.tracker.enabled";
+  public final static String OWN_ADDRESS = "torrent.ownAddress";
   public final static String SEEDER_ENABLED = "torrent.seeder.enabled";
   public final static String FILE_SIZE_THRESHOLD = "file.size.threshold.mb";
   public final static String MAX_NUMBER_OF_SEEDED_TORRENTS = "max.seeded.torrents.number";
@@ -42,6 +46,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   private final ServerTorrentsDirectorySeeder mySeederManager;
   private final TorrentTrackerManager myTrackerManager;
   private final ServerPaths myServerPaths;
+  private final RootUrlHolder myRootUrlHolder;
   private volatile Properties myConfiguration;
 
   public TorrentConfigurator(@NotNull ServerPaths serverPaths,
@@ -49,7 +54,9 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
                              @NotNull ServerTorrentsDirectorySeeder torrentsDirectorySeeder,
                              @NotNull TorrentTrackerManager trackerManager,
                              @NotNull XmlRpcHandlerManager xmlRpcHandlerManager,
-                             @NotNull final ExecutorServices executors) {
+                             @NotNull final ExecutorServices executors,
+                             @NotNull RootUrlHolder rootUrlHolder) {
+    myRootUrlHolder = rootUrlHolder;
     mySeederManager = torrentsDirectorySeeder;
     myTrackerManager = trackerManager;
     myServerPaths = serverPaths;
@@ -65,7 +72,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
       public void serverStartup() {
         super.serverStartup();
         if (isEnabled(TRACKER_ENABLED)) {
-          myTrackerManager.startTracker();
+          myTrackerManager.startTracker(getOwnAddress());
         }
         executors.getLowPriorityExecutorService().submit(new Runnable() {
           public void run() {
@@ -104,7 +111,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
     myConfiguration.setProperty(TRACKER_ENABLED, Boolean.toString(enabled));
     if (changed) {
       if (enabled) {
-        myTrackerManager.startTracker();
+        myTrackerManager.startTracker(getOwnAddress());
       } else {
         myTrackerManager.stopTracker();
       }
@@ -144,7 +151,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   private void startSeeder() {
     mySeederManager.setFileSizeThreshold(getFileSizeThresholdMb());
     mySeederManager.setMaxNumberOfSeededTorrents(getMaxNumberOfSeededTorrents());
-    mySeederManager.startSeeder();
+    mySeederManager.startSeeder(getOwnAddress());
   }
 
   public int getFileSizeThresholdMb() {
@@ -192,5 +199,21 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
 
   public String getAnnounceUrl() {
     return myTrackerManager.getAnnounceUrl();
+  }
+
+  @NotNull
+  private String getOwnAddress() {
+    String hostName = myConfiguration.getProperty(OWN_ADDRESS);
+    if (hostName != null) return hostName;
+
+    try {
+      String rootUrl = myRootUrlHolder.getRootUrl();
+      if (rootUrl.endsWith("/")) rootUrl = rootUrl.substring(0, rootUrl.length()-1);
+
+      URI serverUrl = new URI(rootUrl);
+      return serverUrl.getHost();
+    } catch (URISyntaxException e) {
+      return "127.0.0.1";
+    }
   }
 }

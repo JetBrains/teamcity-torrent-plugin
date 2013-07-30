@@ -4,11 +4,9 @@
  */
 package jetbrains.buildServer.artifactsMirror;
 
-import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentFileFactory;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
-import jetbrains.buildServer.artifactsMirror.torrent.TorrentTracker;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.*;
@@ -22,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -32,15 +31,12 @@ import java.util.Collections;
 public class ServerTorrentsDirectorySeeder {
   private final TorrentTrackerManager myTorrentTrackerManager;
   private final TorrentsDirectorySeeder myTorrentsDirectorySeeder;
-  private final RootUrlHolder myRootUrlHolder;
   private volatile int myFileSizeThreshold;
 
   public ServerTorrentsDirectorySeeder(@NotNull ServerPaths serverPaths,
-                                       @NotNull RootUrlHolder rootUrlHolder,
                                        @NotNull TorrentTrackerManager torrentTrackerManager,
                                        @NotNull EventDispatcher<BuildServerListener> eventDispatcher) {
     myTorrentTrackerManager = torrentTrackerManager;
-    myRootUrlHolder = rootUrlHolder;
     File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
     torrentsStorage.mkdirs();
     myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, new TorrentFileFactory() {
@@ -64,11 +60,11 @@ public class ServerTorrentsDirectorySeeder {
     }
   }
 
-  public void startSeeder() {
+  public void startSeeder(@NotNull String seederAddress) {
     stopSeeder();
 
     try {
-      myTorrentsDirectorySeeder.start(TorrentTracker.getServerAddress(myRootUrlHolder.getRootUrl()));
+      myTorrentsDirectorySeeder.start(InetAddress.getByName(seederAddress));
     } catch (Exception e) {
       Loggers.SERVER.warn("Failed to start torrent seeder, error: " + e.toString());
     }
