@@ -25,7 +25,7 @@ public class TorrentUtil {
     setHashingThreadsCount();
 
     try {
-      return Torrent.load(torrentFile, null);
+      return Torrent.load(torrentFile);
     } catch (NoSuchAlgorithmException e) {
       ExceptionUtil.rethrowAsRuntimeException(e);
     }

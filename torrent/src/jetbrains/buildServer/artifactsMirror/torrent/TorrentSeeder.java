@@ -58,7 +58,7 @@ public class TorrentSeeder {
   }
 
   private Torrent loadTorrent(File torrentFile) throws IOException, NoSuchAlgorithmException {
-    return Torrent.load(torrentFile, null);
+    return Torrent.load(torrentFile);
   }
 
   public boolean isSeeding(@NotNull File torrentFile) throws IOException, NoSuchAlgorithmException {
