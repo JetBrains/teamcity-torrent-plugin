@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ttorrent:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/ttorrent_jar</output-path>
+    <root id="archive" name="ttorrent.jar">
+      <element id="module-output" name="ttorrent" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/simpleframework/simple/4.1.21/simple-4.1.21.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/commons-io/commons-io/2.1/commons-io-2.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/net/sf/jargs/1.0/jargs-1.0.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

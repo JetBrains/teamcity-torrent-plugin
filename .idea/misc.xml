@@ -3,6 +3,7 @@
   <component name="EntryPointsManager">
     <entry_points version="2.0" />
   </component>
+  <component name="IdProvider" IDEtalkID="DD26B6D42DCA31EE65F7FB0A131DE77D" />
   <component name="JavadocGenerationManager">
     <option name="OUTPUT_DIRECTORY" />
     <option name="OPTION_SCOPE" value="protected" />
@@ -19,6 +20,13 @@
     <option name="HEAP_SIZE" />
     <option name="LOCALE" />
     <option name="OPEN_IN_BROWSER" value="true" />
+  </component>
+  <component name="MavenProjectsManager">
+    <option name="originalFiles">
+      <list>
+        <option value="$PROJECT_DIR$/torrent/pom.xml" />
+      </list>
+    </option>
   </component>
   <component name="ModuleEditorState">
     <option name="LAST_EDITED_MODULE_NAME" />

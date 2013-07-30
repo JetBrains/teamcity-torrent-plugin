@@ -9,13 +9,12 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="idea annotations.jar" level="project" />
-    <orderEntry type="module" module-name="torrent" />
     <orderEntry type="library" name="Common-Api" level="project" />
     <orderEntry type="library" name="Idea-OpenApi" level="project" />
     <orderEntry type="library" scope="TEST" name="Test-Api" level="project" />
     <orderEntry type="library" scope="TEST" name="jmock" level="project" />
     <orderEntry type="library" scope="TEST" name="testng" level="project" />
-    <orderEntry type="library" name="ttorrent" level="project" />
+    <orderEntry type="module" module-name="ttorrent" />
   </component>
 </module>
 

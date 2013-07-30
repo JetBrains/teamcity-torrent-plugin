@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
+  <component name="FacetManager">
+    <facet type="Spring" name="Spring">
+      <configuration>
+        <fileset id="fileset" name="Spring Application Context" removed="false">
+          <file>file://$MODULE_DIR$/src/META-INF/build-agent-plugin-mirror.xml</file>
+        </fileset>
+      </configuration>
+    </facet>
+  </component>
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
@@ -11,9 +20,7 @@
     <orderEntry type="library" name="Agent-Api" level="project" />
     <orderEntry type="library" name="Common-Api" level="project" />
     <orderEntry type="library" name="TeamCity agent" level="project" />
-    <orderEntry type="module" module-name="torrent" />
     <orderEntry type="library" name="TeamCity agent runtime" level="project" />
-    <orderEntry type="library" name="ttorrent" level="project" />
     <orderEntry type="module" module-name="common" />
     <orderEntry type="library" scope="TEST" name="Test-Api" level="project" />
     <orderEntry type="library" scope="TEST" name="testng" level="project" />
