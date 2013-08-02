@@ -1,10 +1,5 @@
-.has-torrent {
-  white-space: nowrap;
-}
-
 .tree-torrent-link {
-  float: right;
-  margin-left: 20px;
+  margin-left: 10px;
 
   opacity: 0.5;
 
