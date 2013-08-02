@@ -23,19 +23,14 @@ public class TorrentTracker {
     int freePort = NetworkUtil.getFreePort(6969);
 
     try {
-      InetAddress serverAddress = getServerAddress(trackerAddress);
-      myTracker = new Tracker(new InetSocketAddress(serverAddress, freePort));
+      String announceAddress = String.format("http://%s:%d/announce", trackerAddress, freePort);
+      myTracker = new Tracker(freePort, announceAddress);
       myTracker.setAcceptForeignTorrents(true);
       myTracker.start();
-      LOG.info("Torrent tracker started on url: " + myTracker.getAnnounceUrl().toString());
+      LOG.info("Torrent tracker started on url: " + myTracker.getAnnounceUrl());
     } catch (Exception e) {
       LOG.error("Failed to start torrent tracker, server URL is invalid: " + e.toString());
     }
-  }
-
-  @NotNull
-  public static InetAddress getServerAddress(@NotNull String trackerAddress) throws UnknownHostException {
-    return InetAddress.getByName(trackerAddress);
   }
 
   public void stop() {
@@ -47,12 +42,7 @@ public class TorrentTracker {
 
   @Nullable
   public URI getAnnounceURI() {
-    try {
-      return myTracker == null ? null : myTracker.getAnnounceUrl().toURI();
-    } catch (URISyntaxException e) {
-      ExceptionUtil.rethrowAsRuntimeException(e);
-    }
-    return null;
+    return myTracker == null ? null : myTracker.getAnnounceURI();
   }
 
   @NotNull
