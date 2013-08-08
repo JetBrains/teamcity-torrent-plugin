@@ -14,6 +14,7 @@ import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.http.HttpUtil;
+import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.commons.httpclient.Credentials;
 import org.apache.commons.httpclient.HttpClient;
@@ -108,6 +109,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       if (torrent.getSize() < myDirectorySeeder.getFileSizeThresholdMb()*1024*1024){
         throw new IOException(String.format("File size is lower than threshold of %dMb", myDirectorySeeder.getFileSizeThresholdMb()));
       }
+      Loggers.AGENT.info("Will attempt to download " + target.getName() + " via torrent.");
       try {
         final List<List<URI>> announceList = torrent.getAnnounceList();
         final AtomicBoolean hasSeeders = new AtomicBoolean(false);
@@ -142,7 +144,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         }
 
         mySeeder.downloadAndShareOrFail(torrent, target, target.getParentFile(), getDownloadTimeoutSec());
-
+        Loggers.AGENT.info("Download successfull");
         return torrent.getHexInfoHash();
       } catch (IOException e) {
         throw new IOException("Unable to download torrent for " + urlString, e);
