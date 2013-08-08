@@ -63,7 +63,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
 
   public void test_links_created_when_artifact_is_published() throws Exception {
     buildStarted();
-
+    myTorrentsManager.getTorrentsDirectorySeeder().setFileSizeThresholdMb(0);
     Map<File, String> files = new HashMap<File, String>();
     for (int i=0; i<3; i++) {
       files.put(createTempFile(), "");
@@ -85,6 +85,8 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
 
   public void test_links_created_when_artifact_is_published_take_checkout_dir_into_account() throws Exception {
     Mock buildMock = buildStarted();
+
+    myTorrentsManager.getTorrentsDirectorySeeder().setFileSizeThresholdMb(0);
 
     AgentRunningBuild build = (AgentRunningBuild) buildMock.proxy();
     Map<File, String> files = new HashMap<File, String>();

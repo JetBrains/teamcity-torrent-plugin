@@ -5,7 +5,6 @@
 package jetbrains.buildServer.artifactsMirror;
 
 import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
-import jetbrains.buildServer.artifactsMirror.seeder.TorrentFileFactory;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.log.Loggers;
@@ -39,11 +38,7 @@ public class ServerTorrentsDirectorySeeder {
     myTorrentTrackerManager = torrentTrackerManager;
     File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
     torrentsStorage.mkdirs();
-    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, new TorrentFileFactory() {
-      public File createTorrentFile(@NotNull File sourceFile, @NotNull File parentDir) throws IOException {
-        return myTorrentTrackerManager.createTorrent(sourceFile, parentDir);
-      }
-    });
+    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage);
 
     eventDispatcher.addListener(new BuildServerAdapter() {
       @Override
@@ -76,7 +71,8 @@ public class ServerTorrentsDirectorySeeder {
 
   @NotNull
   public File getTorrentFilesBaseDir(@NotNull SBuild build) {
-    return getLinkDir(build);
+    final File artifactsDirectory = build.getArtifactsDirectory();
+    return new File(artifactsDirectory, TorrentsDirectorySeeder.TORRENTS_DIT_PATH);
   }
 
   @NotNull
@@ -103,22 +99,24 @@ public class ServerTorrentsDirectorySeeder {
   }
 
   private void announceBuildArtifacts(@NotNull final SBuild build) {
-    final File artifactsDirectory = build.getArtifactsDirectory();
-
+    final File torrentsDir = getTorrentFilesBaseDir(build);
     BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT);
+    torrentsDir.mkdirs();
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
       @NotNull
       public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
         if (shouldCreateTorrentFor(artifact)) {
-          File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
+          File artifactFile = new File(build.getArtifactsDirectory(), artifact.getRelativePath());
           File baseDir = getTorrentFilesBaseDir(build);
           File filePath = new File(baseDir, artifact.getRelativePath());
           File linkDir = filePath.getParentFile();
 
           try {
-            FileLink.createLink(artifactFile, linkDir);
-          } catch (IOException e) {
-            //
+            File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
+            FileLink.createLink(artifactFile, torrentFile, linkDir);
+            myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, artifactFile);
+            } catch (IOException e) {
+              e.printStackTrace();
           }
         }
         return Continuation.CONTINUE;
@@ -126,9 +124,12 @@ public class ServerTorrentsDirectorySeeder {
     });
   }
 
-  private File getLinkDir(@NotNull SBuild build) {
-    return new File(myTorrentsDirectorySeeder.getStorageDirectory(),
-                    build.getBuildTypeId() + File.separator + build.getBuildId());
+  private File createTorrent(@NotNull final File artifactFile, @NotNull final String path, @NotNull final File torrentsDir){
+    File destPath = new File(torrentsDir, path);
+    final File parentDir = destPath.getParentFile();
+    parentDir.mkdirs();
+
+    return myTorrentTrackerManager.createTorrent(artifactFile, parentDir);
   }
 
   private boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {

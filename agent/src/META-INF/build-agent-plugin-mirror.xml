@@ -7,4 +7,6 @@
         >
   <bean class="jetbrains.buildServer.artifactsMirror.TrackerManagerProxy"/>
   <bean class="jetbrains.buildServer.artifactsMirror.AgentTorrentsManager"/>
+  <bean id="torrentTransportFactory" class="jetbrains.buildServer.artifactsMirror.TorrentTransportFactory"/>
+
 </beans>

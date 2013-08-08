@@ -3,6 +3,7 @@ package jetbrains.buildServer.artifactsMirror.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.common.Peer;
 import com.turn.ttorrent.common.Torrent;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,12 +12,13 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
 
-public class TorrentSeeder {
-  private final static Logger LOG = Logger.getInstance(TorrentSeeder.class.getName());
+public class TeamcityTorrentClient {
+  private final static Logger LOG = Logger.getInstance(TeamcityTorrentClient.class.getName());
 
+  private int myMaxTorrentsToSeed = -1;
   private Client myClient;
 
-  public TorrentSeeder() {
+  public TeamcityTorrentClient() {
   }
 
   public void start(@NotNull InetAddress inetAddress) {
@@ -34,9 +36,14 @@ public class TorrentSeeder {
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) {
     if (myClient == null) return false;
+    if (myMaxTorrentsToSeed != -1 && myClient.getTorrents().size() > myMaxTorrentsToSeed){
+      LOG.warn("Reached max number of seeded torrents. Torrent "+torrentFile.getName()+" will not be seeded");
+      return false;
+    }
     try {
       Torrent t = loadTorrent(torrentFile);
-      myClient.addTorrent(new SharedTorrent(t, srcFile.getParentFile(), false, true));
+      final SharedTorrent torrent = new SharedTorrent(t, srcFile.getParentFile(), false, true);
+      myClient.addTorrent(torrent);
     } catch (Exception e) {
       LOG.warn("Failed to seed file: " + e.toString(), e);
       return false;
@@ -71,5 +78,25 @@ public class TorrentSeeder {
 
   public int getNumberOfSeededTorrents() {
     return myClient.getTorrents().size();
+  }
+
+  public Peer getSelfPeer(){
+    return myClient.getPeerSpec();
+  }
+
+  public void downloadAndShareOrFail(Torrent torrent, File destFile, File destDir, long downloadTimeoutSec) throws IOException, NoSuchAlgorithmException, InterruptedException {
+    boolean torrentContainsFile = false;
+    for (String filePath : torrent.getFilenames()) {
+      if (destFile.getAbsolutePath().endsWith(filePath)){
+        torrentContainsFile = true;
+        break;
+      }
+    }
+    if (!torrentContainsFile){
+      throw new IOException("File not found in torrent");
+    }
+    SharedTorrent downTorrent = new SharedTorrent(torrent, destDir, false);
+    myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec);
+
   }
 }
