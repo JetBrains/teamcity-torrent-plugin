@@ -113,6 +113,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
     myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(srcFile);
 
     if (myTorrentsDirectorySeeder.shouldCreateTorrentFileFor(srcFile)) {
+      LOG.info("Will create torrent for " + srcFile.getAbsolutePath());
       File linkDir;
       if (srcFile.getAbsolutePath().startsWith(myBuild.getCheckoutDirectory().getAbsolutePath())) {
         String relPath = FileUtil.getRelativePath(myBuild.getCheckoutDirectory(), srcFile);
@@ -124,13 +125,12 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
       if (!linkDir.isDirectory()) return false;
       try {
         Torrent torrent = Torrent.create(srcFile, myTrackerAnnounceUrl, "teamcity");
+        LOG.info("created torrent with hash " + torrent.getHexInfoHash());
         myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrent, srcFile);
-      } catch (IOException e) {
+        LOG.info("Seeding " + srcFile.getAbsolutePath());
+      } catch (Exception e) {
+        LOG.warn("Can't start seeding", e);
         return false;
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      } catch (NoSuchAlgorithmException e) {
-        e.printStackTrace();
       }
     }
 

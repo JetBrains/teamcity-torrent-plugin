@@ -68,8 +68,10 @@ public class TeamcityTorrentClient {
 
   public void stopSeedingByPath(File file){
     final SharedTorrent torrentByName = myClient.getTorrentByFilePath(file);
-    if (torrentByName != null)
+    if (torrentByName != null) {
+      LOG.info("Stopped seeding torrent by file: " + file.getAbsolutePath());
       myClient.removeTorrent(torrentByName);
+    }
  }
 
   private Torrent loadTorrent(File torrentFile) throws IOException, NoSuchAlgorithmException {
@@ -95,7 +97,7 @@ public class TeamcityTorrentClient {
   public void downloadAndShareOrFail(Torrent torrent, File destFile, File destDir, long downloadTimeoutSec) throws IOException, NoSuchAlgorithmException, InterruptedException {
     boolean torrentContainsFile = false;
     for (String filePath : torrent.getFilenames()) {
-      if (destFile.getAbsolutePath().endsWith(filePath)){
+      if (destFile.getAbsolutePath().replaceAll("/", "\\").endsWith(filePath.replaceAll("/", "\\"))){
         torrentContainsFile = true;
         break;
       }
@@ -104,7 +106,10 @@ public class TeamcityTorrentClient {
       throw new IOException("File not found in torrent");
     }
     SharedTorrent downTorrent = new SharedTorrent(torrent, destDir, false);
+    if (myClient.getTorrentsMap().containsKey(torrent.getHexInfoHash())){
+      LOG.info("Already seeding torrent with hash " + torrent.getHexInfoHash() + ". Will stop seeding it");
+      myClient.removeTorrent(torrent);
+    }
     myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec);
-
   }
 }
