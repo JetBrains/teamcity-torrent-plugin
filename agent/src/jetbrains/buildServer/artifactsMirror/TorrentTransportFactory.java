@@ -55,10 +55,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   private final TorrentsDirectorySeeder myDirectorySeeder;
   private final CurrentBuildTracker myBuildTracker;
 
-  public TorrentTransportFa
-
-
-  ctory(@NotNull final AgentTorrentsManager agentTorrentsManager,
+  public TorrentTransportFactory(@NotNull final AgentTorrentsManager agentTorrentsManager,
                                  @NotNull final CurrentBuildTracker currentBuildTracker) {
     myBuildTracker = currentBuildTracker;
     myDirectorySeeder = agentTorrentsManager.getTorrentsDirectorySeeder();
