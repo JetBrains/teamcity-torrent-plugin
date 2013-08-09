@@ -109,6 +109,9 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
 
   private boolean announceNewFile(@NotNull File srcFile) {
     if (!settingsInited()) return false;
+
+    myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(srcFile);
+
     if (myTorrentsDirectorySeeder.shouldCreateTorrentFileFor(srcFile)) {
       File linkDir;
       if (srcFile.getAbsolutePath().startsWith(myBuild.getCheckoutDirectory().getAbsolutePath())) {
@@ -121,10 +124,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
       if (!linkDir.isDirectory()) return false;
       try {
         Torrent torrent = Torrent.create(srcFile, myTrackerAnnounceUrl, "teamcity");
-        File torrentFile = new File(srcFile.getParentFile(), srcFile.getName() + ".torrent");
-        torrent.save(torrentFile);
-        FileLink.createLink(srcFile, torrentFile, linkDir);
-        myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, srcFile);
+        myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrent, srcFile);
       } catch (IOException e) {
         return false;
       } catch (InterruptedException e) {

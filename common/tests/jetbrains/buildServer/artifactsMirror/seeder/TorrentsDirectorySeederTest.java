@@ -50,7 +50,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
     File srcFile = createTempFile();
     final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
     final File linkFile = FileLink.createLink(srcFile, torrentFile, myStorageDir);
-    myDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, srcFile);
+    myDirectorySeeder.getTorrentSeeder().seedTorrent(Torrent.load(torrentFile), srcFile);
 
     assertTrue(torrentFile.isFile());
     assertTrue(myDirectorySeeder.isSeeding(torrentFile));
@@ -66,7 +66,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
     final File srcFile = createTempFile();
     final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
     final File linkFile = FileLink.createLink(srcFile, torrentFile, myStorageDir);
-    myDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, srcFile);
+    myDirectorySeeder.getTorrentSeeder().seedTorrent(Torrent.load(torrentFile), srcFile);
 
     assertTrue(torrentFile.isFile());
     assertTrue(myDirectorySeeder.isSeeding(torrentFile));
@@ -110,7 +110,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
       final File torrentFromFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
       FileLink.createLink(srcFile, torrentFromFile,myStorageDir);
       myDirectorySeeder.getNewLinksWatcher().checkForModifications();
-      myDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFromFile, srcFile);
+      myDirectorySeeder.getTorrentSeeder().seedTorrent(Torrent.load(torrentFromFile), srcFile);
     }
 
     assertEquals(3, myDirectorySeeder.getTorrentSeeder().getNumberOfSeededTorrents());

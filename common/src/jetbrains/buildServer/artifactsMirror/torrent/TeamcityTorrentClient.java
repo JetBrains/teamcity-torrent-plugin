@@ -34,16 +34,18 @@ public class TeamcityTorrentClient {
     myClient.stop(true);
   }
 
-  public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) {
+  public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) throws IOException, NoSuchAlgorithmException {
+    return seedTorrent(loadTorrent(torrentFile), srcFile);
+  }
+  public boolean seedTorrent(@NotNull Torrent torrent, @NotNull File srcFile) {
     if (myClient == null) return false;
     if (myMaxTorrentsToSeed != -1 && myClient.getTorrents().size() > myMaxTorrentsToSeed){
-      LOG.warn("Reached max number of seeded torrents. Torrent "+torrentFile.getName()+" will not be seeded");
+      LOG.warn("Reached max number of seeded torrents. Torrent "+torrent.getName()+" will not be seeded");
       return false;
     }
     try {
-      Torrent t = loadTorrent(torrentFile);
-      final SharedTorrent torrent = new SharedTorrent(t, srcFile.getParentFile(), false, true);
-      myClient.addTorrent(torrent);
+      final SharedTorrent st = new SharedTorrent(torrent, srcFile.getParentFile(), false, true);
+      myClient.addTorrent(st);
     } catch (Exception e) {
       LOG.warn("Failed to seed file: " + e.toString(), e);
       return false;
@@ -63,6 +65,12 @@ public class TeamcityTorrentClient {
       LOG.warn(e.toString());
     }
   }
+
+  public void stopSeedingByPath(File file){
+    final SharedTorrent torrentByName = myClient.getTorrentByFilePath(file);
+    if (torrentByName != null)
+      myClient.removeTorrent(torrentByName);
+ }
 
   private Torrent loadTorrent(File torrentFile) throws IOException, NoSuchAlgorithmException {
     return Torrent.load(torrentFile);

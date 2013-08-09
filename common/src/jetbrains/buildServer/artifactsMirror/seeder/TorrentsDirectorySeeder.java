@@ -36,6 +36,9 @@ public class TorrentsDirectorySeeder {
 
   public static final String TORRENTS_DIT_PATH = ".teamcity/torrents";
 
+  public static final int TORRENTS_STORAGE_VERSION=2;
+  public static final String TORRENTS_STORAGE_VERSION_FILE = "storage.version";
+
   @NotNull
   private final File myTorrentStorage;
 
@@ -49,6 +52,8 @@ public class TorrentsDirectorySeeder {
 
   public TorrentsDirectorySeeder(@NotNull File torrentStorage) {
     myTorrentStorage = torrentStorage;
+    checkTorrentsStorageVersion();
+
     myNewLinksWatcher = new FilesWatcher(new FilesWatcher.WatchedFilesProvider() {
       public File[] getWatchedFiles() throws IOException {
         Collection<File> links = findAllLinks(myMaxTorrentsToSeed);
@@ -124,33 +129,35 @@ public class TorrentsDirectorySeeder {
     FileUtil.deleteIfEmpty(linkDir);
   }
 
+  private void startSeeding(File linkFile){
+    try {
+      File torrentFile = FileLink.getTorrentFile(linkFile);
+      File targetFile = FileLink.getTargetFile(linkFile);
+      if (torrentFile.exists() && targetFile.exists()){
+        getTorrentSeeder().seedTorrent(torrentFile, targetFile);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (NoSuchAlgorithmException e) {
+      e.printStackTrace();
+    }
+  }
+
   public void processChangedLink(@NotNull File changedLink) {
     //do nothing
     try {
       File torrentFile = FileLink.getTorrentFile(changedLink);
-      if (torrentFile != null && torrentFile.exists()) {
-        stopSeedingTorrent(torrentFile);
-      }
 
       File targetFile = FileLink.getTargetFile(changedLink);
-      if (targetFile.isFile()) {
-        Torrent oldTorrent = Torrent.load(torrentFile);
-        //TODO must rework this
-        Torrent torrent = Torrent.create(targetFile, oldTorrent.getAnnounceList(), "teamcity");
-//        Torrent torrent = Torrent.create(targetFile, oldTorrent.getAnnounceList().get(0).get(0), "teamcity");
-        torrent.save(torrentFile);
-        if (torrentFile != null) {
-          myTorrentSeeder.seedTorrent(torrentFile, targetFile);
+      if (!targetFile.isFile()) {
+        if (torrentFile != null && torrentFile.exists()) {
+          stopSeedingTorrent(torrentFile);
+          FileUtil.delete(torrentFile);
         }
-      } else {
         cleanupBrokenLink(changedLink);
       }
     } catch (IOException e) {
       Loggers.AGENT.warn("Exception during new link processing: " + e.toString(), e);
-    } catch (NoSuchAlgorithmException e) {
-
-    } catch (InterruptedException e) {
-      e.printStackTrace();
     }
   }
 
@@ -172,7 +179,7 @@ public class TorrentsDirectorySeeder {
 
     // initialization: scan all existing links and start seeding them
     for (File linkFile: findAllLinks(-1)) {
-      processChangedLink(linkFile);
+      startSeeding(linkFile);
     }
 
     myNewLinksWatcher.setSleepingPeriod(directoryScanIntervalSeconds * 1000);
@@ -223,6 +230,34 @@ public class TorrentsDirectorySeeder {
   //for tests only
   FilesWatcher getNewLinksWatcher() {
     return myNewLinksWatcher;
+  }
+
+  private void checkTorrentsStorageVersion(){
+
+    final File versionFile = new File(myTorrentStorage, TORRENTS_STORAGE_VERSION_FILE);
+    try {
+      final String s = FileUtil.readText(versionFile);
+      if (Integer.parseInt(s) == TORRENTS_STORAGE_VERSION)
+        return;
+      else {
+        Loggers.AGENT.warn("Torrent storage version " + s + " doesn't match expected " + TORRENTS_STORAGE_VERSION);
+        Loggers.AGENT.warn("Torrent storage will be cleaned");
+      }
+    } catch (Exception e) {
+      Loggers.AGENT.warn("IOE during reading storage version. Will clean the storage", e);
+    }
+    final String[] names = myTorrentStorage.list();
+    for (String name : names) {
+      if (name.equals(TORRENTS_STORAGE_VERSION_FILE))
+        continue;
+      FileUtil.delete(new File(myTorrentStorage, name));
+    }
+
+    try {
+      FileUtil.writeFileAndReportErrors(versionFile, String.valueOf(TORRENTS_STORAGE_VERSION));
+    } catch (IOException e) {
+      Loggers.AGENT.warn("Unable to write versions file. All caches will be cleaned on restart");
+    }
   }
 }
 

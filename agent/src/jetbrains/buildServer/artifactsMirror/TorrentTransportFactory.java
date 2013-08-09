@@ -8,9 +8,11 @@ import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.common.protocol.TrackerMessage;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
+import jetbrains.buildServer.artifacts.ArtifactDependencyInfo;
 import jetbrains.buildServer.artifacts.DependencyResolverContext;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
+import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.http.HttpUtil;
@@ -47,13 +49,16 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   private static final String TEAMCITY_ARTIFACTS_TRANSPORT = "teamcity.artifacts.transport";
 
 
-  private static final Pattern FILE_PATH_PATTERN = Pattern.compile("(.*?)/repository/download/([^/]+)/([^/]+)/(.+?(\\?branch=.+)?)");
+  private static final Pattern FILE_PATH_PATTERN = Pattern.compile("(.*?)/repository/download/([^/]+)/([^/]+)/(.+?)(\\?branch=.+)?");
 
   private final TeamcityTorrentClient mySeeder;
   private final TorrentsDirectorySeeder myDirectorySeeder;
   private final CurrentBuildTracker myBuildTracker;
 
-  public TorrentTransportFactory(@NotNull final AgentTorrentsManager agentTorrentsManager,
+  public TorrentTransportFa
+
+
+  ctory(@NotNull final AgentTorrentsManager agentTorrentsManager,
                                  @NotNull final CurrentBuildTracker currentBuildTracker) {
     myBuildTracker = currentBuildTracker;
     myDirectorySeeder = agentTorrentsManager.getTorrentsDirectorySeeder();
@@ -97,19 +102,19 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     @NotNull
-    public String downloadUrlTo(@NotNull String urlString, @NotNull File target) throws IOException {
+    public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
       if (!shouldUseTorrentTransport()){
         throw new IOException("Shouldn't use torrent transport for build type " + myBuild.getBuildTypeId());
       }
 
-      if (urlString.endsWith(TEAMCITY_IVY)){
+      if (urlString.contains(TEAMCITY_IVY)){
         throw new IOException("Skip downloading teamcity-ivy.xml");
       }
       Torrent torrent = downloadTorrent(urlString);
       if (torrent.getSize() < myDirectorySeeder.getFileSizeThresholdMb()*1024*1024){
         throw new IOException(String.format("File size is lower than threshold of %dMb", myDirectorySeeder.getFileSizeThresholdMb()));
       }
-      Loggers.AGENT.info("Will attempt to download " + target.getName() + " via torrent.");
+      LOG.info("Will attempt to download " + target.getName() + " via torrent.");
       try {
         final List<List<URI>> announceList = torrent.getAnnounceList();
         final AtomicBoolean hasSeeders = new AtomicBoolean(false);
@@ -144,7 +149,13 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         }
 
         mySeeder.downloadAndShareOrFail(torrent, target, target.getParentFile(), getDownloadTimeoutSec());
-        Loggers.AGENT.info("Download successfull");
+        LOG.info("Download successfull. Saving torrent..");
+        String realFilePath = getFilePathFromUrl(urlString);
+        File parentDir = getRealParentDir(target, realFilePath);
+        File torrentFile = new File(parentDir, TEAMCITY_TORRENTS + realFilePath + ".torrent");
+        torrentFile.getParentFile().mkdirs();
+        torrent.save(torrentFile);
+        FileLink.createLink(target, torrentFile, myDirectorySeeder.getStorageDirectory());
         return torrent.getHexInfoHash();
       } catch (IOException e) {
         throw new IOException("Unable to download torrent for " + urlString, e);
@@ -173,7 +184,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         return null;
       }
       final StringBuilder b = new StringBuilder(urlString);
-      b.insert(matcher.start(4), TEAMCITY_TORRENTS);
+      final int realPathStart = matcher.start(4);
+      b.insert(realPathStart, TEAMCITY_TORRENTS);
       int suffixPos = (matcher.group(5)==null? b.length() : TEAMCITY_TORRENTS.length() + matcher.start(5));
       b.insert(suffixPos, ".torrent");
       String downloadUrl = b.toString();
@@ -211,7 +223,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     private static File getRealParentDir(File file, String relativePath){
-      String path = file.getAbsolutePath();
+      String path = file.getAbsolutePath().replaceAll("\\\\", "/");
       if (path.endsWith(relativePath)){
         return new File(path.substring(0, path.length() - relativePath.length()));
       } else {
@@ -229,8 +241,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     private boolean shouldUseTorrentTransport(){
-      final String param = myBuild.getSharedBuildParameters().getAllParameters().get(TEAMCITY_ARTIFACTS_TRANSPORT);
-      return param!=null && param.contains(this.getClass().getName());
+      final String param = myBuild.getSharedBuildParameters().getSystemProperties().get(TEAMCITY_ARTIFACTS_TRANSPORT);
+      return param!=null && param.contains(this.getClass().getSimpleName());
     }
   }
 }

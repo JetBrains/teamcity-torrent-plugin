@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -107,16 +108,17 @@ public class ServerTorrentsDirectorySeeder {
       public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
         if (shouldCreateTorrentFor(artifact)) {
           File artifactFile = new File(build.getArtifactsDirectory(), artifact.getRelativePath());
-          File baseDir = getTorrentFilesBaseDir(build);
-          File filePath = new File(baseDir, artifact.getRelativePath());
-          File linkDir = filePath.getParentFile();
+          File linkDir = getLinkDir(build);
+          linkDir.mkdirs();
 
           try {
             File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
-            FileLink.createLink(artifactFile, torrentFile, linkDir);
             myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, artifactFile);
+            FileLink.createLink(artifactFile, torrentFile, linkDir);
             } catch (IOException e) {
               e.printStackTrace();
+          } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
           }
         }
         return Continuation.CONTINUE;
@@ -140,4 +142,11 @@ public class ServerTorrentsDirectorySeeder {
   public void setMaxNumberOfSeededTorrents(int maxNumberOfSeededTorrents) {
     myTorrentsDirectorySeeder.setMaxTorrentsToSeed(maxNumberOfSeededTorrents);
   }
+
+
+  private File getLinkDir(@NotNull SBuild build) {
+    return new File(myTorrentsDirectorySeeder.getStorageDirectory(),
+            build.getBuildTypeId() + File.separator + build.getBuildId());
+  }
+
 }
