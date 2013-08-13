@@ -131,7 +131,8 @@ public class ServerTorrentsDirectorySeeder {
     final File parentDir = destPath.getParentFile();
     parentDir.mkdirs();
 
-    return myTorrentTrackerManager.createTorrent(artifactFile, parentDir);
+    return TorrentUtil.getOrCreateTorrent(artifactFile, torrentsDir, myTorrentTrackerManager.getAnnounceUri());
+//            myTorrentTrackerManager.createTorrent(artifactFile, parentDir);
   }
 
   private boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {

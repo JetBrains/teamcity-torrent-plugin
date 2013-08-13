@@ -21,6 +21,12 @@
     </c:if>
   </td>
 </tr>
+  <tr>
+    <th><label for="useDedicatedPort">Dedicated tracker port:</label></th>
+    <td>
+      <forms:checkbox name="useDedicatedPort" checked="${torrentConfigurator.trackerDedicatedPort}"/><label for="useDedicatedPort"> start tracker on dedicated port</label>
+    </td>
+  </tr>
 <tr>
   <th><label for="seederEnabled">Torrent seeder:</label></th>
   <td>
@@ -40,6 +46,14 @@
   <th><label for="fileSizeThresholdMb">Artifact size threshold:</label></th>
   <td><forms:textField name="fileSizeThresholdMb" style="width: 5em" value="${torrentConfigurator.fileSizeThresholdMb}"/> Mb</td>
 </tr>
+  <tr>
+    <th><label for="announceIntervalSec">Announce interval secs:</label></th>
+    <td><forms:textField name="announceIntervalSec" style="width: 5em" value="${torrentConfigurator.announceIntervalSec}"/> Sec</td>
+  </tr>
+  <tr>
+    <th><label for="trackerTorrentExpireTimeoutSec">Tracker torrent expire timeout:</label></th>
+    <td><forms:textField name="trackerTorrentExpireTimeoutSec" style="width: 5em" value="${torrentConfigurator.trackerTorrentExpireTimeoutSec}"/> Sec</td>
+  </tr>
 <tr>
   <td colspan="2"><forms:submit label="Save" name="save"/></td>
 </tr>

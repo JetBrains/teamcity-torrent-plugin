@@ -101,17 +101,20 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     @NotNull
     public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
       if (!shouldUseTorrentTransport()){
-        throw new IOException("Shouldn't use torrent transport for build type " + myBuild.getBuildTypeId());
+        LOG.debug("Shouldn't use torrent transport for build type " + myBuild.getBuildTypeId());
+        return null;
       }
 
       if (urlString.contains(TEAMCITY_IVY)){
-        throw new IOException("Skip downloading teamcity-ivy.xml");
+        LOG.debug("Skip downloading teamcity-ivy.xml");
+        return null;
       }
       Torrent torrent = downloadTorrent(urlString);
       if (torrent.getSize() < myDirectorySeeder.getFileSizeThresholdMb()*1024*1024){
-        throw new IOException(String.format("File size is lower than threshold of %dMb", myDirectorySeeder.getFileSizeThresholdMb()));
+        LOG.debug(String.format("File size is lower than threshold of %dMb", myDirectorySeeder.getFileSizeThresholdMb()));
+        return null;
       }
-      LOG.info("Will attempt to download " + target.getName() + " via torrent.");
+      LOG.debug("Will attempt to download " + target.getName() + " via torrent.");
       try {
         final List<List<URI>> announceList = torrent.getAnnounceList();
         final AtomicBoolean hasSeeders = new AtomicBoolean(false);
@@ -142,11 +145,12 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         }
 
         if (!hasSeeders.get()) {
-          throw new IOException("no seeders for " + urlString);
+          LOG.debug("no seeders for " + urlString);
+          return null;
         }
 
         mySeeder.downloadAndShareOrFail(torrent, target, target.getParentFile(), getDownloadTimeoutSec());
-        LOG.info("Download successfull. Saving torrent..");
+        LOG.debug("Download successfull. Saving torrent..");
         String realFilePath = getFilePathFromUrl(urlString);
         File parentDir = getRealParentDir(target, realFilePath);
         File torrentFile = new File(parentDir, TEAMCITY_TORRENTS + realFilePath + ".torrent");
@@ -160,7 +164,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         throw new IOException("Unable to hash torrent for " + urlString, e);
       } catch (InterruptedException e) {
         throw new IOException("Torrent download has been interrupted " + urlString, e);
-      } finally {
       }
     }
 

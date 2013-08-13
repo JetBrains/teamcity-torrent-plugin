@@ -50,21 +50,21 @@ public class TrackerAdminPage extends AdminPage {
           boolean seederEnabled = request.getParameter("seederEnabled") != null;
           String threshold = request.getParameter("fileSizeThresholdMb");
           String maxTorrentsNum = request.getParameter("maxNumberOfSeededTorrents");
+          boolean useDedicatedPort = request.getParameter("useDedicatedPort") != null;
+          String announceInterval = request.getParameter("announceIntervalSec");
+          String trackerTorrentExpireTimeout = request.getParameter("trackerTorrentExpireTimeoutSec");
           myTorrentConfigurator.setTrackerEnabled(trackerEnabled);
           myTorrentConfigurator.setSeederEnabled(seederEnabled);
-          try {
-            myTorrentConfigurator.setFileSizeThresholdMb(Integer.parseInt(threshold));
-          } catch (NumberFormatException e) {
-            //
-          }
-          try {
-            myTorrentConfigurator.setMaxNumberOfSeededTorrents(Integer.parseInt(maxTorrentsNum));
-          } catch (NumberFormatException e) {
-            //
-          }
+          myTorrentConfigurator.setTrackerUsesDedicatedPort(useDedicatedPort);
+          try { myTorrentConfigurator.setFileSizeThresholdMb(Integer.parseInt(threshold));} catch (NumberFormatException e) {}
+          try { myTorrentConfigurator.setMaxNumberOfSeededTorrents(Integer.parseInt(maxTorrentsNum));} catch (NumberFormatException e) {}
+          try { myTorrentConfigurator.setTrackerTorrentExpireTimeoutSec(Integer.parseInt(trackerTorrentExpireTimeout));} catch (NumberFormatException e) {}
+          try { myTorrentConfigurator.setAnnounceIntervalSec(Integer.parseInt(announceInterval));} catch (NumberFormatException e) {}
+
+
           myTorrentConfigurator.persistConfiguration();
         }
-        return new ModelAndView(new RedirectView("/admin/admin.html?item=" + TAB_ID));
+        return new ModelAndView(new RedirectView(request.getContextPath() + "/admin/admin.html?item=" + TAB_ID));
       }
     });
   }

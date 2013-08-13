@@ -16,4 +16,5 @@
   <bean class="jetbrains.buildServer.artifactsMirror.web.TorrentLinksExtension"/>
   <bean class="jetbrains.buildServer.artifactsMirror.web.TorrentLinksController"/>
   <bean class="jetbrains.buildServer.artifactsMirror.web.DownloadTorrentController"/>
+  <bean class="jetbrains.buildServer.artifactsMirror.web.TrackerController"/>
 </beans>

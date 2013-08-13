@@ -41,7 +41,10 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   public final static String OWN_ADDRESS = "torrent.ownAddress";
   public final static String SEEDER_ENABLED = "torrent.seeder.enabled";
   public final static String FILE_SIZE_THRESHOLD = "file.size.threshold.mb";
+  public final static String ANNOUNCE_INTERVAL = "announce.interval.sec";
+  public final static String TRACKER_TORRENT_EXPIRE_TIMEOUT = "tracker.torrent.expire.timeout.sec";
   public final static String MAX_NUMBER_OF_SEEDED_TORRENTS = "max.seeded.torrents.number";
+  public final static String TRACKER_USES_DEDICATED_PORT ="tracker.dedicated.port";
 
   private final ServerTorrentsDirectorySeeder mySeederManager;
   private final TorrentTrackerManager myTrackerManager;
@@ -72,7 +75,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
       public void serverStartup() {
         super.serverStartup();
         if (isEnabled(TRACKER_ENABLED)) {
-          myTrackerManager.startTracker(getOwnAddress());
+          myTrackerManager.startTracker(getTrackerUsesDedicatedPort(), getOwnAddress(), getTrackerTorrentExpireTimeoutSec());
         }
         executors.getLowPriorityExecutorService().submit(new Runnable() {
           public void run() {
@@ -100,6 +103,9 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
       props.setProperty(SEEDER_ENABLED, "true");
       props.setProperty(FILE_SIZE_THRESHOLD, "10");
       props.setProperty(MAX_NUMBER_OF_SEEDED_TORRENTS, "1000");
+      props.setProperty(TRACKER_USES_DEDICATED_PORT, Boolean.TRUE.toString());
+      props.setProperty(ANNOUNCE_INTERVAL, "60");
+      props.setProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT, "180");
       PropertiesUtil.storeProperties(props, configFile, "");
     } catch (IOException e) {
       Loggers.SERVER.warn("Failed to create configuration file: " + configFile.getAbsolutePath() + ", error: " + e.toString());
@@ -110,11 +116,15 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
     boolean changed = isTrackerEnabled() != enabled;
     myConfiguration.setProperty(TRACKER_ENABLED, Boolean.toString(enabled));
     if (changed) {
-      if (enabled) {
-        myTrackerManager.startTracker(getOwnAddress());
-      } else {
-        myTrackerManager.stopTracker();
-      }
+      startTrackerIfNecessary();
+    }
+  }
+
+  private void startTrackerIfNecessary() {
+    if (isTrackerEnabled()) {
+      myTrackerManager.startTracker(getTrackerUsesDedicatedPort(), getOwnAddress(), getTrackerTorrentExpireTimeoutSec());
+    } else {
+      myTrackerManager.stopTracker();
     }
   }
 
@@ -140,6 +150,25 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
     mySeederManager.setMaxNumberOfSeededTorrents(number);
   }
 
+  public void setAnnounceIntervalSec(int sec){
+    myConfiguration.setProperty(ANNOUNCE_INTERVAL, String.valueOf(sec));
+    myTrackerManager.setAnnounceInterval(sec);
+  }
+
+  public void setTrackerTorrentExpireTimeoutSec(int sec){
+    myConfiguration.setProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT, String.valueOf(sec));
+    myTrackerManager.setTorrentExpireTimeout(sec);
+  }
+
+  public void setTrackerUsesDedicatedPort(boolean enabled){
+    boolean changed = isTrackerDedicatedPort() != enabled;
+    myConfiguration.setProperty(TRACKER_USES_DEDICATED_PORT, String.valueOf(enabled));
+    if (changed && isTrackerEnabled()){
+      myTrackerManager.stopTracker();
+      startTrackerIfNecessary();
+    }
+  }
+
   public int getMaxNumberOfSeededTorrents() {
     try {
       return Integer.parseInt(myConfiguration.getProperty(MAX_NUMBER_OF_SEEDED_TORRENTS));
@@ -162,6 +191,26 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
     }
   }
 
+  public int getAnnounceIntervalSec() {
+    try {
+      return Integer.parseInt(myConfiguration.getProperty(ANNOUNCE_INTERVAL, "60"));
+    } catch (NumberFormatException e) {
+      return 60;
+    }
+  }
+
+  public int getTrackerTorrentExpireTimeoutSec() {
+    try {
+      return Integer.parseInt(myConfiguration.getProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT, "180"));
+    } catch (NumberFormatException e) {
+      return 180;
+    }
+  }
+
+  public boolean isTrackerDedicatedPort(){
+    return isEnabled(TRACKER_USES_DEDICATED_PORT);
+  }
+
   public void persistConfiguration() throws IOException {
     PropertiesUtil.storeProperties(myConfiguration, getConfigFile(), "");
   }
@@ -179,7 +228,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   private File getConfigFile() {
-    return new File(myServerPaths.getConfigDir(), "artifacts-mirror.properties");
+    return new File(myServerPaths.getConfigDir(), "torrent-plugin.properties");
   }
 
   private void loadConfiguration(@NotNull File configFile) {
@@ -198,11 +247,11 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   public String getAnnounceUrl() {
-    return myTrackerManager.getAnnounceUrl();
+    return myTrackerManager.getAnnounceUri().toString();
   }
 
   @NotNull
-  private String getOwnAddress() {
+  public String getOwnAddress() {
     String hostName = myConfiguration.getProperty(OWN_ADDRESS);
     if (hostName != null) return hostName;
 
@@ -215,5 +264,9 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
     } catch (URISyntaxException e) {
       return "127.0.0.1";
     }
+  }
+
+  public boolean getTrackerUsesDedicatedPort(){
+    return isEnabled(TRACKER_USES_DEDICATED_PORT);
   }
 }
