@@ -25,6 +25,7 @@ import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.net.*;
@@ -98,7 +99,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       myBuild = agentBuild;
     }
 
-    @NotNull
+    @Nullable
     public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
       if (!shouldUseTorrentTransport()){
         LOG.debug("Shouldn't use torrent transport for build type " + myBuild.getBuildTypeId());
@@ -114,7 +115,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         LOG.debug(String.format("File size is lower than threshold of %dMb", myDirectorySeeder.getFileSizeThresholdMb()));
         return null;
       }
-      LOG.debug("Will attempt to download " + target.getName() + " via torrent.");
+      LOG.info("Will attempt to download " + target.getName() + " via torrent.");
       try {
         final List<List<URI>> announceList = torrent.getAnnounceList();
         final AtomicBoolean hasSeeders = new AtomicBoolean(false);
@@ -145,12 +146,12 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         }
 
         if (!hasSeeders.get()) {
-          LOG.debug("no seeders for " + urlString);
+          LOG.info("no seeders for " + urlString);
           return null;
         }
 
         mySeeder.downloadAndShareOrFail(torrent, target, target.getParentFile(), getDownloadTimeoutSec());
-        LOG.debug("Download successfull. Saving torrent..");
+        LOG.info("Download successfull. Saving torrent..");
         String realFilePath = getFilePathFromUrl(urlString);
         File parentDir = getRealParentDir(target, realFilePath);
         File torrentFile = new File(parentDir, TEAMCITY_TORRENTS + realFilePath + ".torrent");
@@ -241,7 +242,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     private boolean shouldUseTorrentTransport(){
-      final String param = myBuild.getSharedBuildParameters().getSystemProperties().get(TEAMCITY_ARTIFACTS_TRANSPORT);
+      final String param = myBuild.getSharedConfigParameters().get(TEAMCITY_ARTIFACTS_TRANSPORT);
       return param!=null && param.contains(this.getClass().getSimpleName());
     }
   }
