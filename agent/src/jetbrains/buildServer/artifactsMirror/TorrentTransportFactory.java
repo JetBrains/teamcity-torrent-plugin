@@ -18,10 +18,7 @@ import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.http.HttpUtil;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.util.FileUtil;
-import org.apache.commons.httpclient.Credentials;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
+import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.jetbrains.annotations.NotNull;
@@ -29,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.net.*;
+import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -110,7 +108,12 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         LOG.debug("Skip downloading teamcity-ivy.xml");
         return null;
       }
+      LOG.info("Downloading torrent for " + urlString);
       Torrent torrent = downloadTorrent(urlString);
+      if (torrent == null) {
+        LOG.debug("No torrent file for " + urlString);
+        return null;
+      }
       if (torrent.getSize() < myDirectorySeeder.getFileSizeThresholdMb()*1024*1024){
         LOG.debug(String.format("File size is lower than threshold of %dMb", myDirectorySeeder.getFileSizeThresholdMb()));
         return null;
@@ -178,7 +181,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       return torrent.getHexInfoHash();
     }
 
-    private Torrent downloadTorrent(@NotNull final  String urlString) throws IOException {
+    private Torrent downloadTorrent(@NotNull final  String urlString){
       // adding path here:
       final Matcher matcher = FILE_PATH_PATTERN.matcher(urlString);
       if (!matcher.matches()){
@@ -206,6 +209,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         return new Torrent(torrentData, true);
       } catch (NoSuchAlgorithmException e) {
         LOG.error("NoSuchAlgorithmException", e);
+      } catch (IOException e) {
+        LOG.debug("Unable to download: " + e.getMessage());
       } finally {
         FileUtil.close(in);
         getMethod.releaseConnection();
