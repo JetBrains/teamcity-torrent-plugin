@@ -43,7 +43,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
     myStorageDir = createTempDir();
     announceURI = new URI("http://localhost:6969/announce");
     myDirectorySeeder = new TorrentsDirectorySeeder(myStorageDir);
-    myDirectorySeeder.start(InetAddress.getLocalHost(), 3);
+    myDirectorySeeder.start(InetAddress.getLocalHost(), null, 3);
   }
 
   public void link_removed() throws IOException, NoSuchAlgorithmException, InterruptedException {

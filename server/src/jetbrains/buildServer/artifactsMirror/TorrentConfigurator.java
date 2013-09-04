@@ -18,22 +18,30 @@ package jetbrains.buildServer.artifactsMirror;
 
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
+import jetbrains.buildServer.artifactsMirror.web.TrackerController;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.BuildServerListener;
 import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
+import jetbrains.buildServer.serverSide.impl.ServerSettings;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.PropertiesUtil;
 import jetbrains.buildServer.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 public class TorrentConfigurator implements TorrentTrackerConfiguration {
@@ -45,48 +53,20 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   public final static String TRACKER_TORRENT_EXPIRE_TIMEOUT = "tracker.torrent.expire.timeout.sec";
   public final static String MAX_NUMBER_OF_SEEDED_TORRENTS = "max.seeded.torrents.number";
   public final static String TRACKER_USES_DEDICATED_PORT ="tracker.dedicated.port";
+  // this is fake option to multicast announce url changes;
+  public static final String ANNOUNCE_URL = "announce.url";
 
-  private final ServerTorrentsDirectorySeeder mySeederManager;
-  private final TorrentTrackerManager myTrackerManager;
   private final ServerPaths myServerPaths;
-  private final RootUrlHolder myRootUrlHolder;
+  private final ServerSettings myServerSettings;
   private volatile Properties myConfiguration;
+  private List<PropertyChangeListener> myChangeListeners = new ArrayList<PropertyChangeListener>();
+  private String myAnnounceUrl;
 
-  public TorrentConfigurator(@NotNull ServerPaths serverPaths,
-                             @NotNull EventDispatcher<BuildServerListener> dispatcher,
-                             @NotNull ServerTorrentsDirectorySeeder torrentsDirectorySeeder,
-                             @NotNull TorrentTrackerManager trackerManager,
-                             @NotNull XmlRpcHandlerManager xmlRpcHandlerManager,
-                             @NotNull final ExecutorServices executors,
-                             @NotNull RootUrlHolder rootUrlHolder) {
-    myRootUrlHolder = rootUrlHolder;
-    mySeederManager = torrentsDirectorySeeder;
-    myTrackerManager = trackerManager;
+  public TorrentConfigurator(@NotNull final ServerPaths serverPaths,
+                             @NotNull final ServerSettings serverSettings,
+                             @NotNull final XmlRpcHandlerManager xmlRpcHandlerManager) {
     myServerPaths = serverPaths;
-    dispatcher.addListener(new BuildServerAdapter() {
-      @Override
-      public void serverShutdown() {
-        super.serverShutdown();
-        mySeederManager.stopSeeder();
-        myTrackerManager.stopTracker();
-      }
-
-      @Override
-      public void serverStartup() {
-        super.serverStartup();
-        if (isEnabled(TRACKER_ENABLED)) {
-          myTrackerManager.startTracker(getTrackerUsesDedicatedPort(), getOwnAddress(), getTrackerTorrentExpireTimeoutSec());
-        }
-        executors.getLowPriorityExecutorService().submit(new Runnable() {
-          public void run() {
-            if (isEnabled(SEEDER_ENABLED)) {
-              startSeeder();
-            }
-          }
-        });
-      }
-    });
-
+    myServerSettings = serverSettings;
     File configFile = getConfigFile();
     if (!configFile.isFile()) {
       initConfigFile(configFile);
@@ -99,8 +79,8 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   private void initConfigFile(File configFile) {
     try {
       Properties props = new Properties();
-      props.setProperty(TRACKER_ENABLED, "true");
-      props.setProperty(SEEDER_ENABLED, "true");
+      props.setProperty(TRACKER_ENABLED, "false");
+      props.setProperty(SEEDER_ENABLED, "false");
       props.setProperty(FILE_SIZE_THRESHOLD, "10");
       props.setProperty(MAX_NUMBER_OF_SEEDED_TORRENTS, "1000");
       props.setProperty(TRACKER_USES_DEDICATED_PORT, Boolean.TRUE.toString());
@@ -113,59 +93,58 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   public void setTrackerEnabled(boolean enabled) {
-    boolean changed = isTrackerEnabled() != enabled;
-    myConfiguration.setProperty(TRACKER_ENABLED, Boolean.toString(enabled));
-    if (changed) {
-      startTrackerIfNecessary();
-    }
-  }
-
-  private void startTrackerIfNecessary() {
-    if (isTrackerEnabled()) {
-      myTrackerManager.startTracker(getTrackerUsesDedicatedPort(), getOwnAddress(), getTrackerTorrentExpireTimeoutSec());
-    } else {
-      myTrackerManager.stopTracker();
+    boolean oldValue = isTrackerEnabled();
+    if (oldValue != enabled) {
+      myConfiguration.setProperty(TRACKER_ENABLED, Boolean.toString(enabled));
+      propertyChanged(TRACKER_ENABLED, oldValue, enabled);
     }
   }
 
   public void setSeederEnabled(boolean enabled) {
-    boolean changed = isSeederEnabled() != enabled;
-    myConfiguration.setProperty(SEEDER_ENABLED, Boolean.toString(enabled));
-    if (changed) {
-      if (enabled) {
-        startSeeder();
-      } else {
-        mySeederManager.stopSeeder();
-      }
+    boolean oldValue = isSeederEnabled();
+    if  (oldValue != enabled){
+      myConfiguration.setProperty(SEEDER_ENABLED, Boolean.toString(enabled));
+      propertyChanged(SEEDER_ENABLED, oldValue, enabled);
     }
   }
 
   public void setFileSizeThresholdMb(int threshold) {
-    myConfiguration.setProperty(FILE_SIZE_THRESHOLD, Integer.toString(threshold));
-    mySeederManager.setFileSizeThreshold(threshold);
+    int oldValue = getFileSizeThresholdMb();
+    if (oldValue != threshold){
+      myConfiguration.setProperty(FILE_SIZE_THRESHOLD, Integer.toString(threshold));
+      propertyChanged(FILE_SIZE_THRESHOLD, oldValue, threshold);
+    }
   }
 
   public void setMaxNumberOfSeededTorrents(int number) {
-    myConfiguration.setProperty(MAX_NUMBER_OF_SEEDED_TORRENTS, Integer.toString(number));
-    mySeederManager.setMaxNumberOfSeededTorrents(number);
+    int oldValue = getMaxNumberOfSeededTorrents();
+    if (oldValue != number){
+      myConfiguration.setProperty(MAX_NUMBER_OF_SEEDED_TORRENTS, Integer.toString(number));
+      propertyChanged(MAX_NUMBER_OF_SEEDED_TORRENTS, oldValue, number);
+    }
   }
 
   public void setAnnounceIntervalSec(int sec){
-    myConfiguration.setProperty(ANNOUNCE_INTERVAL, String.valueOf(sec));
-    myTrackerManager.setAnnounceInterval(sec);
+    int oldValue = getAnnounceIntervalSec();
+    if (oldValue != sec){
+      myConfiguration.setProperty(ANNOUNCE_INTERVAL, Integer.toString(sec));
+      propertyChanged(ANNOUNCE_INTERVAL, oldValue, sec);
+    }
   }
 
   public void setTrackerTorrentExpireTimeoutSec(int sec){
-    myConfiguration.setProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT, String.valueOf(sec));
-    myTrackerManager.setTorrentExpireTimeout(sec);
+    int oldValue = getTrackerTorrentExpireTimeoutSec();
+    if (oldValue != sec){
+      myConfiguration.setProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT, Integer.toString(sec));
+      propertyChanged(TRACKER_TORRENT_EXPIRE_TIMEOUT, oldValue, sec);
+    }
   }
 
   public void setTrackerUsesDedicatedPort(boolean enabled){
-    boolean changed = isTrackerDedicatedPort() != enabled;
-    myConfiguration.setProperty(TRACKER_USES_DEDICATED_PORT, String.valueOf(enabled));
-    if (changed && isTrackerEnabled()){
-      myTrackerManager.stopTracker();
-      startTrackerIfNecessary();
+    boolean oldValue = isTrackerDedicatedPort();
+    if  (oldValue != enabled){
+      myConfiguration.setProperty(TRACKER_USES_DEDICATED_PORT, Boolean.toString(enabled));
+      propertyChanged(TRACKER_USES_DEDICATED_PORT, oldValue, enabled);
     }
   }
 
@@ -175,12 +154,6 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
     } catch (NumberFormatException e) {
       return 1000;
     }
-  }
-
-  private void startSeeder() {
-    mySeederManager.setFileSizeThreshold(getFileSizeThresholdMb());
-    mySeederManager.setMaxNumberOfSeededTorrents(getMaxNumberOfSeededTorrents());
-    mySeederManager.startSeeder(getOwnAddress());
   }
 
   public int getFileSizeThresholdMb() {
@@ -224,7 +197,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   private boolean isEnabled(@NotNull String configParam) {
-    return StringUtil.isTrue(myConfiguration.getProperty(configParam, "true"));
+    return StringUtil.isTrue(myConfiguration.getProperty(configParam, "false"));
   }
 
   private File getConfigFile() {
@@ -247,7 +220,16 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   public String getAnnounceUrl() {
-    return myTrackerManager.getAnnounceUri().toString();
+    if (isTrackerEnabled())
+      return myAnnounceUrl;
+    else
+      return null;
+  }
+
+  public void setAnnounceUrl(@NotNull final String announceUrl) {
+    final String oldAnnounceUrl = myAnnounceUrl;
+    myAnnounceUrl = announceUrl;
+    propertyChanged(ANNOUNCE_URL, oldAnnounceUrl, announceUrl);
   }
 
   @NotNull
@@ -256,17 +238,35 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
     if (hostName != null) return hostName;
 
     try {
-      String rootUrl = myRootUrlHolder.getRootUrl();
-      if (rootUrl.endsWith("/")) rootUrl = rootUrl.substring(0, rootUrl.length()-1);
-
-      URI serverUrl = new URI(rootUrl);
-      return serverUrl.getHost();
-    } catch (URISyntaxException e) {
-      return "127.0.0.1";
+      return InetAddress.getLocalHost().getCanonicalHostName();
+    } catch (UnknownHostException e) {
+      return "localhost";
     }
+  }
+
+  @NotNull
+  public String getServerAddress(){
+    return myServerSettings.getRootUrl();
   }
 
   public boolean getTrackerUsesDedicatedPort(){
     return isEnabled(TRACKER_USES_DEDICATED_PORT);
+  }
+
+  public void addPropertyChangeListener(@NotNull final PropertyChangeListener listener){
+    myChangeListeners.add(listener);
+  }
+
+  public void removePropertyChangeListener(@NotNull final PropertyChangeListener listener){
+    myChangeListeners.remove(listener);
+  }
+
+  public void propertyChanged(String changedPropertyName, Object oldValue, Object newValue){
+    PropertyChangeEvent event = new PropertyChangeEvent(this, changedPropertyName, oldValue, newValue);
+    for (PropertyChangeListener listener : myChangeListeners) {
+      try {
+      listener.propertyChange(event);
+      } catch (Exception ex){}
+    }
   }
 }

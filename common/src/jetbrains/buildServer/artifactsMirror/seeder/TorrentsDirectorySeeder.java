@@ -24,11 +24,13 @@ import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.util.CollectionsUtil;
 import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
@@ -170,12 +172,12 @@ public class TorrentsDirectorySeeder {
     return myTorrentSeeder.isSeeding(torrentFile);
   }
 
-  public void start(@NotNull InetAddress address) {
-    start(address, 30);
+  public void start(@NotNull InetAddress address, @Nullable final URI defaultTrackerURI) {
+    start(address, defaultTrackerURI, 30);
   }
 
-  public void start(@NotNull InetAddress address, int directoryScanIntervalSeconds) {
-    myTorrentSeeder.start(address);
+  public void start(@NotNull InetAddress address, @Nullable final URI defaultTrackerURI, int directoryScanIntervalSeconds) {
+    myTorrentSeeder.start(address, defaultTrackerURI);
 
     // initialization: scan all existing links and start seeding them
     for (File linkFile: findAllLinks(-1)) {

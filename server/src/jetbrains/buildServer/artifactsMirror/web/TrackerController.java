@@ -8,6 +8,7 @@ import com.turn.ttorrent.tracker.TrackerRequestProcessor;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.artifactsMirror.TorrentConfigurator;
 import jetbrains.buildServer.artifactsMirror.TorrentTrackerManager;
+import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import org.jetbrains.annotations.NotNull;
@@ -41,10 +42,12 @@ public class TrackerController extends BaseController {
   private final TorrentTrackerManager myTrackerManager;
 
 
-  public TrackerController(@NotNull WebControllerManager controllerManager,
-                           final TorrentTrackerManager trackerManager) {
+  public TrackerController(@NotNull final WebControllerManager controllerManager,
+                           @NotNull final TorrentTrackerManager trackerManager,
+                           @NotNull final AuthorizationInterceptor interceptor) {
     controllerManager.registerController(PATH, this);
     myTrackerManager = trackerManager;
+    interceptor.addPathNotRequiringAuth(PATH);
   }
 
   @Nullable

@@ -12,14 +12,18 @@ import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
+import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,22 +33,61 @@ import java.util.Collections;
  * @since 8.0
  */
 public class ServerTorrentsDirectorySeeder {
-  private final TorrentTrackerManager myTorrentTrackerManager;
   private final TorrentsDirectorySeeder myTorrentsDirectorySeeder;
+  private final TorrentConfigurator myConfigurator;
   private volatile int myFileSizeThreshold;
+  private URI myAnnounceURI;
 
-  public ServerTorrentsDirectorySeeder(@NotNull ServerPaths serverPaths,
-                                       @NotNull TorrentTrackerManager torrentTrackerManager,
-                                       @NotNull EventDispatcher<BuildServerListener> eventDispatcher) {
-    myTorrentTrackerManager = torrentTrackerManager;
+  public ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
+                                       @NotNull final TorrentConfigurator configurator,
+                                       @NotNull final ExecutorServices executorServices,
+                                       @NotNull final EventDispatcher<BuildServerListener> eventDispatcher) {
     File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
     torrentsStorage.mkdirs();
     myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage);
-
+    myConfigurator = configurator;
     eventDispatcher.addListener(new BuildServerAdapter() {
+      public void serverShutdown() {
+        stopSeeder();
+      }
+
+
+      @Override
+      public void serverStartup() {
+        if (myConfigurator.isSeederEnabled()) {
+          executorServices.getLowPriorityExecutorService().submit(new Runnable() {
+            public void run() {
+              startSeeder();
+            }
+          });
+        }
+      }
+
       @Override
       public void buildFinished(SRunningBuild build) {
-        announceBuildArtifacts(build);
+        if (myConfigurator.isTrackerEnabled()) {
+          announceBuildArtifacts(build);
+        }
+      }
+    });
+
+    configurator.addPropertyChangeListener(new PropertyChangeListener() {
+      public void propertyChange(PropertyChangeEvent evt) {
+        String propertyName = evt.getPropertyName();
+        if (TorrentConfigurator.FILE_SIZE_THRESHOLD.equals(propertyName)){
+          setFileSizeThreshold((Integer) evt.getNewValue());
+        } else if (TorrentConfigurator.MAX_NUMBER_OF_SEEDED_TORRENTS.equals(propertyName)){
+          setMaxNumberOfSeededTorrents((Integer)evt.getNewValue());
+        } else if (TorrentConfigurator.ANNOUNCE_URL.equals(propertyName)){
+          setAnnounceURI(URI.create(String.valueOf(evt.getNewValue())));
+        } else if (TorrentConfigurator.SEEDER_ENABLED.equals(propertyName)){
+          boolean enabled = (Boolean) evt.getNewValue();
+          if (enabled){
+            startSeeder();
+          } else {
+            stopSeeder();
+          }
+        }
       }
     });
   }
@@ -56,11 +99,9 @@ public class ServerTorrentsDirectorySeeder {
     }
   }
 
-  public void startSeeder(@NotNull String seederAddress) {
-    stopSeeder();
-
+  public void startSeeder() {
     try {
-      myTorrentsDirectorySeeder.start(InetAddress.getByName(seederAddress));
+      myTorrentsDirectorySeeder.start(InetAddress.getByName(myConfigurator.getOwnAddress()), myAnnounceURI);
     } catch (Exception e) {
       Loggers.SERVER.warn("Failed to start torrent seeder, error: " + e.toString());
     }
@@ -96,6 +137,9 @@ public class ServerTorrentsDirectorySeeder {
   }
 
   public int getNumberOfSeededTorrents() {
+    if (myTorrentsDirectorySeeder.isStopped()) {
+      return 0;
+    }
     return myTorrentsDirectorySeeder.getNumberOfSeededTorrents();
   }
 
@@ -113,7 +157,9 @@ public class ServerTorrentsDirectorySeeder {
 
           try {
             File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
-            myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, artifactFile);
+            if (myConfigurator.isSeederEnabled()) {
+              myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, artifactFile);
+            }
             FileLink.createLink(artifactFile, torrentFile, linkDir);
             } catch (IOException e) {
               e.printStackTrace();
@@ -131,8 +177,7 @@ public class ServerTorrentsDirectorySeeder {
     final File parentDir = destPath.getParentFile();
     parentDir.mkdirs();
 
-    return TorrentUtil.getOrCreateTorrent(artifactFile, torrentsDir, myTorrentTrackerManager.getAnnounceUri());
-//            myTorrentTrackerManager.createTorrent(artifactFile, parentDir);
+    return TorrentUtil.getOrCreateTorrent(artifactFile, torrentsDir, myAnnounceURI);
   }
 
   private boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {
@@ -144,6 +189,9 @@ public class ServerTorrentsDirectorySeeder {
     myTorrentsDirectorySeeder.setMaxTorrentsToSeed(maxNumberOfSeededTorrents);
   }
 
+  public void setAnnounceURI(URI announceURI){
+    myAnnounceURI = announceURI;
+  }
 
   private File getLinkDir(@NotNull SBuild build) {
     return new File(myTorrentsDirectorySeeder.getStorageDirectory(),

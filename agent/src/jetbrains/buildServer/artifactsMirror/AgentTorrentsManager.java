@@ -83,7 +83,9 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
         found = addr; break;
       }
       if (found != null) {
-        myTorrentsDirectorySeeder.start(found);
+        final String url = myTrackerManager.getAnnounceUrl();
+        final URI defaultTrackerURI = url==null ? null : URI.create(url);
+        myTorrentsDirectorySeeder.start(found, defaultTrackerURI);
       } else {
         Loggers.AGENT.warn("Failed to find inet address to bind seeder to, list of all available addresses: " + addrs);
       }

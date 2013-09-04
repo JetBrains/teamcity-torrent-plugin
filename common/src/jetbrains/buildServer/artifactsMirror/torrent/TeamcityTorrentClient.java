@@ -6,10 +6,12 @@ import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Peer;
 import com.turn.ttorrent.common.Torrent;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 
 public class TeamcityTorrentClient {
@@ -21,9 +23,9 @@ public class TeamcityTorrentClient {
   public TeamcityTorrentClient() {
   }
 
-  public void start(@NotNull InetAddress inetAddress) {
+  public void start(@NotNull InetAddress inetAddress, @Nullable final URI defaultTrackerURI) {
     try {
-      myClient = new Client(inetAddress);
+      myClient = new Client(inetAddress, defaultTrackerURI);
       myClient.share();
     } catch (IOException e) {
       LOG.warn("Failed to start torrent client: " + e.toString());
@@ -39,19 +41,18 @@ public class TeamcityTorrentClient {
   }
   public boolean seedTorrent(@NotNull Torrent torrent, @NotNull File srcFile) {
     if (myClient == null) return false;
-    if (myMaxTorrentsToSeed != -1 && myClient.getTorrents().size() > myMaxTorrentsToSeed){
+    if (myMaxTorrentsToSeed != -1 && myClient.getTorrents().size() >= myMaxTorrentsToSeed){
       LOG.warn("Reached max number of seeded torrents. Torrent "+torrent.getName()+" will not be seeded");
       return false;
     }
     try {
       final SharedTorrent st = new SharedTorrent(torrent, srcFile.getParentFile(), false, true);
       myClient.addTorrent(st);
+      return true;
     } catch (Exception e) {
-      LOG.warn("Failed to seed file: " + e.toString(), e);
+      LOG.warn("Failed to seed file: " + srcFile.getName(), e);
       return false;
     }
-
-    return true;
   }
 
   public void stopSeeding(@NotNull File torrentFile) {
