@@ -37,6 +37,7 @@ public class ServerTorrentsDirectorySeeder {
   private final TorrentConfigurator myConfigurator;
   private volatile int myFileSizeThreshold;
   private URI myAnnounceURI;
+  private int myMaxTorrentsToSeed;
 
   public ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
                                        @NotNull final TorrentConfigurator configurator,
@@ -77,7 +78,9 @@ public class ServerTorrentsDirectorySeeder {
         if (TorrentConfigurator.FILE_SIZE_THRESHOLD.equals(propertyName)){
           setFileSizeThreshold((Integer) evt.getNewValue());
         } else if (TorrentConfigurator.MAX_NUMBER_OF_SEEDED_TORRENTS.equals(propertyName)){
-          setMaxNumberOfSeededTorrents((Integer)evt.getNewValue());
+          setMaxNumberOfSeededTorrents((Integer) evt.getNewValue());
+        } else if (TorrentConfigurator.ANNOUNCE_INTERVAL.equals(propertyName)){
+          myTorrentsDirectorySeeder.setAnnounceInterval((Integer)evt.getNewValue());
         } else if (TorrentConfigurator.ANNOUNCE_URL.equals(propertyName)){
           setAnnounceURI(URI.create(String.valueOf(evt.getNewValue())));
         } else if (TorrentConfigurator.SEEDER_ENABLED.equals(propertyName)){
@@ -101,7 +104,9 @@ public class ServerTorrentsDirectorySeeder {
 
   public void startSeeder() {
     try {
-      myTorrentsDirectorySeeder.start(InetAddress.getByName(myConfigurator.getOwnAddress()), myAnnounceURI);
+      myTorrentsDirectorySeeder.start(InetAddress.getByName(myConfigurator.getOwnAddress()),
+              myAnnounceURI,
+              myConfigurator.getAnnounceIntervalSec());
     } catch (Exception e) {
       Loggers.SERVER.warn("Failed to start torrent seeder, error: " + e.toString());
     }
@@ -146,47 +151,75 @@ public class ServerTorrentsDirectorySeeder {
   private void announceBuildArtifacts(@NotNull final SBuild build) {
     final File torrentsDir = getTorrentFilesBaseDir(build);
     BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT);
+    final File artifactsDirectory = build.getArtifactsDirectory();
+    final File linkDir = getLinkDir(build);
     torrentsDir.mkdirs();
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
       @NotNull
       public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
-        if (shouldCreateTorrentFor(artifact)) {
-          File artifactFile = new File(build.getArtifactsDirectory(), artifact.getRelativePath());
-          File linkDir = getLinkDir(build);
-          linkDir.mkdirs();
-
-          try {
-            File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
-            if (myConfigurator.isSeederEnabled()) {
-              myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, artifactFile);
-            }
-            FileLink.createLink(artifactFile, torrentFile, linkDir);
-            } catch (IOException e) {
-              e.printStackTrace();
-          } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-          }
-        }
-        return Continuation.CONTINUE;
+        processArtifactInternal(artifact, artifactsDirectory, linkDir, torrentsDir);
+        return BuildArtifacts.BuildArtifactsProcessor.Continuation.CONTINUE;
       }
+
     });
   }
 
-  private File createTorrent(@NotNull final File artifactFile, @NotNull final String path, @NotNull final File torrentsDir){
-    File destPath = new File(torrentsDir, path);
+  protected void processArtifactInternal(@NotNull final BuildArtifact artifact,
+                                       @NotNull final File artifactsDirectory,
+                                       @NotNull final File linkDir,
+                                       @NotNull final File torrentsDir) {
+    if (artifact.isDirectory()){
+      for (BuildArtifact childArtifacts : artifact.getChildren()) {
+        processArtifactInternal(childArtifacts, artifactsDirectory, linkDir, torrentsDir);
+      }
+      return;
+    }
+
+    if (shouldCreateTorrentFor(artifact)) {
+      File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
+
+      linkDir.mkdirs();
+
+      try {
+        if (myConfigurator.isSeederEnabled()) {
+          File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
+          myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, artifactFile);
+          FileLink.createLink(artifactFile, torrentFile, linkDir);
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      } catch (NoSuchAlgorithmException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+
+  private File createTorrent(@NotNull final File artifactFile,
+                             @NotNull final String artifactPath,
+                             @NotNull final File torrentsDir){
+    File destPath = new File(torrentsDir, artifactPath);
     final File parentDir = destPath.getParentFile();
     parentDir.mkdirs();
 
-    return TorrentUtil.getOrCreateTorrent(artifactFile, torrentsDir, myAnnounceURI);
+    return TorrentUtil.getOrCreateTorrent(artifactFile, artifactPath, torrentsDir, myAnnounceURI);
   }
 
   private boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {
     long size = artifact.getSize();
-    return !artifact.isDirectory() && size >= myFileSizeThreshold * 1024 * 1024;
+    if (size < myFileSizeThreshold * 1024 * 1024)
+      return false;
+
+    if (myMaxTorrentsToSeed > 0 && myTorrentsDirectorySeeder.getNumberOfSeededTorrents() >= myMaxTorrentsToSeed){
+      Loggers.SERVER.warn("Reached max number of seeded torrents. Torrent for "+artifact.getName()+" will not be seeded");
+      return false;
+    }
+
+    return true;
   }
 
   public void setMaxNumberOfSeededTorrents(int maxNumberOfSeededTorrents) {
-    myTorrentsDirectorySeeder.setMaxTorrentsToSeed(maxNumberOfSeededTorrents);
+    myMaxTorrentsToSeed = maxNumberOfSeededTorrents;
   }
 
   public void setAnnounceURI(URI announceURI){

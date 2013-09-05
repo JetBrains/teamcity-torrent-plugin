@@ -45,14 +45,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
     myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage);
   }
 
-  private File createTorrentFile(File sourceFile, File parentDir) {
-    if (!settingsInited()) return null;
-    if (myTorrentsDirectorySeeder.shouldCreateTorrentFileFor(sourceFile)) {
-      return TorrentUtil.getOrCreateTorrent(sourceFile, parentDir, myTrackerAnnounceUrl);
-    }
-    return null;
-  }
-
   private boolean settingsInited() {
     return myTrackerAnnounceUrl != null && myFileSizeThresholdMb != null;
   }
@@ -85,7 +77,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
       if (found != null) {
         final String url = myTrackerManager.getAnnounceUrl();
         final URI defaultTrackerURI = url==null ? null : URI.create(url);
-        myTorrentsDirectorySeeder.start(found, defaultTrackerURI);
+        myTorrentsDirectorySeeder.start(found, defaultTrackerURI, myTrackerManager.getAnnounceIntervalSec());
       } else {
         Loggers.AGENT.warn("Failed to find inet address to bind seeder to, list of all available addresses: " + addrs);
       }
@@ -141,6 +133,13 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
 
 
   public int publishFiles(@NotNull Map<File, String> fileStringMap) throws ArtifactPublishingFailedException {
+    // update filesize threshold
+    myTorrentsDirectorySeeder.setFileSizeThresholdMb(myTrackerManager.getFileSizeThresholdMb());
+    myTorrentsDirectorySeeder.setAnnounceInterval(myTrackerManager.getAnnounceIntervalSec());
+    final String announceUrl = myTrackerManager.getAnnounceUrl();
+    if (announceUrl != null) {
+      myTrackerAnnounceUrl = URI.create(announceUrl);
+    }
     return announceBuildArtifacts(fileStringMap.keySet());
   }
 

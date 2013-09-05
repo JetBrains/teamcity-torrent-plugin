@@ -42,10 +42,13 @@ public class TorrentUtil {
    * If such torrent already exists, loads and returns it.
    */
   @NotNull
-  public static File getOrCreateTorrent(@NotNull File srcFile, @NotNull File torrentsStore, @NotNull URI announceURI) {
+  public static File getOrCreateTorrent(@NotNull final File srcFile,
+                                        @NotNull final String relativePath,
+                                        @NotNull final File torrentsStore,
+                                        @NotNull final URI announceURI) {
     setHashingThreadsCount();
 
-    File torrentFile = new File(torrentsStore, srcFile.getName() + TORRENT_FILE_SUFFIX);
+    File torrentFile = new File(torrentsStore, relativePath + TORRENT_FILE_SUFFIX);
     if (torrentFile.isFile()) {
       try {
         Torrent t =  loadTorrent(torrentFile);

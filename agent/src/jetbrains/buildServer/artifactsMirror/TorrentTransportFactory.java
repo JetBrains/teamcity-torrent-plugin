@@ -42,10 +42,10 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
   private final static Logger LOG = Logger.getInstance(TorrentTransportFactory.class.getName());
 
-  private static final String TEAMCITY_IVY = "teamcity-ivy.xml";
-  private static final String TEAMCITY_TORRENTS = ".teamcity/torrents/";
+  public static final String TEAMCITY_IVY = "teamcity-ivy.xml";
+  public static final String TEAMCITY_TORRENTS = ".teamcity/torrents/";
 
-  private static final String TEAMCITY_ARTIFACTS_TRANSPORT = "teamcity.artifacts.transport";
+  public static final String TEAMCITY_ARTIFACTS_TRANSPORT = "teamcity.artifacts.transport";
 
 
   private static final Pattern FILE_PATH_PATTERN = Pattern.compile("(.*?)/repository/download/([^/]+)/([^/]+)/(.+?)(\\?branch=.+)?");
@@ -80,14 +80,14 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   }
 
 
-  private static class TorrentTransport implements URLContentRetriever{
+  protected static class TorrentTransport implements URLContentRetriever{
 
     private final HttpClient myClient;
     private final TeamcityTorrentClient mySeeder;
     private final TorrentsDirectorySeeder myDirectorySeeder;
     private final AgentRunningBuild myBuild;
 
-    private TorrentTransport(TeamcityTorrentClient seeder,
+    protected TorrentTransport(TeamcityTorrentClient seeder,
                              TorrentsDirectorySeeder directorySeeder,
                              HttpClient client,
                              AgentRunningBuild agentBuild) {
@@ -99,23 +99,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     @Nullable
     public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
-      if (!shouldUseTorrentTransport()){
-        LOG.debug("Shouldn't use torrent transport for build type " + myBuild.getBuildTypeId());
-        return null;
-      }
-
-      if (urlString.contains(TEAMCITY_IVY)){
-        LOG.debug("Skip downloading teamcity-ivy.xml");
-        return null;
-      }
-      LOG.info("Downloading torrent for " + urlString);
-      Torrent torrent = downloadTorrent(urlString);
-      if (torrent == null) {
-        LOG.debug("No torrent file for " + urlString);
-        return null;
-      }
-      if (torrent.getSize() < myDirectorySeeder.getFileSizeThresholdMb()*1024*1024){
-        LOG.debug(String.format("File size is lower than threshold of %dMb", myDirectorySeeder.getFileSizeThresholdMb()));
+      Torrent torrent = getTorrent(urlString);
+      if (torrent == null){
         return null;
       }
       LOG.info("Will attempt to download " + target.getName() + " via torrent.");
@@ -171,17 +156,36 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       }
     }
 
-    @NotNull
-    public String getDigest(@NotNull String urlString) throws IOException {
-      if (!shouldUseTorrentTransport()){
-        throw new IOException("Shouldn't use torrent transport for build type " + myBuild.getBuildTypeId());
-      }
-
-      Torrent torrent = downloadTorrent(urlString);
-      return torrent.getHexInfoHash();
+    @Nullable
+    public String getDigest(@NotNull final String urlString) throws IOException {
+      Torrent torrent = getTorrent(urlString);
+      return torrent == null ? null : torrent.getHexInfoHash();
     }
 
-    private Torrent downloadTorrent(@NotNull final  String urlString){
+    protected Torrent getTorrent(@NotNull final String urlString){
+      if (!shouldUseTorrentTransport()){
+        LOG.debug("Shouldn't use torrent transport for build type " + myBuild.getBuildTypeId());
+        return null;
+      }
+
+      if (urlString.contains(TEAMCITY_IVY)){
+        LOG.debug("Skip downloading teamcity-ivy.xml");
+        return null;
+      }
+      LOG.info("Downloading torrent for " + urlString);
+      Torrent torrent = downloadTorrent(urlString);
+      if (torrent == null) {
+        LOG.debug("No torrent file for " + urlString);
+        return null;
+      }
+      if (torrent.getSize() < myDirectorySeeder.getFileSizeThresholdMb()*1024*1024){
+        LOG.debug(String.format("File size is lower than threshold of %dMb", myDirectorySeeder.getFileSizeThresholdMb()));
+        return null;
+      }
+      return torrent;
+    }
+
+    protected Torrent downloadTorrent(@NotNull final  String urlString){
       // adding path here:
       final Matcher matcher = FILE_PATH_PATTERN.matcher(urlString);
       if (!matcher.matches()){

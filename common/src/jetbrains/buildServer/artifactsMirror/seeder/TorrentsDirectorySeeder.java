@@ -172,12 +172,17 @@ public class TorrentsDirectorySeeder {
     return myTorrentSeeder.isSeeding(torrentFile);
   }
 
-  public void start(@NotNull InetAddress address, @Nullable final URI defaultTrackerURI) {
-    start(address, defaultTrackerURI, 30);
+  public void start(@NotNull InetAddress address,
+                    @Nullable final URI defaultTrackerURI,
+                    final int announceInterval) {
+    start(address, defaultTrackerURI, 30, announceInterval);
   }
 
-  public void start(@NotNull InetAddress address, @Nullable final URI defaultTrackerURI, int directoryScanIntervalSeconds) {
-    myTorrentSeeder.start(address, defaultTrackerURI);
+  public void start(@NotNull InetAddress address,
+                    @Nullable final URI defaultTrackerURI,
+                    final int directoryScanIntervalSeconds,
+                    final int announceInterval) {
+    myTorrentSeeder.start(address, defaultTrackerURI, announceInterval);
 
     // initialization: scan all existing links and start seeding them
     for (File linkFile: findAllLinks(-1)) {
@@ -204,21 +209,16 @@ public class TorrentsDirectorySeeder {
     return myTorrentSeeder.getNumberOfSeededTorrents();
   }
 
-  public int getMaxTorrentsToSeed() {
-    return myMaxTorrentsToSeed;
-  }
-
-  public void setMaxTorrentsToSeed(int maxTorrentsToSeed) {
-    myMaxTorrentsToSeed = maxTorrentsToSeed;
-    myTorrentSeeder.setMaxTorrentsToSeed(myMaxTorrentsToSeed);
-  }
-
   public int getFileSizeThresholdMb() {
     return myFileSizeThresholdMb;
   }
 
   public void setFileSizeThresholdMb(int fileSizeThresholdMb) {
     myFileSizeThresholdMb = fileSizeThresholdMb;
+  }
+
+  public void setAnnounceInterval(final int announceInterval){
+    myTorrentSeeder.setAnnounceInterval(announceInterval);
   }
 
   public boolean shouldCreateTorrentFileFor(File srcFile) {
@@ -238,16 +238,20 @@ public class TorrentsDirectorySeeder {
   private void checkTorrentsStorageVersion(){
 
     final File versionFile = new File(myTorrentStorage, TORRENTS_STORAGE_VERSION_FILE);
-    try {
-      final String s = FileUtil.readText(versionFile);
-      if (Integer.parseInt(s) == TORRENTS_STORAGE_VERSION)
-        return;
-      else {
-        Loggers.AGENT.warn("Torrent storage version " + s + " doesn't match expected " + TORRENTS_STORAGE_VERSION);
-        Loggers.AGENT.warn("Torrent storage will be cleaned");
+    if (versionFile.exists()) {
+      try {
+        final String s = FileUtil.readText(versionFile);
+        if (Integer.parseInt(s) == TORRENTS_STORAGE_VERSION)
+          return;
+        else {
+          Loggers.AGENT.warn("Torrent storage version " + s + " doesn't match expected " + TORRENTS_STORAGE_VERSION);
+          Loggers.AGENT.warn("Torrent storage will be cleaned");
+        }
+      } catch (Exception e) {
+        Loggers.AGENT.warn("IOE during reading storage version. Will clean the storage", e);
       }
-    } catch (Exception e) {
-      Loggers.AGENT.warn("IOE during reading storage version. Will clean the storage", e);
+    } else {
+      Loggers.AGENT.info("No torrent storage version file available. Will clean the storage");
     }
     final String[] names = myTorrentStorage.list();
     for (String name : names) {

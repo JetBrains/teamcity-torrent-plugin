@@ -102,20 +102,6 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
 */
   }
 
-  public void max_number_of_seeded_torrents() throws IOException, NoSuchAlgorithmException, InterruptedException {
-    myDirectorySeeder.setMaxTorrentsToSeed(3);
-
-    for (int i=0; i<5; i++) {
-      File srcFile = createTempFile();
-      final File torrentFromFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
-      FileLink.createLink(srcFile, torrentFromFile,myStorageDir);
-      myDirectorySeeder.getNewLinksWatcher().checkForModifications();
-      myDirectorySeeder.getTorrentSeeder().seedTorrent(Torrent.load(torrentFromFile), srcFile);
-    }
-
-    assertEquals(3, myDirectorySeeder.getTorrentSeeder().getNumberOfSeededTorrents());
-  }
-
   private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, NoSuchAlgorithmException, IOException {
     File torrentFile = new File(torrentDir, srcFile.getName() + ".torrent");
     final Torrent torrent = Torrent.create(srcFile, announceURI, "Test");
