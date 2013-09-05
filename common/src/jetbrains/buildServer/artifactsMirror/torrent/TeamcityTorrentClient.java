@@ -113,4 +113,8 @@ public class TeamcityTorrentClient {
     }
     myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec);
   }
+
+  public void setMaxTorrentsToSeed(int maxTorrentsToSeed) {
+    myMaxTorrentsToSeed = maxTorrentsToSeed;
+  }
 }

@@ -210,6 +210,7 @@ public class TorrentsDirectorySeeder {
 
   public void setMaxTorrentsToSeed(int maxTorrentsToSeed) {
     myMaxTorrentsToSeed = maxTorrentsToSeed;
+    myTorrentSeeder.setMaxTorrentsToSeed(myMaxTorrentsToSeed);
   }
 
   public int getFileSizeThresholdMb() {
