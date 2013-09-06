@@ -42,7 +42,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
 
     File torrentsStorage = agentConfiguration.getCacheDirectory(TORRENT_FOLDER_NAME);
     myTrackerManager = trackerManager;
-    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage);
+    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, -1, 0);
   }
 
   private boolean settingsInited() {
@@ -59,6 +59,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
       return false;
     }
     myFileSizeThresholdMb = myTrackerManager.getFileSizeThresholdMb();
+    myTorrentsDirectorySeeder.setFileSizeThresholdMb(myFileSizeThresholdMb);
     return true;
   }
 

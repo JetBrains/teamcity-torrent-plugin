@@ -50,18 +50,16 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
   private static final Pattern FILE_PATH_PATTERN = Pattern.compile("(.*?)/repository/download/([^/]+)/([^/]+)/(.+?)(\\?branch=.+)?");
 
-  private final TeamcityTorrentClient mySeeder;
-  private final TorrentsDirectorySeeder myDirectorySeeder;
+  private final AgentTorrentsManager myAgentTorrentsManager;
   private final CurrentBuildTracker myBuildTracker;
 
   public TorrentTransportFactory(@NotNull final AgentTorrentsManager agentTorrentsManager,
                                  @NotNull final CurrentBuildTracker currentBuildTracker) {
+    myAgentTorrentsManager = agentTorrentsManager;
     myBuildTracker = currentBuildTracker;
-    myDirectorySeeder = agentTorrentsManager.getTorrentsDirectorySeeder();
-    mySeeder = myDirectorySeeder.getTorrentSeeder();
   }
 
-  private HttpClient createHttpClient(final DependencyResolverContext context) {
+  private HttpClient createHttpClient(@NotNull final DependencyResolverContext context) {
     HttpClient client = HttpUtil.createHttpClient(context.getConnectionTimeout());
     client.getParams().setAuthenticationPreemptive(true);
     Credentials defaultcreds = new UsernamePasswordCredentials(context.getUsername(), context.getPassword());
@@ -76,7 +74,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   @NotNull
   public URLContentRetriever getTransport(@NotNull DependencyResolverContext context) {
 
-    return new TorrentTransport(mySeeder, myDirectorySeeder, createHttpClient(context), myBuildTracker.getCurrentBuild());
+    return new TorrentTransport(myAgentTorrentsManager.getTorrentsDirectorySeeder(), createHttpClient(context), myBuildTracker.getCurrentBuild());
   }
 
 
@@ -87,12 +85,11 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     private final TorrentsDirectorySeeder myDirectorySeeder;
     private final AgentRunningBuild myBuild;
 
-    protected TorrentTransport(TeamcityTorrentClient seeder,
-                             TorrentsDirectorySeeder directorySeeder,
-                             HttpClient client,
-                             AgentRunningBuild agentBuild) {
-      mySeeder = seeder;
+    protected TorrentTransport(@NotNull final TorrentsDirectorySeeder directorySeeder,
+                               @NotNull final HttpClient client,
+                               @NotNull final AgentRunningBuild agentBuild) {
       myDirectorySeeder = directorySeeder;
+      mySeeder = myDirectorySeeder.getTorrentSeeder();
       myClient = client;
       myBuild = agentBuild;
     }

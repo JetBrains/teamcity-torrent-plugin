@@ -107,10 +107,9 @@ public class TorrentTransportTest extends BaseTestCase {
       allowing(myBuild).getBuildTypeId(); will (returnValue("TC_Gaya80x_BuildDist"));
     }});
 
-    myDirectorySeeder = new TorrentsDirectorySeeder(myTempFiles.createTempDir());
+    myDirectorySeeder = new TorrentsDirectorySeeder(myTempFiles.createTempDir(), -1, 1);
 
-    myTorrentTransport = new TorrentTransportFactory.TorrentTransport(new TeamcityTorrentClient(),
-            myDirectorySeeder,
+    myTorrentTransport = new TorrentTransportFactory.TorrentTransport(myDirectorySeeder,
                     new HttpClient(),
                     myBuild){
       @Override

@@ -45,7 +45,11 @@ public class ServerTorrentsDirectorySeeder {
                                        @NotNull final EventDispatcher<BuildServerListener> eventDispatcher) {
     File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
     torrentsStorage.mkdirs();
-    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage);
+    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage,
+            configurator.getMaxNumberOfSeededTorrents(),
+            configurator.getFileSizeThresholdMb());
+    setMaxNumberOfSeededTorrents(configurator.getMaxNumberOfSeededTorrents());
+    setFileSizeThreshold(configurator.getFileSizeThresholdMb());
     myConfigurator = configurator;
     eventDispatcher.addListener(new BuildServerAdapter() {
       public void serverShutdown() {
@@ -79,6 +83,7 @@ public class ServerTorrentsDirectorySeeder {
           setFileSizeThreshold((Integer) evt.getNewValue());
         } else if (TorrentConfigurator.MAX_NUMBER_OF_SEEDED_TORRENTS.equals(propertyName)){
           setMaxNumberOfSeededTorrents((Integer) evt.getNewValue());
+          myTorrentsDirectorySeeder.setMaxTorrentsToSeed(myMaxTorrentsToSeed);
         } else if (TorrentConfigurator.ANNOUNCE_INTERVAL.equals(propertyName)){
           myTorrentsDirectorySeeder.setAnnounceInterval((Integer)evt.getNewValue());
         } else if (TorrentConfigurator.ANNOUNCE_URL.equals(propertyName)){

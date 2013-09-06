@@ -47,31 +47,17 @@ public class TorrentsDirectorySeeder {
 
   @NotNull
   private final TeamcityTorrentClient myTorrentSeeder = new TeamcityTorrentClient();
-  private final FilesWatcher myNewLinksWatcher;
+  private FilesWatcher myNewLinksWatcher;
   private volatile boolean myStopped = true;
-  private volatile int myMaxTorrentsToSeed = -1; // no limit by default
-  private volatile int myFileSizeThresholdMb=10; //default value
+  private volatile int myMaxTorrentsToSeed; // no limit by default
+  private volatile int myFileSizeThresholdMb; //default value
 
-  public TorrentsDirectorySeeder(@NotNull File torrentStorage) {
+  public TorrentsDirectorySeeder(@NotNull File torrentStorage, int maxTorrentsToSeed, int fileSizeThresholdMb) {
+    myMaxTorrentsToSeed = maxTorrentsToSeed;
+    myFileSizeThresholdMb = fileSizeThresholdMb;
     myTorrentStorage = torrentStorage;
     checkTorrentsStorageVersion();
 
-    myNewLinksWatcher = new FilesWatcher(new FilesWatcher.WatchedFilesProvider() {
-      public File[] getWatchedFiles() throws IOException {
-        Collection<File> links = findAllLinks(myMaxTorrentsToSeed);
-        return links.toArray(new File[links.size()]);
-      }
-    });
-    myNewLinksWatcher.registerListener(new ChangeListener() {
-      public void changeOccured(String requestor) {
-        for (File link : CollectionsUtil.join(myNewLinksWatcher.getNewFiles(), myNewLinksWatcher.getModifiedFiles())) {
-          processChangedLink(link);
-        }
-        for (File link : myNewLinksWatcher.getRemovedFiles()) {
-          processRemovedLink(link);
-        }
-      }
-    });
   }
 
   @NotNull
@@ -182,10 +168,27 @@ public class TorrentsDirectorySeeder {
                     @Nullable final URI defaultTrackerURI,
                     final int directoryScanIntervalSeconds,
                     final int announceInterval) {
+    final Collection<File> allLinks = findAllLinks(myMaxTorrentsToSeed);
+    myNewLinksWatcher = new FilesWatcher(new FilesWatcher.WatchedFilesProvider() {
+      public File[] getWatchedFiles() throws IOException {
+        return allLinks.toArray(new File[allLinks.size()]);
+      }
+    });
+    myNewLinksWatcher.registerListener(new ChangeListener() {
+      public void changeOccured(String requestor) {
+        for (File link : CollectionsUtil.join(myNewLinksWatcher.getNewFiles(), myNewLinksWatcher.getModifiedFiles())) {
+          processChangedLink(link);
+        }
+        for (File link : myNewLinksWatcher.getRemovedFiles()) {
+          processRemovedLink(link);
+        }
+      }
+    });
+
     myTorrentSeeder.start(address, defaultTrackerURI, announceInterval);
 
     // initialization: scan all existing links and start seeding them
-    for (File linkFile: findAllLinks(-1)) {
+    for (File linkFile: allLinks) {
       startSeeding(linkFile);
     }
 
@@ -265,6 +268,10 @@ public class TorrentsDirectorySeeder {
     } catch (IOException e) {
       Loggers.AGENT.warn("Unable to write versions file. All caches will be cleaned on restart");
     }
+  }
+
+  public void setMaxTorrentsToSeed(int maxTorrentsToSeed) {
+    myMaxTorrentsToSeed = maxTorrentsToSeed;
   }
 }
 

@@ -42,7 +42,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
     super.setUp();
     myStorageDir = createTempDir();
     announceURI = new URI("http://localhost:6969/announce");
-    myDirectorySeeder = new TorrentsDirectorySeeder(myStorageDir);
+    myDirectorySeeder = new TorrentsDirectorySeeder(myStorageDir, -1, 1);
     myDirectorySeeder.start(InetAddress.getLocalHost(), null, 3);
   }
 

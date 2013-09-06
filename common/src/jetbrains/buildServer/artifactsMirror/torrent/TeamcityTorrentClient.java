@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 public class TeamcityTorrentClient {
   private final static Logger LOG = Logger.getInstance(TeamcityTorrentClient.class.getName());
@@ -36,7 +37,13 @@ public class TeamcityTorrentClient {
   }
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) throws IOException, NoSuchAlgorithmException {
-    return seedTorrent(loadTorrent(torrentFile), srcFile);
+    final Torrent torrent = loadTorrent(torrentFile);
+    if (!myClient.tryTracker(torrent)){
+      torrent.getAnnounceList().clear();
+      torrent.getAnnounceList().add(Arrays.asList(myClient.getDefaultTrackerURI()));
+      torrent.save(torrentFile);
+    }
+    return seedTorrent(torrent, srcFile);
   }
 
   public boolean seedTorrent(@NotNull Torrent torrent, @NotNull File srcFile) {
