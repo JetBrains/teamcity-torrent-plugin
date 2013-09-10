@@ -98,12 +98,14 @@ public class TorrentsDirectorySeeder {
 
   private void processRemovedLink(@NotNull File removedLink) {
     try {
-      File torrentFile = FileLink.getTorrentFile(removedLink);
-      if (torrentFile == null || !torrentFile.exists()) {
-        return;
+      if (removedLink.exists()) {
+        File torrentFile = FileLink.getTorrentFile(removedLink);
+        if (torrentFile == null || !torrentFile.exists()) {
+          return;
+        }
+        stopSeedingTorrent(torrentFile);
+        FileUtil.delete(torrentFile);
       }
-      stopSeedingTorrent(torrentFile);
-      FileUtil.delete(torrentFile);
       cleanupBrokenLink(removedLink);
     } catch (IOException e) {
       Loggers.AGENT.warn("Exception during new link removing", e);

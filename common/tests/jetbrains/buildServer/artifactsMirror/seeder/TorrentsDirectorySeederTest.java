@@ -84,22 +84,18 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
   }
 
   public void empty_dirs_removed() throws IOException, NoSuchAlgorithmException, InterruptedException {
-    throw new SkipException("Skipped"); // until we figure that out.
-/*
     File srcFile = createTempFile();
     final File linkDir = new File(myStorageDir, "subdir");
     final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
     final File linkFile = FileLink.createLink(srcFile, torrentFile, linkDir);
 
     assertTrue(torrentFile.isFile());
-    assertTrue(myDirectorySeeder.isSeeding(torrentFile));
     myDirectorySeeder.getNewLinksWatcher().checkForModifications();
 
     FileUtil.delete(linkFile);
     myDirectorySeeder.getNewLinksWatcher().checkForModifications();
 
     assertFalse(linkDir.isDirectory());
-*/
   }
 
   private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, NoSuchAlgorithmException, IOException {
