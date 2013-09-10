@@ -121,6 +121,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
   public void new_file_seedeed_old_removed() throws IOException, InterruptedException {
     myDirectorySeeder.setAnnounceURI(URI.create("http://localhost:6969/announce"));
     myConfigurator.setTrackerEnabled(true);
+    myConfigurator.setSeederEnabled(true);
     myConfigurator.setMaxNumberOfSeededTorrents(3);
     myConfigurator.setFileSizeThresholdMb(1);
     myDirectorySeeder.startSeeder(3);
@@ -178,11 +179,18 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
       if (filesQueue.size() > 3){
         filesQueue.poll();
       }
-      new WaitFor(1000*1000){
+      new WaitFor(10*1000){
 
         @Override
         protected boolean condition() {
-          return myDirectorySeeder.getSharedTorrents().size() <= 3;
+          final Collection<SharedTorrent> sharedTorrents = myDirectorySeeder.getSharedTorrents();
+          if (sharedTorrents.size() <= 3){
+            for (SharedTorrent torrent : sharedTorrents) {
+              if (torrent.getName().equals(srcFile.getName()))
+                return true;
+            }
+          }
+          return false;
         }
       };
       Collection<String> filesFromTorrents = new ArrayList<String>();
@@ -190,7 +198,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
         filesFromTorrents.add(torrent.getName());
       }
       // checking currently seeded torrents
-      assertEquals(filesFromTorrents.size(), filesQueue.size());
+      assertEquals(filesQueue.size(), filesFromTorrents.size());
       assertContains(filesQueue, filesFromTorrents.toArray(new String[filesFromTorrents.size()]));
 
       // checking removed ones;
