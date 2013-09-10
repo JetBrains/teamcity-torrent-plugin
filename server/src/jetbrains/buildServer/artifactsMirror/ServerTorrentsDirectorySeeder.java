@@ -4,6 +4,7 @@
  */
 package jetbrains.buildServer.artifactsMirror;
 
+import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
@@ -109,16 +110,23 @@ public class ServerTorrentsDirectorySeeder {
   }
 
   public void startSeeder() {
+    startSeeder(TorrentsDirectorySeeder.DIRECTORY_SCAN_INTERVAL_SECONDS);
+  }
+
+  //for tests
+  /*package internal*/ void startSeeder(int scanInterval) {
     try {
       InetAddress[] myAddresses = NetworkUtil.getSelfAddresses();
 
       myTorrentsDirectorySeeder.start(myAddresses,
               myAnnounceURI,
+              scanInterval,
               myConfigurator.getAnnounceIntervalSec());
     } catch (Exception e) {
       Loggers.SERVER.warn("Failed to start torrent seeder, error: " + e.toString());
     }
   }
+
 
   public void setFileSizeThreshold(int fileSizeThreshold) {
     myFileSizeThreshold = fileSizeThreshold;
@@ -189,11 +197,15 @@ public class ServerTorrentsDirectorySeeder {
       linkDir.mkdirs();
 
       try {
+        File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
+        FileLink.createLink(artifactFile, torrentFile, linkDir);
         if (myConfigurator.isSeederEnabled()) {
-          File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
           myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, artifactFile);
-          FileLink.createLink(artifactFile, torrentFile, linkDir);
         }
+        if (myTorrentsDirectorySeeder.getNumberOfSeededTorrents() >= myMaxTorrentsToSeed){
+          Loggers.SERVER.warn("Reached max number of seeded torrents. The last one will be cleaned out");
+        }
+
       } catch (IOException e) {
         e.printStackTrace();
       } catch (NoSuchAlgorithmException e) {
@@ -214,16 +226,7 @@ public class ServerTorrentsDirectorySeeder {
   }
 
   private boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {
-    long size = artifact.getSize();
-    if (size < myFileSizeThreshold * 1024 * 1024)
-      return false;
-
-    if (myMaxTorrentsToSeed > 0 && myTorrentsDirectorySeeder.getNumberOfSeededTorrents() >= myMaxTorrentsToSeed){
-      Loggers.SERVER.warn("Reached max number of seeded torrents. Torrent for "+artifact.getName()+" will not be seeded");
-      return false;
-    }
-
-    return true;
+    return (artifact.getSize() >= myFileSizeThreshold * 1024 * 1024);
   }
 
   public void setMaxNumberOfSeededTorrents(int maxNumberOfSeededTorrents) {
@@ -239,4 +242,12 @@ public class ServerTorrentsDirectorySeeder {
             build.getBuildTypeId() + File.separator + build.getBuildId());
   }
 
+  public Collection<SharedTorrent> getSharedTorrents(){
+    return myTorrentsDirectorySeeder.getSharedTorrents();
+  }
+
+  //for tests
+  /*package internal*/ TorrentsDirectorySeeder getTorrentsDirectorySeeder() {
+    return myTorrentsDirectorySeeder;
+  }
 }

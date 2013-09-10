@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="TrackerTest" type="TestNG" factoryName="TestNG">
+  <configuration default="false" name="ClientTest" type="TestNG" factoryName="TestNG" folderName="Torrent Lib tests" nameIsGenerated="true">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
       <pattern>
-        <option name="PATTERN" value="com.turn.ttorrent.tracker.*" />
+        <option name="PATTERN" value="com.turn.ttorrent.client.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
@@ -10,14 +10,14 @@
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
     <option name="ALTERNATIVE_JRE_PATH" value="" />
     <option name="SUITE_NAME" value="" />
-    <option name="PACKAGE_NAME" value="com.turn.ttorrent.tracker" />
-    <option name="MAIN_CLASS_NAME" value="com.turn.ttorrent.tracker.TrackerTest" />
+    <option name="PACKAGE_NAME" value="com.turn.ttorrent.client" />
+    <option name="MAIN_CLASS_NAME" value="com.turn.ttorrent.client.ClientTest" />
     <option name="METHOD_NAME" />
     <option name="GROUP_NAME" value="" />
     <option name="TEST_OBJECT" value="CLASS" />
     <option name="VM_PARAMETERS" value="-ea" />
     <option name="PARAMETERS" value="" />
-    <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/torrent" />
+    <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
     <option name="OUTPUT_DIRECTORY" value="" />
     <option name="ANNOTATION_TYPE" />
     <option name="ENV_VARIABLES" />

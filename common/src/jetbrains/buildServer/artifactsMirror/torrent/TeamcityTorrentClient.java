@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
 
 public class TeamcityTorrentClient {
   private final static Logger LOG = Logger.getInstance(TeamcityTorrentClient.class.getName());
@@ -116,5 +117,9 @@ public class TeamcityTorrentClient {
       myClient.removeTorrent(torrent);
     }
     myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec);
+  }
+
+  public Collection<SharedTorrent> getSharedTorrents(){
+    return myClient.getTorrents();
   }
 }

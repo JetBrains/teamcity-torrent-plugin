@@ -1,0 +1,8 @@
+<suite name="Agent tests">
+  <test name="Agent tests">
+    <classes>
+      <class name="jetbrains.buildServer.artifactsMirror.AgentTorrentsManagerTest"/>
+      <class name="jetbrains.buildServer.artifactsMirror.TorrentTransportTest"/>
+    </classes>
+  </test>
+</suite>

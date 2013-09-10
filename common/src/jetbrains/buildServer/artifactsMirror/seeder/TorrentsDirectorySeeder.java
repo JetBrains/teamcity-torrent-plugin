@@ -16,7 +16,7 @@
 
 package jetbrains.buildServer.artifactsMirror.seeder;
 
-import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.configuration.ChangeListener;
 import jetbrains.buildServer.configuration.FilesWatcher;
@@ -37,6 +37,7 @@ import java.util.*;
 public class TorrentsDirectorySeeder {
 
   public static final String TORRENTS_DIT_PATH = ".teamcity/torrents";
+  public static final int DIRECTORY_SCAN_INTERVAL_SECONDS = 30;
 
   public static final int TORRENTS_STORAGE_VERSION=2;
   public static final String TORRENTS_STORAGE_VERSION_FILE = "storage.version";
@@ -161,16 +162,16 @@ public class TorrentsDirectorySeeder {
   public void start(@NotNull InetAddress[] address,
                     @Nullable final URI defaultTrackerURI,
                     final int announceInterval) {
-    start(address, defaultTrackerURI, 30, announceInterval);
+    start(address, defaultTrackerURI, DIRECTORY_SCAN_INTERVAL_SECONDS, announceInterval);
   }
 
   public void start(@NotNull InetAddress[] address,
                     @Nullable final URI defaultTrackerURI,
                     final int directoryScanIntervalSeconds,
                     final int announceInterval) {
-    final Collection<File> allLinks = findAllLinks(myMaxTorrentsToSeed);
     myNewLinksWatcher = new FilesWatcher(new FilesWatcher.WatchedFilesProvider() {
       public File[] getWatchedFiles() throws IOException {
+        final Collection<File> allLinks = findAllLinks(myMaxTorrentsToSeed);
         return allLinks.toArray(new File[allLinks.size()]);
       }
     });
@@ -188,7 +189,8 @@ public class TorrentsDirectorySeeder {
     myTorrentSeeder.start(address, defaultTrackerURI, announceInterval);
 
     // initialization: scan all existing links and start seeding them
-    for (File linkFile: allLinks) {
+    final Collection<File> initialLinks = findAllLinks(myMaxTorrentsToSeed);
+    for (File linkFile: initialLinks) {
       startSeeding(linkFile);
     }
 
@@ -272,6 +274,10 @@ public class TorrentsDirectorySeeder {
 
   public void setMaxTorrentsToSeed(int maxTorrentsToSeed) {
     myMaxTorrentsToSeed = maxTorrentsToSeed;
+  }
+
+  public Collection<SharedTorrent> getSharedTorrents(){
+    return myTorrentSeeder.getSharedTorrents();
   }
 }
 

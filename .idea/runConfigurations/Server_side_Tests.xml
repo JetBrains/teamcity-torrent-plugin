@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Server side Tests" type="TestNG" factoryName="TestNG">
+  <configuration default="false" name="Server side tests" type="TestNG" factoryName="TestNG" folderName="Plugin Tests">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
     <module name="server" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
@@ -25,6 +25,8 @@
     <envs />
     <properties />
     <listeners />
+    <RunnerSettings RunnerId="Run" />
+    <ConfigurationWrapper RunnerId="Run" />
     <method />
   </configuration>
 </component>
