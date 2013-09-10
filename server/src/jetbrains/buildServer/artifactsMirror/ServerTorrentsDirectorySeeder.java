@@ -4,6 +4,7 @@
  */
 package jetbrains.buildServer.artifactsMirror;
 
+import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
@@ -109,7 +110,9 @@ public class ServerTorrentsDirectorySeeder {
 
   public void startSeeder() {
     try {
-      myTorrentsDirectorySeeder.start(InetAddress.getByName(myConfigurator.getOwnAddress()),
+      InetAddress[] myAddresses = NetworkUtil.getSelfAddresses();
+
+      myTorrentsDirectorySeeder.start(myAddresses,
               myAnnounceURI,
               myConfigurator.getAnnounceIntervalSec());
     } catch (Exception e) {

@@ -6,6 +6,7 @@ import com.turn.ttorrent.client.announce.*;
 import com.turn.ttorrent.common.Peer;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.common.protocol.TrackerMessage;
+import com.turn.ttorrent.tracker.TrackerHelper;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
 import jetbrains.buildServer.artifacts.ArtifactDependencyInfo;
@@ -71,7 +72,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   }
 
 
-  @NotNull
+  @Nullable
   public URLContentRetriever getTransport(@NotNull DependencyResolverContext context) {
 
     return new TorrentTransport(myAgentTorrentsManager.getTorrentsDirectorySeeder(), createHttpClient(context), myBuildTracker.getCurrentBuild());
@@ -102,35 +103,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       }
       LOG.info("Will attempt to download " + target.getName() + " via torrent.");
       try {
-        final List<List<URI>> announceList = torrent.getAnnounceList();
-        final AtomicBoolean hasSeeders = new AtomicBoolean(false);
-
-        final AnnounceResponseListener listener = new AnnounceResponseListener() {
-          public void handleAnnounceResponse(int interval, int complete, int incomplete, String hexInfoHash) {
-            hasSeeders.set(complete > 0);
-          }
-          public void handleDiscoveredPeers(List<Peer> peers, String hexInfoHash) {}
-        };
-
-        for (List<URI> uriList : announceList) {
-          if (hasSeeders.get()){
-            break;
-          }
-          for (URI uri : uriList) {
-            if (hasSeeders.get()){
-              break;
-            }
-            TrackerClient client = Announce.createTrackerClient(mySeeder.getSelfPeer(), uri);
-            client.register(listener);
-            try {
-              client.announce(TrackerMessage.AnnounceRequestMessage.RequestEvent.NONE, false, torrent);
-            } catch (AnnounceException e) {
-
-            }
-          }
-        }
-
-        if (!hasSeeders.get()) {
+        if (TrackerHelper.getSeedersCount(torrent) == 0) {
           LOG.info("no seeders for " + urlString);
           return null;
         }

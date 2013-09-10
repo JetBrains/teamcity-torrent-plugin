@@ -61,7 +61,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
 
     myTorrentsManager = new AgentTorrentsManager((BuildAgentConfiguration)myConfigurationMock.proxy(),
             myDispatcher, (TorrentTrackerConfiguration)myTorrentTrackerConfigurationMock.proxy());
-    myTorrentsManager.getTorrentsDirectorySeeder().start(InetAddress.getLocalHost(), null, 60);
+    myTorrentsManager.getTorrentsDirectorySeeder().start(new InetAddress[]{InetAddress.getLocalHost()}, null, 60);
   }
 
   public void test_links_created_when_artifact_is_published() throws Exception {

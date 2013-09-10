@@ -158,13 +158,13 @@ public class TorrentsDirectorySeeder {
     return myTorrentSeeder.isSeeding(torrentFile);
   }
 
-  public void start(@NotNull InetAddress address,
+  public void start(@NotNull InetAddress[] address,
                     @Nullable final URI defaultTrackerURI,
                     final int announceInterval) {
     start(address, defaultTrackerURI, 30, announceInterval);
   }
 
-  public void start(@NotNull InetAddress address,
+  public void start(@NotNull InetAddress[] address,
                     @Nullable final URI defaultTrackerURI,
                     final int directoryScanIntervalSeconds,
                     final int announceInterval) {

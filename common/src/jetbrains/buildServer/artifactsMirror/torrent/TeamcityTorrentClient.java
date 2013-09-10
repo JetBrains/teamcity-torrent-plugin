@@ -5,6 +5,7 @@ import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Peer;
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.tracker.TrackerHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,9 +23,9 @@ public class TeamcityTorrentClient {
   public TeamcityTorrentClient() {
   }
 
-  public void start(@NotNull InetAddress inetAddress, @Nullable final URI defaultTrackerURI, final int announceInterval) {
+  public void start(@NotNull InetAddress[] inetAddresses, @Nullable final URI defaultTrackerURI, final int announceInterval) {
     try {
-      myClient = new Client(inetAddress, defaultTrackerURI, announceInterval);
+      myClient = new Client(inetAddresses, defaultTrackerURI, announceInterval);
       myClient.share();
     } catch (IOException e) {
       LOG.warn("Failed to start torrent client: " + e.toString());
@@ -37,7 +38,7 @@ public class TeamcityTorrentClient {
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) throws IOException, NoSuchAlgorithmException {
     Torrent torrent = loadTorrent(torrentFile);
-    if (!myClient.tryTracker(torrent)){
+    if (!TrackerHelper.tryTracker(torrent)){
       torrent = torrent.createWithNewTracker(myClient.getDefaultTrackerURI());
       torrent.save(torrentFile);
     }
@@ -94,10 +95,6 @@ public class TeamcityTorrentClient {
 
   public int getNumberOfSeededTorrents() {
     return myClient.getTorrents().size();
-  }
-
-  public Peer getSelfPeer(){
-    return myClient.getPeerSpec();
   }
 
   public void downloadAndShareOrFail(Torrent torrent, File destFile, File destDir, long downloadTimeoutSec) throws IOException, NoSuchAlgorithmException, InterruptedException {
