@@ -65,7 +65,6 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     super.setUp();
     final Mockery m = new Mockery();
     myTempFiles = new TempFiles();
-    final File baseDir = myTempFiles.createTempDir();
 
     final ServerPaths serverPaths = new ServerPaths(myTempFiles.createTempDir().getAbsolutePath());
     final ServerSettings settings = m.mock(ServerSettings.class);
@@ -258,6 +257,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     super.tearDown();
     myDirectorySeeder.stopSeeder();
     myTracker.stop();
+    myTempFiles.cleanup();
   }
 
   private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, NoSuchAlgorithmException, IOException {
