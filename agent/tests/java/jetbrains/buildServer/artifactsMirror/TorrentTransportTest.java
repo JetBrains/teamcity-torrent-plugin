@@ -110,8 +110,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myDirectorySeeder = new TorrentsDirectorySeeder(myTempFiles.createTempDir(), -1, 1);
 
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(myDirectorySeeder,
-                    new HttpClient(),
-                    myBuild){
+                    new HttpClient()){
       @Override
       protected Torrent downloadTorrent(@NotNull String urlString) {
         if (myDownloadHonestly) {
