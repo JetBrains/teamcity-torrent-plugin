@@ -124,7 +124,8 @@ public class TorrentsDirectorySeeder {
     try {
       File torrentFile = FileLink.getTorrentFile(linkFile);
       File targetFile = FileLink.getTargetFile(linkFile);
-      if (torrentFile.exists() && targetFile.exists()){
+
+      if (torrentFile.exists() && targetFile.exists() && targetFile.length() >= getFileSizeThresholdMb()*1024*1024){
         getTorrentSeeder().seedTorrent(torrentFile, targetFile);
       }
     } catch (IOException e) {
