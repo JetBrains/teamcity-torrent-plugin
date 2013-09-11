@@ -2,14 +2,10 @@ package jetbrains.buildServer.artifactsMirror;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.StreamUtil;
-import com.turn.ttorrent.client.announce.*;
-import com.turn.ttorrent.common.Peer;
 import com.turn.ttorrent.common.Torrent;
-import com.turn.ttorrent.common.protocol.TrackerMessage;
 import com.turn.ttorrent.tracker.TrackerHelper;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
-import jetbrains.buildServer.artifacts.ArtifactDependencyInfo;
 import jetbrains.buildServer.artifacts.DependencyResolverContext;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
@@ -17,7 +13,6 @@ import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.http.HttpUtil;
-import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthScope;
@@ -26,11 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
-import java.net.*;
-import java.net.URI;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -74,8 +65,17 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
   @Nullable
   public URLContentRetriever getTransport(@NotNull DependencyResolverContext context) {
+    if (!shouldUseTorrentTransport(myBuildTracker.getCurrentBuild())) {
+        LOG.debug("Shouldn't use torrent transport for build type " + myBuildTracker.getCurrentBuild().getBuildTypeId());
+        return null;
+    }
 
-    return new TorrentTransport(myAgentTorrentsManager.getTorrentsDirectorySeeder(), createHttpClient(context), myBuildTracker.getCurrentBuild());
+    return new TorrentTransport(myAgentTorrentsManager.getTorrentsDirectorySeeder(), createHttpClient(context));
+  }
+
+  private static boolean shouldUseTorrentTransport(@NotNull final AgentRunningBuild build){
+    final String param = build.getSharedConfigParameters().get(TEAMCITY_ARTIFACTS_TRANSPORT);
+    return param!=null && param.contains(TorrentTransport.class.getSimpleName());
   }
 
 
@@ -84,15 +84,12 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     private final HttpClient myClient;
     private final TeamcityTorrentClient mySeeder;
     private final TorrentsDirectorySeeder myDirectorySeeder;
-    private final AgentRunningBuild myBuild;
 
     protected TorrentTransport(@NotNull final TorrentsDirectorySeeder directorySeeder,
-                               @NotNull final HttpClient client,
-                               @NotNull final AgentRunningBuild agentBuild) {
+                               @NotNull final HttpClient client) {
       myDirectorySeeder = directorySeeder;
       mySeeder = myDirectorySeeder.getTorrentSeeder();
       myClient = client;
-      myBuild = agentBuild;
     }
 
     @Nullable
@@ -133,11 +130,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     protected Torrent getTorrent(@NotNull final String urlString){
-      if (!shouldUseTorrentTransport()){
-        LOG.debug("Shouldn't use torrent transport for build type " + myBuild.getBuildTypeId());
-        return null;
-      }
-
       if (urlString.contains(TEAMCITY_IVY)){
         LOG.debug("Skip downloading teamcity-ivy.xml");
         return null;
@@ -220,9 +212,5 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       }
     }
 
-    private boolean shouldUseTorrentTransport(){
-      final String param = myBuild.getSharedConfigParameters().get(TEAMCITY_ARTIFACTS_TRANSPORT);
-      return param!=null && param.contains(this.getClass().getSimpleName());
-    }
   }
 }
