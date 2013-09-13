@@ -101,7 +101,10 @@ public class TeamcityTorrentClient {
   public void downloadAndShareOrFail(Torrent torrent, File destFile, File destDir, long downloadTimeoutSec) throws IOException, NoSuchAlgorithmException, InterruptedException {
     boolean torrentContainsFile = false;
     for (String filePath : torrent.getFilenames()) {
-      if (destFile.getAbsolutePath().replaceAll("/", "\\").endsWith(filePath.replaceAll("/", "\\"))){
+      final String destFileAbsolutePath = destFile.getAbsolutePath();
+      final String destFileCleaned = destFileAbsolutePath.replaceAll("\\\\", "/");
+      final String filePathCleaned = filePath.replaceAll("\\\\", "/");
+      if (destFileCleaned.endsWith(filePathCleaned)){
         torrentContainsFile = true;
         break;
       }
@@ -116,6 +119,8 @@ public class TeamcityTorrentClient {
       LOG.info("Already seeding torrent with hash " + torrent.getHexInfoHash() + ". Will stop seeding it");
       myClient.removeTorrent(torrent);
     }
+    LOG.info(String.format("Will attempt to download uninterruptibly %s into %s. Timeout:%d",
+            destFile.getAbsolutePath(), destDir.getAbsolutePath(), downloadTimeoutSec));
     myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec);
   }
 

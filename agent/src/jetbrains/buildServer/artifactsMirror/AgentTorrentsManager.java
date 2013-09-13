@@ -65,26 +65,12 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
 
   @Override
   public void agentStarted(@NotNull BuildAgent agent) {
-    initSettings();
     try {
-      List<InetAddress> addrs = new ArrayList<InetAddress>();
-      addrs.add(InetAddress.getByName(agent.getConfiguration().getOwnAddress()));
-      addrs.addAll(Arrays.asList(NetworkUtil.getSelfAddresses()));
-      InetAddress found = null;
-      for (InetAddress addr: addrs) {
-        if (addr.isLoopbackAddress() || addr.isAnyLocalAddress()) continue;
-        found = addr; break;
-      }
-      if (found != null) {
-        final String url = myTrackerManager.getAnnounceUrl();
-        final URI defaultTrackerURI = url==null ? null : URI.create(url);
-        myTorrentsDirectorySeeder.start(addrs.toArray(new InetAddress[addrs.size()]), defaultTrackerURI, myTrackerManager.getAnnounceIntervalSec());
-      } else {
-        Loggers.AGENT.warn("Failed to find inet address to bind seeder to, list of all available addresses: " + addrs);
-      }
+      initSettings();
+      final String url = myTrackerManager.getAnnounceUrl();
+      final URI defaultTrackerURI = url == null ? null : URI.create(url);
+      myTorrentsDirectorySeeder.start(NetworkUtil.getSelfAddresses(), defaultTrackerURI, myTrackerManager.getAnnounceIntervalSec());
     } catch (SocketException e) {
-      Loggers.AGENT.error("Failed to start torrent seeder, error: " + e.toString());
-    } catch (UnknownHostException e) {
       Loggers.AGENT.error("Failed to start torrent seeder, error: " + e.toString());
     }
   }

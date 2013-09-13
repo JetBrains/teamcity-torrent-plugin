@@ -4,6 +4,7 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.StreamUtil;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.TrackerHelper;
+import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
 import jetbrains.buildServer.artifacts.DependencyResolverContext;
@@ -69,6 +70,10 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         LOG.debug("Shouldn't use torrent transport for build type " + myBuildTracker.getCurrentBuild().getBuildTypeId());
         return null;
     }
+    if (NetworkUtil.isLocalHost(context.getServerUrl().getHost())){
+      LOG.debug("Shouldn't use torrent transport localhost");
+      return null;
+    }
 
     return new TorrentTransport(myAgentTorrentsManager.getTorrentsDirectorySeeder(), createHttpClient(context));
   }
@@ -115,11 +120,15 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         FileLink.createLink(target, torrentFile, myDirectorySeeder.getStorageDirectory());
         return torrent.getHexInfoHash();
       } catch (IOException e) {
+        LOG.error("Unable to download torrent for " + urlString, e);
         throw new IOException("Unable to download torrent for " + urlString, e);
       } catch (NoSuchAlgorithmException e) {
         throw new IOException("Unable to hash torrent for " + urlString, e);
       } catch (InterruptedException e) {
         throw new IOException("Torrent download has been interrupted " + urlString, e);
+      } catch (RuntimeException ex){
+        LOG.error("Unable to download artifact " + urlString, ex);
+        throw ex;
       }
     }
 
@@ -176,7 +185,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       } catch (NoSuchAlgorithmException e) {
         LOG.error("NoSuchAlgorithmException", e);
       } catch (IOException e) {
-        LOG.debug("Unable to download: " + e.getMessage());
+        LOG.info("Unable to download: " + e.getMessage(), e);
       } finally {
         FileUtil.close(in);
         getMethod.releaseConnection();
