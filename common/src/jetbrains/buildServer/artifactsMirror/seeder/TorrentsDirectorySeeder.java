@@ -100,7 +100,7 @@ public class TorrentsDirectorySeeder {
     try {
       if (removedLink.exists()) {
         File torrentFile = FileLink.getTorrentFile(removedLink);
-        if (torrentFile == null || !torrentFile.exists()) {
+        if (!torrentFile.exists()) {
           return;
         }
         stopSeedingTorrent(torrentFile);
@@ -125,13 +125,11 @@ public class TorrentsDirectorySeeder {
       File torrentFile = FileLink.getTorrentFile(linkFile);
       File targetFile = FileLink.getTargetFile(linkFile);
 
-      if (torrentFile.exists() && targetFile.exists() && targetFile.length() >= getFileSizeThresholdMb()*1024*1024){
+      if (torrentFile.exists() && targetFile.exists() && targetFile.length() >= getFileSizeThresholdMb() * 1024 * 1024){
         getTorrentSeeder().seedTorrent(torrentFile, targetFile);
       }
     } catch (IOException e) {
-      e.printStackTrace();
     } catch (NoSuchAlgorithmException e) {
-      e.printStackTrace();
     }
   }
 
@@ -142,7 +140,7 @@ public class TorrentsDirectorySeeder {
 
       File targetFile = FileLink.getTargetFile(changedLink);
       if (!targetFile.isFile()) {
-        if (torrentFile != null && torrentFile.exists()) {
+        if (torrentFile.exists()) {
           stopSeedingTorrent(torrentFile);
           FileUtil.delete(torrentFile);
         }
