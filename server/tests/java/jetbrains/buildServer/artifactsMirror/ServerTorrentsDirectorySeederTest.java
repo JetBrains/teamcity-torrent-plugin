@@ -80,6 +80,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     EventDispatcher<BuildServerListener> dispatcher = new BuildServerListenerEventDispatcher(new SecurityContextImpl());
 
     myDirectorySeeder = new ServerTorrentsDirectorySeeder(serverPaths, myConfigurator, services, dispatcher);
+    dispatcher.getMulticaster().serverStartup();
 
     myTracker = new Tracker(6969);
     myTracker.start(true);
@@ -111,7 +112,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     myConfigurator.setSeederEnabled(true);
     myConfigurator.setTrackerEnabled(true);
 
-    Thread.sleep(2*1000);
+    Thread.sleep(5*1000);
 
     assertEquals(3, myDirectorySeeder.getNumberOfSeededTorrents());
   }
@@ -178,7 +179,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
       if (filesQueue.size() > 3){
         filesQueue.poll();
       }
-      new WaitFor(10*1000){
+      new WaitFor(15*1000){
 
         @Override
         protected boolean condition() {
