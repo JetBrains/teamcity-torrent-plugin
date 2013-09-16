@@ -43,12 +43,12 @@ public class FileLink {
 
   @NotNull
   public static File getTargetFile(@NotNull File linkFile) throws IOException {
-    return new File(FileUtil.readText(linkFile, LINK_FILE_ENCODING).split("\r\n")[0]);
+    return new File(FileUtil.readText(linkFile, LINK_FILE_ENCODING).split("[\r\n]")[0]);
   }
 
   @NotNull
   public static File getTorrentFile(@NotNull File linkFile) throws IOException {
-    final String[] split = FileUtil.readText(linkFile, LINK_FILE_ENCODING).split("\r\n");
+    final String[] split = FileUtil.readText(linkFile, LINK_FILE_ENCODING).split("[\r\n]");
     if (split.length < 2)
       return null;
     else

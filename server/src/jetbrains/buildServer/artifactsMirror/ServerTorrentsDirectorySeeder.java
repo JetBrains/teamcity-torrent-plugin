@@ -40,11 +40,13 @@ public class ServerTorrentsDirectorySeeder {
   private volatile int myFileSizeThreshold;
   private URI myAnnounceURI;
   private int myMaxTorrentsToSeed;
+  private boolean myIsServerStarted;
 
   public ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
                                        @NotNull final TorrentConfigurator configurator,
                                        @NotNull final ExecutorServices executorServices,
                                        @NotNull final EventDispatcher<BuildServerListener> eventDispatcher) {
+    myIsServerStarted = false;
     File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
     torrentsStorage.mkdirs();
     myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage,
@@ -68,6 +70,7 @@ public class ServerTorrentsDirectorySeeder {
             }
           });
         }
+        myIsServerStarted = true;
       }
 
       @Override
@@ -92,10 +95,12 @@ public class ServerTorrentsDirectorySeeder {
           setAnnounceURI(URI.create(String.valueOf(evt.getNewValue())));
         } else if (TorrentConfigurator.SEEDER_ENABLED.equals(propertyName)){
           boolean enabled = (Boolean) evt.getNewValue();
-          if (enabled){
-            startSeeder();
-          } else {
-            stopSeeder();
+          if (myIsServerStarted) {
+            if (enabled) {
+              startSeeder();
+            } else {
+              stopSeeder();
+            }
           }
         }
       }
