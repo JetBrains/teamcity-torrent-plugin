@@ -227,7 +227,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       return torrent == null ? null : torrent.getHexInfoHash();
     }
 
-    protected Torrent downloadTorrent(@NotNull final String artifactUrl) {
+    private Torrent downloadTorrent(@NotNull final String artifactUrl) {
       final String relativePath = getRelativePathByUrl(artifactUrl);
       final String torrentRelativePath = myTorrentsForArtifacts.get(relativePath);
       if (torrentRelativePath == null)
@@ -249,7 +249,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       return null;
     }
 
-    private byte[] download(final String urlString) throws IOException {
+    protected byte[] download(final String urlString) throws IOException {
       final HttpMethod getMethod = new GetMethod(urlString);
       InputStream in = null;
       try {

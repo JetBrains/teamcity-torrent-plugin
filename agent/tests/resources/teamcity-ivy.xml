@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="1.4">
+  <info organisation="org" module="MyTestOne_ThreeClone" revision="148.tcbuildid" />
+  <publications>
+    <artifact name=".teamcity/properties/build.finish.properties" type="gz" ext="gz" />
+    <artifact name=".teamcity/properties/build.start.properties" type="gz" ext="gz" />
+    <artifact name=".teamcity/settings/digest" type="txt" ext="txt" />
+    <artifact name=".teamcity/torrents/MyBuild.31.zip" type="torrent" ext="torrent" />
+    <artifact name=".teamcity/torrents/MyExtras/art1.48.dat" type="torrent" ext="torrent" />
+    <artifact name=".teamcity/torrents/MyExtras/art3.48.dat" type="torrent" ext="torrent" />
+    <artifact name="MyBuild.31" type="zip" ext="zip" />
+    <artifact name="MyExtras/art1.48" type="dat" ext="dat" />
+    <artifact name="MyExtras/art3.48" type="dat" ext="dat" />
+  </publications>
+</ivy-module>

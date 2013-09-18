@@ -25,6 +25,7 @@ import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.messages.BuildMessage1;
+import jetbrains.buildServer.util.FileUtil;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.server.Server;
@@ -65,7 +66,7 @@ public class TorrentTransportTest extends BaseTestCase {
   private Server myServer;
   private Map<String, File> myDownloadMap;
   private Map<String, String> myAgentParametersMap;
-  private Map<String, Torrent> myDownloadHacks;
+  private Map<String, byte[]> myDownloadHacks;
   private TorrentTransportFactory.TorrentTransport myTorrentTransport;
   private List<String> myDownloadAttempts;
   private List<String> myDownloadHackAttempts;
@@ -84,7 +85,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myDownloadMap = new HashMap<String, File>();
     myDownloadAttempts = new ArrayList<String>();
     myDownloadHonestly = true;
-    myDownloadHacks = new HashMap<String, Torrent>();
+    myDownloadHacks = new HashMap<String, byte[]>();
     myDownloadHackAttempts = new ArrayList<String>();
     handler.addServlet(new ServletHolder(new HttpServlet() {
       @Override
@@ -127,9 +128,9 @@ public class TorrentTransportTest extends BaseTestCase {
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(myDirectorySeeder,
                     new HttpClient(), myBuild.getBuildLogger()){
       @Override
-      protected Torrent downloadTorrent(@NotNull String urlString) {
+      protected byte[] download(@NotNull String urlString) throws IOException {
         if (myDownloadHonestly) {
-          return super.downloadTorrent(urlString);
+          return super.download(urlString);
         } else {
           myDownloadHackAttempts.add(urlString);
           return myDownloadHacks.get(urlString);
@@ -149,18 +150,43 @@ public class TorrentTransportTest extends BaseTestCase {
     assertNull(digest2);
   }
 
-  public void testTeamcityIvy() throws IOException {
+  public void testTeamcityIvy() throws IOException, NoSuchAlgorithmException {
     setTorrentTransportEnabled();
-    final File tempFile = new File(myTempDir, "testTeamcityIvy");
+    final File ivyFile = new File(myTempDir, TorrentTransportFactory.TEAMCITY_IVY);
 
-    final String urlString = SERVER_PATH + "teamcity-ivy.xml";
-    assertNull(myTorrentTransport.getDigest(urlString));
-    assertNull(myTorrentTransport.downloadUrlTo(urlString, tempFile));
-    assertFalse(tempFile.exists());
-    final String urlStringBranch = SERVER_PATH + "teamcity-ivy.xml?branch=myBranch";
-    assertNull(myTorrentTransport.getDigest(urlStringBranch));
-    assertNull(myTorrentTransport.downloadUrlTo(urlStringBranch, tempFile));
-    assertFalse(tempFile.exists());
+    final String urlString = SERVER_PATH +  TorrentTransportFactory.TEAMCITY_IVY;
+
+    final File teamcityIvyFile = new File("agent/tests/resources/" +  TorrentTransportFactory.TEAMCITY_IVY);
+    myDownloadMap.put("/" + TorrentTransportFactory.TEAMCITY_IVY, teamcityIvyFile);
+
+
+//    assertNull(myTorrentTransport.getDigest(urlString));
+    assertNotNull(myTorrentTransport.downloadUrlTo(urlString, ivyFile));
+    assertTrue(ivyFile.exists());
+
+    final String path1 = SERVER_PATH + "MyBuild.31.zip";
+    final String torrentPath1 = SERVER_PATH + ".teamcity/torrents/MyBuild.31.zip.torrent";
+    final String path2 = SERVER_PATH + "MyBuild.32.zip";
+    final String torrentPath2 = SERVER_PATH + ".teamcity/torrents/MyBuild.32.zip.torrent";
+
+    final File file1 = new File(myTempDir, "MyBuild.31.zip");
+    final File file2 = new File(myTempDir, "MyBuild.32.zip");
+
+    final File torrentFile = new File("agent/tests/resources/commons-io-cio2.5_40.jar.torrent");
+    final byte[] torrentBytes = FileUtils.readFileToByteArray(torrentFile);
+    myDownloadHacks.put(torrentPath1, torrentBytes);
+    myDownloadHacks.put(torrentPath2, torrentBytes);
+    setDownloadHonestly(false);
+
+    myTorrentTransport.downloadUrlTo(path1, file1);
+    myTorrentTransport.downloadUrlTo(path2, file2);
+
+
+
+    // shouldn't try to download the second file:
+    assertEquals(1, myDownloadHackAttempts.size());
+    assertEquals(torrentPath1, myDownloadHackAttempts.get(0));
+
   }
 
   public void testSmallFileSize() throws IOException, NoSuchAlgorithmException {
@@ -174,7 +200,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myDownloadMap.put("/.teamcity/torrents/commons-io-cio2.5_40.jar.torrent", torrentFile);
 
     final String urlString = SERVER_PATH + fileName;
-    myDownloadHacks.put(urlString, Torrent.load(torrentFile));
+    myDownloadHacks.put(urlString, FileUtils.readFileToByteArray(torrentFile));
 
     assertNull(myTorrentTransport.getDigest(urlString));
     assertEquals(1, myDownloadHackAttempts.size());
