@@ -60,7 +60,7 @@ public class TrackerController extends BaseController {
       return null;
     }
     final String uri = request.getRequestURL().append("?").append(request.getQueryString()).toString();
-    myTrackerManager.getTrackerService().process(uri, request.getLocalAddr(), new TrackerRequestProcessor.RequestHandler() {
+    myTrackerManager.getTrackerService().process(uri, request.getRemoteAddr(), new TrackerRequestProcessor.RequestHandler() {
       public void serveResponse(int code, String description, ByteBuffer responseData) {
         response.setStatus(code);
         try {
