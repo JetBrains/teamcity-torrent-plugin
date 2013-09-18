@@ -130,13 +130,14 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     @Nullable
     public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
+      ParsedArtifactUrl parsedArtifactUrl = new ParsedArtifactUrl(urlString);
       if (urlString.endsWith(TEAMCITY_IVY)){
         // downloading teamcity-ivy.xml and parsing it:
         final String digest = parseArtifactsList(urlString, target);
         return digest;
       }
 
-      Torrent torrent = downloadTorrent(urlString);
+      Torrent torrent = downloadTorrent(parsedArtifactUrl);
       if (torrent == null) {
         return null;
       }
@@ -150,12 +151,20 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
         mySeeder.downloadAndShareOrFail(torrent, target, target.getParentFile(), getDownloadTimeoutSec());
         log2Build("Download successfull. Saving torrent..");
-        String relativePathByUrl = getRelativePathByUrl(urlString);
-        File parentDir = getRealParentDir(target, relativePathByUrl);
-        File torrentFile = new File(parentDir, TEAMCITY_TORRENTS + relativePathByUrl + ".torrent");
+        File parentDir = getRealParentDir(target, parsedArtifactUrl.getArtifactPath());
+        File torrentFile = new File(parentDir, parsedArtifactUrl.getTorrentPath());
         torrentFile.getParentFile().mkdirs();
         torrent.save(torrentFile);
-        FileLink.createLink(target, torrentFile, myDirectorySeeder.getStorageDirectory());
+
+        final String relativeLinkPath = String.format("%s/%s/%s",
+                parsedArtifactUrl.getModule(),
+                parsedArtifactUrl.getRevision(),
+                parsedArtifactUrl.getArtifactPath());
+
+        final File linkDir = new File(myDirectorySeeder.getStorageDirectory(), relativeLinkPath).getParentFile();
+        linkDir.mkdirs();
+
+        FileLink.createLink(target, torrentFile, linkDir);
         return torrent.getHexInfoHash();
 
       } catch (IOException e) {
@@ -173,9 +182,9 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       }
     }
 
-    private String parseArtifactsList(@NotNull final String urlString, @NotNull final File target) {
+    private String parseArtifactsList(@NotNull final String teamcityIvyUrl, @NotNull final File target) {
       try {
-        byte[] ivyData = download(urlString);
+        byte[] ivyData = download(teamcityIvyUrl);
         XPath xpath = XPathFactory.newInstance().newXPath();
         NodeList artifactList = (NodeList) xpath.evaluate("/ivy-module/publications/artifact",
                 new InputSource(new ByteArrayInputStream(ivyData)), XPathConstants.NODESET);
@@ -223,28 +232,23 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     @Nullable
     public String getDigest(@NotNull final String urlString) throws IOException {
-      Torrent torrent = downloadTorrent(urlString);
+      ParsedArtifactUrl parsedArtifactUrl = new ParsedArtifactUrl(urlString);
+      Torrent torrent = downloadTorrent(parsedArtifactUrl);
       return torrent == null ? null : torrent.getHexInfoHash();
     }
 
-    private Torrent downloadTorrent(@NotNull final String artifactUrl) {
-      final String relativePath = getRelativePathByUrl(artifactUrl);
-      final String torrentRelativePath = myTorrentsForArtifacts.get(relativePath);
+    private Torrent downloadTorrent(@NotNull final ParsedArtifactUrl parsedArtifactUrl) {
+      final String torrentRelativePath = myTorrentsForArtifacts.get(parsedArtifactUrl.getArtifactPath());
       if (torrentRelativePath == null)
         return null;
 
-      Matcher matcher = FILE_PATH_PATTERN.matcher(artifactUrl);
-      if (matcher.matches()){
-        StringBuilder sb = new StringBuilder(artifactUrl);
-        sb.replace(matcher.start(4), matcher.end(4), torrentRelativePath);
-        try {
-          byte[] torrentData = download(sb.toString());
-          return new Torrent(torrentData, true);
-        } catch (NoSuchAlgorithmException e) {
-          LOG.error("NoSuchAlgorithmException", e);
-        } catch (IOException e) {
-          log2Build(String.format("Unable to download: %s", e.getMessage()));
-        }
+      try {
+        byte[] torrentData = download(parsedArtifactUrl.getTorrentUrl());
+        return new Torrent(torrentData, true);
+      } catch (NoSuchAlgorithmException e) {
+        LOG.error("NoSuchAlgorithmException", e);
+      } catch (IOException e) {
+        log2Build(String.format("Unable to download: %s", e.getMessage()));
       }
       return null;
     }
@@ -294,5 +298,65 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       }
     }
 
+  }
+
+  private static class ParsedArtifactUrl{
+    @NotNull
+    private final String myServerUrl;
+    @NotNull
+    private final String myModule;
+    @NotNull
+    private final String myRevision;
+    @NotNull
+    private final String myArtifactPath;
+    @Nullable
+    private final String myBranch;
+
+    private ParsedArtifactUrl(@NotNull final String artifactUrl) throws IllegalArgumentException{
+      final Matcher matcher = FILE_PATH_PATTERN.matcher(artifactUrl);
+      if (!matcher.matches()){
+        throw new IllegalArgumentException("Unable to parse " + artifactUrl);
+      }
+      myServerUrl = matcher.group(1);
+      myModule = matcher.group(2);
+      myRevision = matcher.group(3);
+      myArtifactPath = matcher.group(4);
+      myBranch = matcher.group(5);
+    }
+
+    @NotNull
+    public String getServerUrl() {
+      return myServerUrl;
+    }
+
+    @NotNull
+    public String getModule() {
+      return myModule;
+    }
+
+    @NotNull
+    public String getRevision() {
+      return myRevision;
+    }
+
+    @NotNull
+    public String getArtifactPath() {
+      return myArtifactPath;
+    }
+
+    @Nullable
+    public String getBranch() {
+      return myBranch;
+    }
+
+    public String getTorrentUrl(){
+      return String.format("%s/repository/download/%s/%s/%s%s",
+              myServerUrl, myModule, myRevision, getTorrentPath(),
+              myBranch == null ? "" : "?branch="+ myBranch);
+    }
+
+    public String getTorrentPath(){
+      return TEAMCITY_TORRENTS + myArtifactPath + ".torrent";
+    }
   }
 }

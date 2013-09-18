@@ -18,6 +18,7 @@ package jetbrains.buildServer.artifactsMirror.seeder;
 
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.BaseTestCase;
+import jetbrains.buildServer.TempFiles;
 import jetbrains.buildServer.util.FileUtil;
 import org.testng.SkipException;
 import org.testng.annotations.AfterMethod;
@@ -35,11 +36,13 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
   private TorrentsDirectorySeeder myDirectorySeeder;
   private File myStorageDir;
   private URI announceURI;
+  private TempFiles myTempFiles;
 
   @BeforeMethod
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    myTempFiles = new TempFiles();
     myStorageDir = createTempDir();
     announceURI = new URI("http://localhost:6969/announce");
     myDirectorySeeder = new TorrentsDirectorySeeder(myStorageDir, -1, 1);
@@ -98,6 +101,26 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
     assertFalse(linkDir.isDirectory());
   }
 
+  public void testStorageVersionTest() throws IOException {
+    int oldVersion = TorrentsDirectorySeeder.TORRENTS_STORAGE_VERSION-1;
+    final File storageDir = myTempFiles.createTempDir();
+    final File innerDir = new File(storageDir, "innerDir");
+    innerDir.mkdir();
+    final File link1 = new File(innerDir, "link1.link");
+    link1.createNewFile();
+    final File link2 = new File(storageDir, "link2.link");
+    link2.createNewFile();
+    final File storageVersionFile = new File(storageDir, TorrentsDirectorySeeder.TORRENTS_STORAGE_VERSION_FILE);
+    FileUtil.writeFileAndReportErrors(
+            storageVersionFile, String.valueOf(oldVersion));
+    assertTrue(link1.exists());
+    assertTrue(link2.exists());
+    new TorrentsDirectorySeeder(storageDir, 1, 1);
+    assertFalse(link1.exists());
+    assertFalse(link2.exists());
+    assertEquals(String.valueOf(TorrentsDirectorySeeder.TORRENTS_STORAGE_VERSION), FileUtil.readText(storageVersionFile));
+  }
+
   private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, NoSuchAlgorithmException, IOException {
     File torrentFile = new File(torrentDir, srcFile.getName() + ".torrent");
     final Torrent torrent = Torrent.create(srcFile, announceURI, "Test");
@@ -108,7 +131,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
   @AfterMethod
   @Override
   protected void tearDown() throws Exception {
-    myDirectorySeeder.stop();
     super.tearDown();
+    myDirectorySeeder.stop();
   }
 }

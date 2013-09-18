@@ -96,17 +96,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
     myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(srcFile);
 
     if (myTorrentsDirectorySeeder.shouldCreateTorrentFileFor(srcFile)) {
-      final File linkDir;
-      if (srcFile.getAbsolutePath().startsWith(myBuild.getCheckoutDirectory().getAbsolutePath())) {
-        String relPath = FileUtil.getRelativePath(myBuild.getCheckoutDirectory(), srcFile);
-        linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), myBuild.getBuildTypeId() + File.separator + relPath).getParentFile();
-      } else {
-        linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), myBuild.getBuildTypeId());
-      }
-      linkDir.mkdirs();
-
-      if (!linkDir.isDirectory())
-        return false;
       try {
         Torrent torrent = Torrent.create(srcFile, myTrackerAnnounceUrl, "teamcity");
         myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrent, srcFile);
