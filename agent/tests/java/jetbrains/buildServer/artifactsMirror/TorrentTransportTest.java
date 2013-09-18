@@ -255,5 +255,6 @@ public class TorrentTransportTest extends BaseTestCase {
   @AfterMethod
   public void tearDown() throws Exception {
     super.tearDown();
+    myTempFiles.cleanup();
   }
 }

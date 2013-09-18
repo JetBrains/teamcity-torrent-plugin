@@ -16,6 +16,9 @@
 
 package jetbrains.buildServer.artifactsMirror;
 
+import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.AgentRunningBuild;
@@ -23,7 +26,7 @@ import jetbrains.buildServer.agent.BuildAgent;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.util.EventDispatcher;
-import jetbrains.buildServer.util.FileUtil;
+import jetbrains.buildServer.util.WaitFor;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
 import org.jmock.Mock;
@@ -33,50 +36,89 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Test
 public class AgentTorrentsManagerTest extends BaseTestCase {
   private AgentTorrentsManager myTorrentsManager;
-  private Mock myTorrentTrackerConfigurationMock;
   private Mock myConfigurationMock;
   private EventDispatcher<AgentLifeCycleListener> myDispatcher;
-  private File myTorrentCacheDir;
+  private File myLinkDir;
 
   @BeforeMethod
   public void setUp() throws Exception {
     super.setUp();
-    myTorrentCacheDir = createTempDir();
+    myLinkDir = createTempDir();
     myDispatcher = EventDispatcher.create(AgentLifeCycleListener.class);
 
     myConfigurationMock = mock(BuildAgentConfiguration.class);
-    myConfigurationMock.stubs().method("getCacheDirectory").will(returnValue(myTorrentCacheDir));
+    myConfigurationMock.stubs().method("getCacheDirectory").will(returnValue(myLinkDir));
 
     Mockery m = new Mockery();
     final TorrentTrackerConfiguration trackerConfiguration = m.mock(TorrentTrackerConfiguration.class);
-    m.checking(new Expectations(){{
-      allowing(trackerConfiguration).getFileSizeThresholdMb(); will(returnValue(1));
-      allowing(trackerConfiguration).getAnnounceUrl(); will(returnValue("http://localhost:6969/announce"));
-      allowing(trackerConfiguration).getAnnounceIntervalSec(); will(returnValue(60));
+    m.checking(new Expectations() {{
+      allowing(trackerConfiguration).getFileSizeThresholdMb();
+      will(returnValue(0));
+      allowing(trackerConfiguration).getAnnounceUrl();
+      will(returnValue("http://localhost:6969/announce"));
+      allowing(trackerConfiguration).getAnnounceIntervalSec();
+      will(returnValue(60));
     }});
 
     myTorrentsManager = new AgentTorrentsManager((BuildAgentConfiguration)myConfigurationMock.proxy(),
             myDispatcher, trackerConfiguration);
     myTorrentsManager.getTorrentsDirectorySeeder().start(new InetAddress[]{InetAddress.getLocalHost()}, null, 60);
+
   }
 
-  public void testAnnounceAllOnAgentStarted(){
+  public void testAnnounceAllOnAgentStarted() throws IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
+    Tracker tracker = new Tracker(6969);
     try {
       Mock buildAgentMock = mock(BuildAgent.class);
+
+      final List<String> torrentHashes = new ArrayList<String>();
+      final List<File> createdFiles = new ArrayList<File>();
+      final int torrentsCount = 10;
+      tracker.start(true);
+      for (int i = 0; i < torrentsCount; i++) {
+        final File artifactFile = createTempFile(65535);
+        createdFiles.add(artifactFile);
+        File torrentDir = createTempDir();
+        final Torrent torrent = Torrent.create(artifactFile, tracker.getAnnounceURI(), "tc-plugin-test");
+        final File torrentFile = new File(torrentDir, artifactFile.getName() + ".torrent");
+        torrentHashes.add(torrent.getHexInfoHash());
+        torrent.save(torrentFile);
+        FileLink.createLink(artifactFile, torrentFile, myLinkDir);
+      }
+
       myTorrentsManager.agentStarted((BuildAgent) buildAgentMock.proxy());
+      new WaitFor(3*1000){
+
+        @Override
+        protected boolean condition() {
+          return myTorrentsManager.getTorrentsDirectorySeeder().getNumberOfSeededTorrents() == torrentsCount;
+        }
+      };
+      List<String> seededHashes = new ArrayList<String>();
+      List<File> seededFiles = new ArrayList<File>();
+      for (SharedTorrent st : myTorrentsManager.getTorrentsDirectorySeeder().getSharedTorrents()) {
+        seededHashes.add(st.getHexInfoHash());
+        seededFiles.add(new File(st.getParentFile(), st.getName()));
+      }
+      assertSameElements(torrentHashes, seededHashes);
+      assertSameElements(createdFiles, seededFiles);
 
     } finally {
       myTorrentsManager.agentShutdown();
+      tracker.stop();
     }
   }
 
@@ -96,7 +138,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
       public boolean accept(File file) {
         return FileLink.isLink(file);
       }
-    }, new File(myTorrentCacheDir, "bt1"));
+    }, new File(myLinkDir, "bt1"));
 
     assertEquals(3, links.size());
     for (File l: links) {
@@ -129,16 +171,16 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
       public boolean accept(File file) {
         return FileLink.isLink(file);
       }
-    }, new File(myTorrentCacheDir, "bt1"));
+    }, new File(myLinkDir, "bt1"));
 
     assertEquals(3, links.size());
     for (File l: links) {
       assertTrue(files.keySet().contains(FileLink.getTargetFile(l)));
     }
 
-    assertTrue(new File(myTorrentCacheDir, "bt1/a/b/f.jar.link").isFile());
-    assertTrue(new File(myTorrentCacheDir, "bt1/a/f.jar.link").isFile());
-    assertTrue(new File(myTorrentCacheDir, "bt1/f.jar.link").isFile());
+    assertTrue(new File(myLinkDir, "bt1/a/b/f.jar.link").isFile());
+    assertTrue(new File(myLinkDir, "bt1/a/f.jar.link").isFile());
+    assertTrue(new File(myLinkDir, "bt1/f.jar.link").isFile());
 */
   }
 
