@@ -25,7 +25,9 @@ import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jmock.Expectations;
 import org.jmock.Mock;
+import org.jmock.Mockery;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -55,13 +57,27 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
     myConfigurationMock = mock(BuildAgentConfiguration.class);
     myConfigurationMock.stubs().method("getCacheDirectory").will(returnValue(myTorrentCacheDir));
 
-    myTorrentTrackerConfigurationMock = mock(TorrentTrackerConfiguration.class);
-    myTorrentTrackerConfigurationMock.stubs().method("getAnnounceUrl").will(returnValue("http://localhost:6969/announce"));
-    myTorrentTrackerConfigurationMock.stubs().method("getFileSizeThresholdMb").will(returnValue(0));
+    Mockery m = new Mockery();
+    final TorrentTrackerConfiguration trackerConfiguration = m.mock(TorrentTrackerConfiguration.class);
+    m.checking(new Expectations(){{
+      allowing(trackerConfiguration).getFileSizeThresholdMb(); will(returnValue(1));
+      allowing(trackerConfiguration).getAnnounceUrl(); will(returnValue("http://localhost:6969/announce"));
+      allowing(trackerConfiguration).getAnnounceIntervalSec(); will(returnValue(60));
+    }});
 
     myTorrentsManager = new AgentTorrentsManager((BuildAgentConfiguration)myConfigurationMock.proxy(),
-            myDispatcher, (TorrentTrackerConfiguration)myTorrentTrackerConfigurationMock.proxy());
+            myDispatcher, trackerConfiguration);
     myTorrentsManager.getTorrentsDirectorySeeder().start(new InetAddress[]{InetAddress.getLocalHost()}, null, 60);
+  }
+
+  public void testAnnounceAllOnAgentStarted(){
+    try {
+      Mock buildAgentMock = mock(BuildAgent.class);
+      myTorrentsManager.agentStarted((BuildAgent) buildAgentMock.proxy());
+
+    } finally {
+      myTorrentsManager.agentShutdown();
+    }
   }
 
   public void test_links_created_when_artifact_is_published() throws Exception {

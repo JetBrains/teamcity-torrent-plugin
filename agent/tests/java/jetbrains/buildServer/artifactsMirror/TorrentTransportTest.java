@@ -16,8 +16,12 @@
 
 package jetbrains.buildServer.artifactsMirror;
 
+import com.turn.ttorrent.client.Client;
+import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
+import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.TempFiles;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BaseServerLoggerFacade;
@@ -28,6 +32,7 @@ import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
+import org.apache.xerces.impl.dv.util.HexBin;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -45,6 +50,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -189,29 +195,48 @@ public class TorrentTransportTest extends BaseTestCase {
 
   }
 
-  public void testSmallFileSize() throws IOException, NoSuchAlgorithmException {
+  public void testDownloadAndSeed() throws IOException, NoSuchAlgorithmException, InterruptedException {
     setTorrentTransportEnabled();
-    setDownloadHonestly(false);
-    myDirectorySeeder.setFileSizeThresholdMb(15);
+    setDownloadHonestly(true);
 
-    final File tempFile = new File(myTempDir, "testSmallFileSize");
-    final String fileName = "commons-io-cio2.5_40.jar";
-    final File torrentFile = new File("agent/tests/resources/commons-io-cio2.5_40.jar.torrent");
-    myDownloadMap.put("/.teamcity/torrents/commons-io-cio2.5_40.jar.torrent", torrentFile);
+    final File storageDir = new File(myTempDir, "storageDir");
+    storageDir.mkdir();
+    final File downloadDir = new File(myTempDir, "downloadDir");
+    downloadDir.mkdir();
+    final File torrentsDir = new File(myTempDir, "torrentsDir");
+    torrentsDir.mkdir();
+    final String fileName = "MyBuild.31.zip";
+    final File artifactFile = new File(storageDir, fileName);
+    myTempFiles.createTempFile(20250).renameTo(artifactFile);
 
-    final String urlString = SERVER_PATH + fileName;
-    myDownloadHacks.put(urlString, FileUtils.readFileToByteArray(torrentFile));
+    final File teamcityIvyFile = new File("agent/tests/resources/" +  TorrentTransportFactory.TEAMCITY_IVY);
+    myDownloadMap.put("/" + TorrentTransportFactory.TEAMCITY_IVY, teamcityIvyFile);
+    final String ivyUrl = SERVER_PATH +  TorrentTransportFactory.TEAMCITY_IVY;
+    final File ivyFile = new File(myTempDir, TorrentTransportFactory.TEAMCITY_IVY);
+    myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
+    Tracker tracker = new Tracker(6969);
+    Client client = new Client(InetAddress.getLocalHost());
+    try {
+    tracker.start(true);
 
-    assertNull(myTorrentTransport.getDigest(urlString));
-    assertEquals(1, myDownloadHackAttempts.size());
-    assertEquals(urlString, myDownloadHackAttempts.get(0));
+    myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
 
-    assertNull(myTorrentTransport.downloadUrlTo(urlString, tempFile));
-    assertEquals(2, myDownloadHackAttempts.size());
-    assertEquals(urlString, myDownloadHackAttempts.get(1));
+    final Torrent torrent = Torrent.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
+    final File torrentFile = new File(torrentsDir, fileName + ".torrent");
+    torrent.save(torrentFile);
+    myDownloadMap.put("/.teamcity/torrents/"+fileName+".torrent", torrentFile);
+    client.share();
+    client.addTorrent(SharedTorrent.fromFile(torrentFile, storageDir, true));
+
+    final File targetFile = new File(downloadDir, fileName);
+    final String digest = myTorrentTransport.downloadUrlTo(SERVER_PATH + fileName, targetFile);
+    assertEquals(torrent.getHexInfoHash(), digest);
+    assertTrue(FileUtils.contentEquals(artifactFile, targetFile));
+    } finally {
+      tracker.stop();
+      client.stop();
+    }
   }
-
-
 
   private void setTorrentTransportEnabled(){
     myAgentParametersMap.put(TorrentTransportFactory.TEAMCITY_ARTIFACTS_TRANSPORT,
