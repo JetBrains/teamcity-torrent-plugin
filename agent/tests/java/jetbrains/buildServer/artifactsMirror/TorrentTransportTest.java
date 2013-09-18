@@ -20,8 +20,11 @@ import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.TempFiles;
 import jetbrains.buildServer.agent.AgentRunningBuild;
+import jetbrains.buildServer.agent.BaseServerLoggerFacade;
+import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
+import jetbrains.buildServer.messages.BuildMessage1;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.server.Server;
@@ -102,15 +105,27 @@ public class TorrentTransportTest extends BaseTestCase {
 
     Mockery m = new Mockery();
     myBuild = m.mock(AgentRunningBuild.class);
+    final BuildProgressLogger myLogger = new BaseServerLoggerFacade() {
+      @Override
+      public void flush() {
+      }
+
+      @Override
+      protected void log(final BuildMessage1 message) {
+
+      }
+    };
+
     m.checking(new Expectations(){{
       allowing(myBuild).getSharedConfigParameters(); will (returnValue(myAgentParametersMap));
       allowing(myBuild).getBuildTypeId(); will (returnValue("TC_Gaya80x_BuildDist"));
+      allowing(myBuild).getBuildLogger(); will (returnValue(myLogger));
     }});
 
     myDirectorySeeder = new TorrentsDirectorySeeder(myTempFiles.createTempDir(), -1, 1);
 
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(myDirectorySeeder,
-                    new HttpClient()){
+                    new HttpClient(), myBuild.getBuildLogger()){
       @Override
       protected Torrent downloadTorrent(@NotNull String urlString) {
         if (myDownloadHonestly) {

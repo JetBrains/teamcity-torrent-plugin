@@ -22,6 +22,7 @@ public class TeamcityTorrentClient {
   private Client myClient;
 
   public TeamcityTorrentClient() {
+    myClient = new Client();
   }
 
   public void start(@NotNull InetAddress[] inetAddresses, @Nullable final URI defaultTrackerURI, final int announceInterval) {

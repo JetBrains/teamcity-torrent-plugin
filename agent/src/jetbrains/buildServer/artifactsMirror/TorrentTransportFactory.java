@@ -6,6 +6,7 @@ import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.TrackerHelper;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.AgentRunningBuild;
+import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
 import jetbrains.buildServer.artifacts.DependencyResolverContext;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
@@ -14,6 +15,9 @@ import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.http.HttpUtil;
+import jetbrains.buildServer.messages.BuildMessage1;
+import jetbrains.buildServer.messages.DefaultMessagesInfo;
+import jetbrains.buildServer.messages.ErrorData;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthScope;
@@ -57,61 +61,71 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     client.getParams().setAuthenticationPreemptive(true);
     Credentials defaultcreds = new UsernamePasswordCredentials(context.getUsername(), context.getPassword());
     client.getState().setCredentials(new AuthScope(AuthScope.ANY_HOST,
-        AuthScope.ANY_PORT,
-        AuthScope.ANY_REALM),
-        defaultcreds);
+            AuthScope.ANY_PORT,
+            AuthScope.ANY_REALM),
+            defaultcreds);
     return client;
   }
 
 
   @Nullable
   public URLContentRetriever getTransport(@NotNull DependencyResolverContext context) {
+    final BuildProgressLogger buildLogger = myBuildTracker.getCurrentBuild().getBuildLogger();
     if (!shouldUseTorrentTransport(myBuildTracker.getCurrentBuild())) {
-        LOG.debug("Shouldn't use torrent transport for build type " + myBuildTracker.getCurrentBuild().getBuildTypeId());
-        return null;
+      log2Build("Shouldn't use torrent transport for build type " + myBuildTracker.getCurrentBuild().getBuildTypeId(), buildLogger);
+      return null;
     }
-    if (NetworkUtil.isLocalHost(context.getServerUrl().getHost())){
-      LOG.debug("Shouldn't use torrent transport localhost");
+    if (NetworkUtil.isLocalHost(context.getServerUrl().getHost())) {
+      log2Build("Shouldn't use torrent transport localhost", buildLogger);
       return null;
     }
 
-    return new TorrentTransport(myAgentTorrentsManager.getTorrentsDirectorySeeder(), createHttpClient(context));
+    return new TorrentTransport(myAgentTorrentsManager.getTorrentsDirectorySeeder(),
+            createHttpClient(context),
+            buildLogger);
   }
 
-  private static boolean shouldUseTorrentTransport(@NotNull final AgentRunningBuild build){
+  private static boolean shouldUseTorrentTransport(@NotNull final AgentRunningBuild build) {
     final String param = build.getSharedConfigParameters().get(TEAMCITY_ARTIFACTS_TRANSPORT);
-    return param!=null && param.contains(TorrentTransport.class.getSimpleName());
+    return param != null && param.contains(TorrentTransport.class.getSimpleName());
   }
 
+  private static void log2Build(final String msg, final BuildProgressLogger buildLogger) {
+    final BuildMessage1 textMessage = DefaultMessagesInfo.createTextMessage(msg);
+    buildLogger.logMessage(DefaultMessagesInfo.internalize(textMessage));
+  }
 
-  protected static class TorrentTransport implements URLContentRetriever{
+  protected static class TorrentTransport implements URLContentRetriever {
 
     private final HttpClient myClient;
     private final TeamcityTorrentClient mySeeder;
     private final TorrentsDirectorySeeder myDirectorySeeder;
+    private final BuildProgressLogger myBuildLogger;
 
     protected TorrentTransport(@NotNull final TorrentsDirectorySeeder directorySeeder,
-                               @NotNull final HttpClient client) {
+                               @NotNull final HttpClient client,
+                               @NotNull final BuildProgressLogger buildLogger) {
       myDirectorySeeder = directorySeeder;
       mySeeder = myDirectorySeeder.getTorrentSeeder();
       myClient = client;
+      myBuildLogger = buildLogger;
     }
 
     @Nullable
     public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
       Torrent torrent = getTorrent(urlString);
-      if (torrent == null){
+      if (torrent == null) {
         return null;
       }
-      LOG.info("Will attempt to download " + target.getName() + " via torrent.");
       try {
+        myBuildLogger.progressStarted("Downloading " + target.getName() + " via torrent.");
         if (TrackerHelper.getSeedersCount(torrent) == 0) {
-          LOG.info("no seeders for " + urlString);
+          log2Build("no seeders for " + urlString);
           return null;
         }
 
         mySeeder.downloadAndShareOrFail(torrent, target, target.getParentFile(), getDownloadTimeoutSec());
-        LOG.info("Download successfull. Saving torrent..");
+        log2Build("Download successfull. Saving torrent..");
         String realFilePath = getFilePathFromUrl(urlString);
         File parentDir = getRealParentDir(target, realFilePath);
         File torrentFile = new File(parentDir, TEAMCITY_TORRENTS + realFilePath + ".torrent");
@@ -120,16 +134,22 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         FileLink.createLink(target, torrentFile, myDirectorySeeder.getStorageDirectory());
         return torrent.getHexInfoHash();
       } catch (IOException e) {
-        LOG.error("Unable to download torrent for " + urlString, e);
+        log2Build(String.format("Unable to download torrent for %s: %s", urlString, e.getMessage()));
         throw new IOException("Unable to download torrent for " + urlString, e);
       } catch (NoSuchAlgorithmException e) {
         throw new IOException("Unable to hash torrent for " + urlString, e);
       } catch (InterruptedException e) {
         throw new IOException("Torrent download has been interrupted " + urlString, e);
-      } catch (RuntimeException ex){
-        LOG.error("Unable to download artifact " + urlString, ex);
+      } catch (RuntimeException ex) {
+        log2Build(String.format("Unable to download artifact %s: %s", urlString, ex.getMessage()));
         throw ex;
+      } finally {
+        myBuildLogger.progressFinished();
       }
+    }
+
+    private void log2Build(String msg) {
+      TorrentTransportFactory.log2Build(msg, myBuildLogger);
     }
 
     @Nullable
@@ -138,34 +158,34 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       return torrent == null ? null : torrent.getHexInfoHash();
     }
 
-    protected Torrent getTorrent(@NotNull final String urlString){
-      if (urlString.contains(TEAMCITY_IVY)){
-        LOG.debug("Skip downloading teamcity-ivy.xml");
+    protected Torrent getTorrent(@NotNull final String urlString) {
+      if (urlString.contains(TEAMCITY_IVY)) {
+        log2Build("Skip downloading teamcity-ivy.xml");
         return null;
       }
-      LOG.info("Downloading torrent for " + urlString);
+      log2Build("Downloading torrent for " + urlString);
       Torrent torrent = downloadTorrent(urlString);
       if (torrent == null) {
-        LOG.debug("No torrent file for " + urlString);
+        log2Build("No torrent file for " + urlString);
         return null;
       }
-      if (torrent.getSize() < myDirectorySeeder.getFileSizeThresholdMb()*1024*1024){
-        LOG.debug(String.format("File size is lower than threshold of %dMb", myDirectorySeeder.getFileSizeThresholdMb()));
+      if (torrent.getSize() < myDirectorySeeder.getFileSizeThresholdMb() * 1024 * 1024) {
+        log2Build(String.format("File size is lower than threshold of %dMb", myDirectorySeeder.getFileSizeThresholdMb()));
         return null;
       }
       return torrent;
     }
 
-    protected Torrent downloadTorrent(@NotNull final  String urlString){
+    protected Torrent downloadTorrent(@NotNull final String urlString) {
       // adding path here:
       final Matcher matcher = FILE_PATH_PATTERN.matcher(urlString);
-      if (!matcher.matches()){
+      if (!matcher.matches()) {
         return null;
       }
       final StringBuilder b = new StringBuilder(urlString);
       final int realPathStart = matcher.start(4);
       b.insert(realPathStart, TEAMCITY_TORRENTS);
-      int suffixPos = (matcher.group(5)==null? b.length() : TEAMCITY_TORRENTS.length() + matcher.start(5));
+      int suffixPos = (matcher.group(5) == null ? b.length() : TEAMCITY_TORRENTS.length() + matcher.start(5));
       b.insert(suffixPos, ".torrent");
       String downloadUrl = b.toString();
       final GetMethod getMethod = new GetMethod(downloadUrl);
@@ -174,7 +194,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         myClient.executeMethod(getMethod);
         if (getMethod.getStatusCode() != HttpStatus.SC_OK) {
           throw new IOException("Problem [" + getMethod.getStatusCode() + "] while downloading " + downloadUrl + ": "
-              + getMethod.getStatusText());
+                  + getMethod.getStatusText());
         }
         in = getMethod.getResponseBodyAsStream();
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
@@ -185,7 +205,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       } catch (NoSuchAlgorithmException e) {
         LOG.error("NoSuchAlgorithmException", e);
       } catch (IOException e) {
-        LOG.info("Unable to download: " + e.getMessage(), e);
+        log2Build(String.format("Unable to download: %s", e.getMessage()));
       } finally {
         FileUtil.close(in);
         getMethod.releaseConnection();
@@ -194,29 +214,29 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     }
 
-    private String getFilePathFromUrl(@NotNull final String urlString){
+    private String getFilePathFromUrl(@NotNull final String urlString) {
       final Matcher matcher = FILE_PATH_PATTERN.matcher(urlString);
-      if (matcher.matches()){
+      if (matcher.matches()) {
         return matcher.group(4);
       } else {
         return null;
       }
     }
 
-    private static File getRealParentDir(File file, String relativePath){
+    private static File getRealParentDir(File file, String relativePath) {
       String path = file.getAbsolutePath().replaceAll("\\\\", "/");
-      if (path.endsWith(relativePath)){
+      if (path.endsWith(relativePath)) {
         return new File(path.substring(0, path.length() - relativePath.length()));
       } else {
         return null;
       }
     }
 
-    private long getDownloadTimeoutSec(){
+    private long getDownloadTimeoutSec() {
       String strValue = System.getProperty("teamcity.torrent.download.timeout", "300");
       try {
         return Long.parseLong(strValue);
-      } catch (NumberFormatException e){
+      } catch (NumberFormatException e) {
         return 300;
       }
     }

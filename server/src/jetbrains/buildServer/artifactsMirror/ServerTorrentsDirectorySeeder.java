@@ -206,9 +206,9 @@ public class ServerTorrentsDirectorySeeder {
         FileLink.createLink(artifactFile, torrentFile, linkDir);
         if (myConfigurator.isSeederEnabled()) {
           myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, artifactFile);
-        }
-        if (myTorrentsDirectorySeeder.getNumberOfSeededTorrents() >= myMaxTorrentsToSeed){
-          Loggers.SERVER.warn("Reached max number of seeded torrents. The last one will be cleaned out");
+          if (myTorrentsDirectorySeeder.getNumberOfSeededTorrents() >= myMaxTorrentsToSeed){
+            Loggers.SERVER.debug("Reached max number of seeded torrents. The last one will be cleaned out");
+          }
         }
 
       } catch (IOException e) {
