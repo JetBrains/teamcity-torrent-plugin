@@ -21,18 +21,13 @@ import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
-import jetbrains.buildServer.NetworkUtil;
-import jetbrains.buildServer.TempFiles;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BaseServerLoggerFacade;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
-import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.messages.BuildMessage1;
-import jetbrains.buildServer.util.FileUtil;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
-import org.apache.xerces.impl.dv.util.HexBin;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -68,7 +63,6 @@ public class TorrentTransportTest extends BaseTestCase {
   private static final String CONTEXT_PATH = "/httpAuth/repository/download/TC_Gaya80x_BuildDist/2063228.tcbuildid";
   public static final String SERVER_PATH = "http://localhost:12345" + CONTEXT_PATH + "/";
   private AgentRunningBuild myBuild;
-  private TempFiles myTempFiles;
   private Server myServer;
   private Map<String, File> myDownloadMap;
   private Map<String, String> myAgentParametersMap;
@@ -83,7 +77,6 @@ public class TorrentTransportTest extends BaseTestCase {
   @BeforeMethod
   public void setUp() throws Exception {
     super.setUp();
-    myTempFiles = new TempFiles();
     myServer = new Server(12345);
     WebAppContext handler = new WebAppContext();
     handler.setResourceBase("/");
@@ -129,7 +122,7 @@ public class TorrentTransportTest extends BaseTestCase {
       allowing(myBuild).getBuildLogger(); will (returnValue(myLogger));
     }});
 
-    myDirectorySeeder = new TorrentsDirectorySeeder(myTempFiles.createTempDir(), -1, 1);
+    myDirectorySeeder = new TorrentsDirectorySeeder(createTempDir(), -1, 1);
 
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(myDirectorySeeder,
                     new HttpClient(), myBuild.getBuildLogger()){
@@ -144,7 +137,7 @@ public class TorrentTransportTest extends BaseTestCase {
       }
     };
 
-    myTempDir = myTempFiles.createTempDir();
+    myTempDir = createTempDir();
   }
 
   public void testNoParam() throws IOException {
@@ -152,7 +145,7 @@ public class TorrentTransportTest extends BaseTestCase {
     final String urlString = SERVER_PATH + "aaaa.txt";
     final String digest = myTorrentTransport.getDigest(urlString);
     assertNull(digest);
-    final String digest2 = myTorrentTransport.downloadUrlTo(urlString, myTempFiles.createTempFile());
+    final String digest2 = myTorrentTransport.downloadUrlTo(urlString, createTempFile());
     assertNull(digest2);
   }
 
@@ -207,7 +200,7 @@ public class TorrentTransportTest extends BaseTestCase {
     torrentsDir.mkdir();
     final String fileName = "MyBuild.31.zip";
     final File artifactFile = new File(storageDir, fileName);
-    myTempFiles.createTempFile(20250).renameTo(artifactFile);
+    createTempFile(20250).renameTo(artifactFile);
 
     final File teamcityIvyFile = new File("agent/tests/resources/" +  TorrentTransportFactory.TEAMCITY_IVY);
     myDownloadMap.put("/" + TorrentTransportFactory.TEAMCITY_IVY, teamcityIvyFile);
@@ -255,6 +248,6 @@ public class TorrentTransportTest extends BaseTestCase {
   @AfterMethod
   public void tearDown() throws Exception {
     super.tearDown();
-    myTempFiles.cleanup();
+    myServer.stop();
   }
 }

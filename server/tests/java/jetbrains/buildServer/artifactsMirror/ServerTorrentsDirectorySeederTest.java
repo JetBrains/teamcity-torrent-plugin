@@ -54,7 +54,6 @@ import java.util.*;
 public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
 
   private ServerTorrentsDirectorySeeder myDirectorySeeder;
-  private TempFiles myTempFiles;
   private TorrentConfigurator myConfigurator;
   private Tracker myTracker;
 
@@ -64,9 +63,8 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     final Mockery m = new Mockery();
-    myTempFiles = new TempFiles();
 
-    final ServerPaths serverPaths = new ServerPaths(myTempFiles.createTempDir().getAbsolutePath());
+    final ServerPaths serverPaths = new ServerPaths(createTempDir().getAbsolutePath());
     final ServerSettings settings = m.mock(ServerSettings.class);
 
     myConfigurator = new TorrentConfigurator(serverPaths, settings, new XmlRpcHandlerManager() {
@@ -91,13 +89,13 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     final URI announceURI = URI.create("http://localhost:6969/announce");
     myDirectorySeeder.setAnnounceURI(announceURI);
 
-    final File artifactsDir = myTempFiles.createTempDir();
-    final File torrentsDir = myTempFiles.createTempDir();
+    final File artifactsDir = createTempDir();
+    final File torrentsDir = createTempDir();
     final File storageDir = myDirectorySeeder.getTorrentsDirectorySeeder().getStorageDirectory();
 
     final int fileSize = 11 * 1024 * 1024;
     for (int i=0; i<5; i++) {
-      File tempFile = myTempFiles.createTempFile(fileSize);
+      File tempFile = createTempFile(fileSize);
       // move to artifacts dir;
       final File srcFile = new File(artifactsDir, tempFile.getName());
       tempFile.renameTo(srcFile);
@@ -126,8 +124,8 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     myConfigurator.setFileSizeThresholdMb(1);
     myDirectorySeeder.startSeeder(3);
 
-    final File artifactsDir = myTempFiles.createTempDir();
-    final File torrentsDir = myTempFiles.createTempDir();
+    final File artifactsDir = createTempDir();
+    final File torrentsDir = createTempDir();
     final File storageDirectory = myDirectorySeeder.getTorrentsDirectorySeeder().getStorageDirectory();
 
     final int fileSize = 1 * 1024 * 1024;
@@ -136,7 +134,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     final List<File> allLinks = new ArrayList<File>();
     final List<File> allTorrents = new ArrayList<File>();
     for (int i=0; i<5; i++) {
-      File tempFile = myTempFiles.createTempFile(fileSize);
+      File tempFile = createTempFile(fileSize);
       // move to artifacts dir;
       final File srcFile = new File(artifactsDir, tempFile.getName());
       tempFile.renameTo(srcFile);
@@ -258,7 +256,6 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     super.tearDown();
     myDirectorySeeder.stopSeeder();
     myTracker.stop();
-    myTempFiles.cleanup();
   }
 
   private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, NoSuchAlgorithmException, IOException {
