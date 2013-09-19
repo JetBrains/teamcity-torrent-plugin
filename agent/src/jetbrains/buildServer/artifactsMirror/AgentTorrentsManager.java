@@ -93,17 +93,17 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   private boolean announceNewFile(@NotNull File srcFile) {
     if (!settingsInited()) return false;
 
+    try {
     myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(srcFile);
 
     if (myTorrentsDirectorySeeder.shouldCreateTorrentFileFor(srcFile)) {
-      try {
         Torrent torrent = Torrent.create(srcFile, myTrackerAnnounceUrl, "teamcity");
         myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrent, srcFile);
         log2Build(String.format("Seeding torrent for %s. Hash: %s", srcFile.getAbsolutePath(), torrent.getHexInfoHash()));
-      } catch (Exception e) {
-        log2Build("Can't start seeding: " + e.getMessage());
-        return false;
-      }
+    }
+    } catch (Exception e) {
+      log2Build("Can't start seeding: " + e.getMessage());
+      return false;
     }
 
     return true;
@@ -112,12 +112,14 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
 
   public int publishFiles(@NotNull Map<File, String> fileStringMap) throws ArtifactPublishingFailedException {
     // update filesize threshold
+    try {
     myTorrentsDirectorySeeder.setFileSizeThresholdMb(myTrackerManager.getFileSizeThresholdMb());
     myTorrentsDirectorySeeder.setAnnounceInterval(myTrackerManager.getAnnounceIntervalSec());
     final String announceUrl = myTrackerManager.getAnnounceUrl();
     if (announceUrl != null) {
       myTrackerAnnounceUrl = URI.create(announceUrl);
     }
+    } catch (Exception ex){}
     return announceBuildArtifacts(fileStringMap.keySet());
   }
 
