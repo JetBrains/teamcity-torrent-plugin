@@ -208,7 +208,7 @@ public class TorrentTransportTest extends BaseTestCase {
     final File ivyFile = new File(myTempDir, TorrentTransportFactory.TEAMCITY_IVY);
     myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
     Tracker tracker = new Tracker(6969);
-    Client client = new Client(InetAddress.getLocalHost());
+    Client client = new Client();
     try {
     tracker.start(true);
 
@@ -218,7 +218,7 @@ public class TorrentTransportTest extends BaseTestCase {
     final File torrentFile = new File(torrentsDir, fileName + ".torrent");
     torrent.save(torrentFile);
     myDownloadMap.put("/.teamcity/torrents/"+fileName+".torrent", torrentFile);
-    client.share();
+    client.start(InetAddress.getLocalHost());
     client.addTorrent(SharedTorrent.fromFile(torrentFile, storageDir, true));
 
     final File targetFile = new File(downloadDir, fileName);

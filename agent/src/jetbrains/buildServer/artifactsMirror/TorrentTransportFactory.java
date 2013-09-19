@@ -5,6 +5,7 @@ import com.intellij.openapi.util.io.StreamUtil;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.TrackerHelper;
 import jetbrains.buildServer.ArtifactsConstants;
+import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
@@ -87,12 +88,15 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       log2Build("Shouldn't use torrent transport for build type " + myBuildTracker.getCurrentBuild().getBuildTypeId(), buildLogger);
       return null;
     }
-/*
     if (NetworkUtil.isLocalHost(context.getServerUrl().getHost())) {
       log2Build("Shouldn't use torrent transport localhost", buildLogger);
       return null;
     }
-*/
+
+    if (!myAgentTorrentsManager.isTorrentClientStarted()){
+      log2Build("Agent torrent manager didn't start. Torrent transport is unavailable", buildLogger);
+      return null;
+    }
 
     return new TorrentTransport(myAgentTorrentsManager.getTorrentsDirectorySeeder(),
             createHttpClient(context),

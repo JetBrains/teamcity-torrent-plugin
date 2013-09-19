@@ -162,14 +162,14 @@ public class TorrentsDirectorySeeder {
 
   public void start(@NotNull InetAddress[] address,
                     @Nullable final URI defaultTrackerURI,
-                    final int announceInterval) {
+                    final int announceInterval) throws IOException {
     start(address, defaultTrackerURI, DIRECTORY_SCAN_INTERVAL_SECONDS, announceInterval);
   }
 
   public void start(@NotNull InetAddress[] address,
                     @Nullable final URI defaultTrackerURI,
                     final int directoryScanIntervalSeconds,
-                    final int announceInterval) {
+                    final int announceInterval) throws IOException {
     myNewLinksWatcher = new FilesWatcher(new FilesWatcher.WatchedFilesProvider() {
       public File[] getWatchedFiles() throws IOException {
         final Collection<File> allLinks = findAllLinks(myMaxTorrentsToSeed);

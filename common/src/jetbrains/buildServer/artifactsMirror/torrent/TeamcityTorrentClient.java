@@ -25,13 +25,8 @@ public class TeamcityTorrentClient {
     myClient = new Client();
   }
 
-  public void start(@NotNull InetAddress[] inetAddresses, @Nullable final URI defaultTrackerURI, final int announceInterval) {
-    try {
-      myClient = new Client(inetAddresses, defaultTrackerURI, announceInterval);
-      myClient.share();
-    } catch (IOException e) {
-      LOG.warn("Failed to start torrent client: " + e.toString());
-    }
+  public void start(@NotNull InetAddress[] inetAddresses, @Nullable final URI defaultTrackerURI, final int announceInterval) throws IOException {
+    myClient.start(inetAddresses, announceInterval, defaultTrackerURI);
   }
 
   public void stop() {
