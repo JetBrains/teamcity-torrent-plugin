@@ -203,7 +203,9 @@ public class TorrentsDirectorySeeder {
 
   public void stop() {
     myStopped = true;
-    myNewLinksWatcher.stop();
+    if (myNewLinksWatcher != null) {
+      myNewLinksWatcher.stop();
+    }
     myTorrentSeeder.stop();
   }
 

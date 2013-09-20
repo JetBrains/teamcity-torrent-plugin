@@ -249,5 +249,6 @@ public class TorrentTransportTest extends BaseTestCase {
   public void tearDown() throws Exception {
     super.tearDown();
     myServer.stop();
+    myDirectorySeeder.stop();
   }
 }
