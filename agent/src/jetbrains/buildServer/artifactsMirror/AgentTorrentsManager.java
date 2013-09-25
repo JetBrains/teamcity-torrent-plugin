@@ -1,16 +1,21 @@
 package jetbrains.buildServer.artifactsMirror;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.util.io.FileUtil;
 import com.turn.ttorrent.TorrentDefaults;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
+import jetbrains.buildServer.agent.impl.cache.AgentArtifactCacheProviderImpl;
+import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.util.EventDispatcher;
+import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,12 +40,15 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   private TorrentsDirectorySeeder myTorrentsDirectorySeeder;
   private AgentRunningBuild myBuild;
   private boolean myTorrentClientStarted = false;
+  @Nullable
+  private final ArtifactCacheProvider myArtifactCacheProvider;
 
   public AgentTorrentsManager(@NotNull BuildAgentConfiguration agentConfiguration,
                               @NotNull EventDispatcher<AgentLifeCycleListener> eventDispatcher,
+                              @Nullable final ArtifactCacheProvider artifactsCacheProvider,
                               @NotNull TorrentTrackerConfiguration trackerManager) throws Exception {
     eventDispatcher.addListener(this);
-
+    myArtifactCacheProvider = artifactsCacheProvider;
     File torrentsStorage = agentConfiguration.getCacheDirectory(TORRENT_FOLDER_NAME);
     myTrackerManager = trackerManager;
     myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, -1, 0);
@@ -114,8 +122,13 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   private boolean announceNewFile(@NotNull File srcFile) {
     if (!settingsInited()) return false;
 
+
     try {
+      if (myArtifactCacheProvider == null || !FileUtil.isAncestor(myArtifactCacheProvider.getCacheDir(), srcFile, true))
+        return false;
+
       myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(srcFile);
+
 
       if (myTorrentsDirectorySeeder.shouldCreateTorrentFileFor(srcFile)) {
         Torrent torrent = Torrent.create(srcFile, myTrackerAnnounceUrl, "teamcity");

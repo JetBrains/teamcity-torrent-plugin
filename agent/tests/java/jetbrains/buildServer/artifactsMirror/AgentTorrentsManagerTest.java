@@ -16,15 +16,18 @@
 
 package jetbrains.buildServer.artifactsMirror;
 
+import com.intellij.openapi.util.io.FileUtil;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
-import jetbrains.buildServer.agent.AgentLifeCycleListener;
-import jetbrains.buildServer.agent.AgentRunningBuild;
-import jetbrains.buildServer.agent.BuildAgent;
-import jetbrains.buildServer.agent.BuildAgentConfiguration;
+import jetbrains.buildServer.agent.*;
+import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
+import jetbrains.buildServer.artifacts.CleanableCachedArtifact;
+import jetbrains.buildServer.artifacts.FileCache;
+import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
+import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
 import org.jetbrains.annotations.NotNull;
@@ -35,6 +38,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +48,7 @@ import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -53,11 +58,13 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
   private Mock myConfigurationMock;
   private EventDispatcher<AgentLifeCycleListener> myDispatcher;
   private File myLinkDir;
+  private File myCacheDir;
 
   @BeforeMethod
   public void setUp() throws Exception {
     super.setUp();
     myLinkDir = createTempDir();
+    myCacheDir = myLinkDir.getParentFile();
     myDispatcher = EventDispatcher.create(AgentLifeCycleListener.class);
 
     myConfigurationMock = mock(BuildAgentConfiguration.class);
@@ -74,8 +81,29 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
       will(returnValue(60));
     }});
 
+    final ArtifactCacheProvider cacheProvider = new ArtifactCacheProvider() {
+      @NotNull
+      public FileCache getHttpCache(@NotNull URLContentRetriever urlContentRetriever) {
+        throw new NotImplementedException();
+      }
+
+      @NotNull
+      public File getCacheDir() {
+        return myCacheDir;
+      }
+
+      public void shutdownFlushExecutor() {
+        throw new NotImplementedException();
+      }
+
+      @NotNull
+      public List<CleanableCachedArtifact> getCleanableArtifacts() {
+        throw new NotImplementedException();
+      }
+    };
+
     myTorrentsManager = new AgentTorrentsManager((BuildAgentConfiguration)myConfigurationMock.proxy(),
-            myDispatcher, trackerConfiguration);
+            myDispatcher, cacheProvider, trackerConfiguration);
   }
 
   @AfterMethod
@@ -88,7 +116,6 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
   public void testAnnounceAllOnAgentStarted() throws IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
     Tracker tracker = new Tracker(6969);
     try {
-      Mock buildAgentMock = mock(BuildAgent.class);
 
       final List<String> torrentHashes = new ArrayList<String>();
       final List<File> createdFiles = new ArrayList<File>();
@@ -105,6 +132,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
         FileLink.createLink(artifactFile, torrentFile, myLinkDir);
       }
 
+      Mock buildAgentMock = mock(BuildAgent.class);
       myTorrentsManager.agentStarted((BuildAgent) buildAgentMock.proxy());
       new WaitFor(3*1000){
 
@@ -205,11 +233,43 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
 */
   }
 
+  public void test_dont_seed_from_non_cache_folder() throws IOException {
+    myCacheDir = createTempDir();
+    final File file1 = new File(myCacheDir, "art1.dat");
+    createTempFile(512).renameTo(file1);
+    final File otherDir = createTempDir();
+    final File file2 = new File(otherDir, "art2.dat");
+    createTempFile(1024).renameTo(file2);
+
+    Mock buildAgentMock = mock(BuildAgent.class);
+    myTorrentsManager.agentStarted((BuildAgent) buildAgentMock.proxy());
+    myTorrentsManager.buildStarted((AgentRunningBuild) buildStarted().proxy());
+
+    final HashMap<File, String> fileStringMap = new HashMap<File, String>();
+    fileStringMap.put(file1, file1.getName());
+    fileStringMap.put(file2, file2.getName());
+    myTorrentsManager.publishFiles(fileStringMap);
+    final Collection<SharedTorrent> sharedTorrents = myTorrentsManager.getTorrentsDirectorySeeder().getSharedTorrents();
+    assertEquals(1, sharedTorrents.size());
+    assertEquals("art1.dat", sharedTorrents.iterator().next().getName());
+  }
+
   @NotNull
   private Mock buildStarted() throws IOException {
     Mock buildMock = mock(AgentRunningBuild.class);
     buildMock.stubs().method("getBuildTypeId").will(returnValue("bt1"));
     buildMock.stubs().method("getCheckoutDirectory").will(returnValue(createTempDir()));
+    buildMock.stubs().method("getBuildLogger").will(returnValue(new BaseServerLoggerFacade() {
+      @Override
+      public void flush() {
+
+      }
+
+      @Override
+      protected void log(BuildMessage1 buildMessage1) {
+
+      }
+    }));
     AgentRunningBuild build = (AgentRunningBuild) buildMock.proxy();
     myDispatcher.getMulticaster().buildStarted(build);
     return buildMock;
