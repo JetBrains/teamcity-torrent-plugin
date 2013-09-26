@@ -120,12 +120,11 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   }
 
   private boolean announceNewFile(@NotNull File srcFile) {
-    if (!settingsInited()) return false;
-
+    if (!settingsInited()) return true;
 
     try {
       if (myArtifactCacheProvider == null || !FileUtil.isAncestor(myArtifactCacheProvider.getCacheDir(), srcFile, true))
-        return false;
+        return true;
 
       myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(srcFile);
 

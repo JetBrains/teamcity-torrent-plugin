@@ -152,9 +152,11 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
           log2Build("no seeders for " + urlString);
           return null;
         }
-
+        final long startTime = System.currentTimeMillis();
         mySeeder.downloadAndShareOrFail(torrent, target, target.getParentFile(), getDownloadTimeoutSec());
-        log2Build("Download successfull. Saving torrent..");
+        final long took = System.currentTimeMillis() - startTime + 1; // to avoid division by zero
+        final long fileSize = target.length();
+        log2Build(String.format("Download successfull. Avg speed %d kb/s. Saving torrent..", fileSize/took));
         File parentDir = getRealParentDir(target, parsedArtifactUrl.getArtifactPath());
         File torrentFile = new File(parentDir, parsedArtifactUrl.getTorrentPath());
         torrentFile.getParentFile().mkdirs();
