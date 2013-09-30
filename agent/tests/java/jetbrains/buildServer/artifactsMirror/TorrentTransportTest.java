@@ -208,26 +208,32 @@ public class TorrentTransportTest extends BaseTestCase {
     final File ivyFile = new File(myTempDir, TorrentTransportFactory.TEAMCITY_IVY);
     myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
     Tracker tracker = new Tracker(6969);
-    Client client = new Client();
+    List<Client> clientList = new ArrayList<Client>();
+    for (int i=0; i< TorrentTransportFactory.MIN_SEEDERS_COUNT_TO_TRY; i++){
+      clientList.add(new Client());
+    }
     try {
-    tracker.start(true);
+      tracker.start(true);
 
-    myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
+      myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
 
-    final Torrent torrent = Torrent.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
-    final File torrentFile = new File(torrentsDir, fileName + ".torrent");
-    torrent.save(torrentFile);
-    myDownloadMap.put("/.teamcity/torrents/"+fileName+".torrent", torrentFile);
-    client.start(InetAddress.getLocalHost());
-    client.addTorrent(SharedTorrent.fromFile(torrentFile, storageDir, true));
-
-    final File targetFile = new File(downloadDir, fileName);
-    final String digest = myTorrentTransport.downloadUrlTo(SERVER_PATH + fileName, targetFile);
-    assertEquals(torrent.getHexInfoHash(), digest);
-    assertTrue(FileUtils.contentEquals(artifactFile, targetFile));
+      final Torrent torrent = Torrent.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
+      final File torrentFile = new File(torrentsDir, fileName + ".torrent");
+      torrent.save(torrentFile);
+      myDownloadMap.put("/.teamcity/torrents/" + fileName + ".torrent", torrentFile);
+      for (Client client : clientList) {
+        client.start(InetAddress.getLocalHost());
+        client.addTorrent(SharedTorrent.fromFile(torrentFile, storageDir, true));
+      }
+      final File targetFile = new File(downloadDir, fileName);
+      final String digest = myTorrentTransport.downloadUrlTo(SERVER_PATH + fileName, targetFile);
+      assertEquals(torrent.getHexInfoHash(), digest);
+      assertTrue(FileUtils.contentEquals(artifactFile, targetFile));
     } finally {
+      for (Client client : clientList) {
+        client.stop();
+      }
       tracker.stop();
-      client.stop();
     }
   }
 
