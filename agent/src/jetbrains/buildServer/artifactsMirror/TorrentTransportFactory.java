@@ -245,6 +245,10 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       return torrent == null ? null : torrent.getHexInfoHash();
     }
 
+    public void interrupt() {
+
+    }
+
     private Torrent downloadTorrent(@NotNull final ParsedArtifactUrl parsedArtifactUrl) {
       final String torrentRelativePath = myTorrentsForArtifacts.get(parsedArtifactUrl.getArtifactPath());
       if (torrentRelativePath == null)
