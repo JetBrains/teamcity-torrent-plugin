@@ -89,7 +89,11 @@ public class TorrentsDirectorySeeder {
     List<File> sorted = new ArrayList<File>(links);
     Collections.sort(sorted, new Comparator<File>() {
       public int compare(File o1, File o2) {
-        return (int)(o2.lastModified() - o1.lastModified());
+        if (o1.lastModified() == o2.lastModified()){
+          return o1.getAbsolutePath().compareTo(o2.getAbsolutePath());
+        } else {
+          return (int)(o2.lastModified() - o1.lastModified());
+        }
       }
     });
 

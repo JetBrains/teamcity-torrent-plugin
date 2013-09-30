@@ -128,7 +128,7 @@ public class ServerTorrentsDirectorySeeder {
               scanInterval,
               myConfigurator.getAnnounceIntervalSec());
     } catch (Exception e) {
-      Loggers.SERVER.warn("Failed to start torrent seeder, error: " + e.toString());
+      Loggers.SERVER.warn("Failed to start torrent seeder", e);
     }
   }
 

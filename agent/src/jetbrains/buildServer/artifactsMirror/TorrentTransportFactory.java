@@ -54,6 +54,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   public static final String TEAMCITY_IVY = "teamcity-ivy.xml";
   public static final String TEAMCITY_TORRENTS = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/torrents/";
 
+  public static final int MIN_SEEDERS_COUNT_TO_TRY=2;
+
   public static final String TEAMCITY_ARTIFACTS_TRANSPORT = "teamcity.artifacts.transport";
 
 
@@ -153,7 +155,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
           return null;
         }
         final long startTime = System.currentTimeMillis();
-        mySeeder.downloadAndShareOrFail(torrent, target, target.getParentFile(), getDownloadTimeoutSec());
+        mySeeder.downloadAndShareOrFail(torrent, target, target.getParentFile(), getDownloadTimeoutSec(), MIN_SEEDERS_COUNT_TO_TRY);
         final long took = System.currentTimeMillis() - startTime + 1; // to avoid division by zero
         final long fileSize = target.length();
         log2Build(String.format("Download successfull. Avg speed %d kb/s. Saving torrent..", fileSize/took));

@@ -94,7 +94,11 @@ public class TeamcityTorrentClient {
     return myClient.getTorrents().size();
   }
 
-  public void downloadAndShareOrFail(Torrent torrent, File destFile, File destDir, long downloadTimeoutSec) throws IOException, NoSuchAlgorithmException, InterruptedException {
+  public void downloadAndShareOrFail(@NotNull final Torrent torrent,
+                                     @NotNull final File destFile,
+                                     @NotNull final File destDir,
+                                     final long downloadTimeoutSec,
+                                     final int minSeedersCount) throws IOException, NoSuchAlgorithmException, InterruptedException {
     boolean torrentContainsFile = false;
     for (String filePath : torrent.getFilenames()) {
       final String destFileAbsolutePath = destFile.getAbsolutePath();
@@ -117,7 +121,7 @@ public class TeamcityTorrentClient {
     }
     LOG.info(String.format("Will attempt to download uninterruptibly %s into %s. Timeout:%d",
             destFile.getAbsolutePath(), destDir.getAbsolutePath(), downloadTimeoutSec));
-    myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec);
+    myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec, minSeedersCount);
   }
 
   public Collection<SharedTorrent> getSharedTorrents(){
