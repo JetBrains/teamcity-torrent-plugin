@@ -107,7 +107,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
   private static boolean shouldUseTorrentTransport(@NotNull final AgentRunningBuild build) {
     final String param = build.getSharedConfigParameters().get(TEAMCITY_ARTIFACTS_TRANSPORT);
-    return param != null && param.contains(TorrentTransport.class.getSimpleName());
+    return param != null && param.equals(TorrentTransport.class.getSimpleName());
   }
 
   private static void log2Build(final String msg, final BuildProgressLogger buildLogger) {
