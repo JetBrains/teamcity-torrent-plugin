@@ -86,13 +86,20 @@ public class TorrentsDirectorySeeder {
       return links;
     }
 
+    final Map<File, Long> fileTimeMap = new HashMap<File, Long>();
+
     List<File> sorted = new ArrayList<File>(links);
+    for (File file : sorted) {
+      fileTimeMap.put(file, file.lastModified());
+    }
     Collections.sort(sorted, new Comparator<File>() {
       public int compare(File o1, File o2) {
-        if (o1.lastModified() == o2.lastModified()){
+        long o1Time = fileTimeMap.get(o1);
+        long o2Time = fileTimeMap.get(o2);
+        if (o1Time == o2Time){
           return o1.getAbsolutePath().compareTo(o2.getAbsolutePath());
         } else {
-          return (int)(o2.lastModified() - o1.lastModified());
+          return (int)(o2Time - o1Time);
         }
       }
     });
