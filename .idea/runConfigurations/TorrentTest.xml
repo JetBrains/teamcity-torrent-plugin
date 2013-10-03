@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="TorrentTest" type="TestNG" factoryName="TestNG">
+  <configuration default="false" name="TorrentTest" type="TestNG" factoryName="TestNG" folderName="Torrent Lib tests">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
       <pattern>
         <option name="PATTERN" value="com.turn.ttorrent.common.*" />

@@ -1,15 +1,19 @@
 package jetbrains.buildServer.artifactsMirror;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.util.io.FileUtil;
+import com.turn.ttorrent.TorrentDefaults;
+import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
-import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
-import jetbrains.buildServer.artifactsMirror.seeder.TorrentFileFactory;
+import jetbrains.buildServer.agent.impl.cache.AgentArtifactCacheProviderImpl;
+import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
-import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.log.Loggers;
+import jetbrains.buildServer.messages.BuildMessage1;
+import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.util.EventDispatcher;
-import jetbrains.buildServer.util.FileUtil;
+import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,77 +35,68 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   @NotNull
   private final TorrentTrackerConfiguration myTrackerManager;
   private volatile URI myTrackerAnnounceUrl;
-  private volatile Integer myFileSizeThresholdMb;
+  private volatile Integer myFileSizeThresholdMb = TorrentDefaults.FILESIZE_THRESHOLD_MB;
+  private volatile Integer myAnnounceIntervalSec = TorrentDefaults.ANNOUNCE_INTERVAL_SEC;
   private TorrentsDirectorySeeder myTorrentsDirectorySeeder;
   private AgentRunningBuild myBuild;
+  private boolean myTorrentClientStarted = false;
+  @Nullable
+  private final ArtifactCacheProvider myArtifactCacheProvider;
 
   public AgentTorrentsManager(@NotNull BuildAgentConfiguration agentConfiguration,
                               @NotNull EventDispatcher<AgentLifeCycleListener> eventDispatcher,
+                              @Nullable final ArtifactCacheProvider artifactsCacheProvider,
                               @NotNull TorrentTrackerConfiguration trackerManager) throws Exception {
     eventDispatcher.addListener(this);
-
+    myArtifactCacheProvider = artifactsCacheProvider;
     File torrentsStorage = agentConfiguration.getCacheDirectory(TORRENT_FOLDER_NAME);
     myTrackerManager = trackerManager;
-    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, new TorrentFileFactory() {
-      @Nullable
-      public File createTorrentFile(@NotNull File sourceFile, @NotNull File parentDir) throws IOException {
-        return AgentTorrentsManager.this.createTorrentFile(sourceFile, parentDir);
-      }
-    });
-  }
-
-  private File createTorrentFile(File sourceFile, File parentDir) {
-    if (!settingsInited()) return null;
-    if (shouldCreateTorrentFileFor(sourceFile)) {
-      return TorrentUtil.getOrCreateTorrent(sourceFile, parentDir, myTrackerAnnounceUrl);
-    }
-    return null;
+    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, -1, 0);
   }
 
   private boolean settingsInited() {
-    return myTrackerAnnounceUrl != null && myFileSizeThresholdMb != null;
+    return myTorrentClientStarted && myTrackerAnnounceUrl != null && myFileSizeThresholdMb != null;
   }
 
-  private boolean initSettings() {
+  private boolean updateSettings() {
     try {
       String announceUrl = myTrackerManager.getAnnounceUrl();
       if (announceUrl == null) return false;
       myTrackerAnnounceUrl = new URI(announceUrl);
-    } catch (URISyntaxException e) {
-      LOG.warn(e.toString(), e);
+      myFileSizeThresholdMb = myTrackerManager.getFileSizeThresholdMb();
+      myTorrentsDirectorySeeder.setFileSizeThresholdMb(myFileSizeThresholdMb);
+      myAnnounceIntervalSec = myTrackerManager.getAnnounceIntervalSec();
+      myTorrentsDirectorySeeder.setAnnounceInterval(myAnnounceIntervalSec);
+    } catch (Exception e) {
+      LOG.warn("Error updating torrent settings", e);
       return false;
     }
-    myFileSizeThresholdMb = myTrackerManager.getFileSizeThresholdMb();
     return true;
   }
 
   @Override
   public void agentStarted(@NotNull BuildAgent agent) {
-    initSettings();
+    checkReady();
+  }
+
+  public void checkReady(){
+    if (myTorrentClientStarted){
+      updateSettings();
+      return;
+    }
     try {
-      List<InetAddress> addrs = new ArrayList<InetAddress>();
-      addrs.add(InetAddress.getByName(agent.getConfiguration().getOwnAddress()));
-      addrs.addAll(Arrays.asList(NetworkUtil.getSelfAddresses()));
-      InetAddress found = null;
-      for (InetAddress addr: addrs) {
-        if (addr.isLoopbackAddress() || addr.isAnyLocalAddress()) continue;
-        found = addr; break;
+      if (updateSettings()) {
+        myTorrentsDirectorySeeder.start(NetworkUtil.getSelfAddresses(), myTrackerAnnounceUrl, myAnnounceIntervalSec);
+        myTorrentClientStarted = true;
       }
-      if (found != null) {
-        myTorrentsDirectorySeeder.start(found);
-      } else {
-        Loggers.AGENT.warn("Failed to find inet address to bind seeder to, list of all available addresses: " + addrs);
-      }
-    } catch (SocketException e) {
-      Loggers.AGENT.error("Failed to start torrent seeder, error: " + e.toString());
-    } catch (UnknownHostException e) {
-      Loggers.AGENT.error("Failed to start torrent seeder, error: " + e.toString());
+    } catch (Exception e) {
+      Loggers.AGENT.warn("Failed to start torrent seeder", e);
     }
   }
 
   @Override
   public void buildStarted(@NotNull AgentRunningBuild runningBuild) {
-    initSettings();
+    checkReady();
     myBuild = runningBuild;
   }
 
@@ -112,34 +107,39 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
     }
   }
 
-  private boolean announceNewFile(@NotNull File srcFile) {
-    if (!settingsInited()) return false;
-    if (shouldCreateTorrentFileFor(srcFile)) {
-      File linkDir;
-      if (srcFile.getAbsolutePath().startsWith(myBuild.getCheckoutDirectory().getAbsolutePath())) {
-        String relPath = FileUtil.getRelativePath(myBuild.getCheckoutDirectory(), srcFile);
-        linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), myBuild.getBuildTypeId() + File.separator + relPath).getParentFile();
-      } else {
-        linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), myBuild.getBuildTypeId());
-      }
-      linkDir.mkdirs();
-      if (!linkDir.isDirectory()) return false;
-      try {
-        FileLink.createLink(srcFile, linkDir);
-      } catch (IOException e) {
-        return false;
-      }
-    }
-
-    return true;
+  public boolean isTorrentClientStarted() {
+    return myTorrentClientStarted;
   }
 
-  private boolean shouldCreateTorrentFileFor(File srcFile) {
-    return srcFile.length() >= myFileSizeThresholdMb * 1024 * 1024;
+  public TorrentsDirectorySeeder getTorrentsDirectorySeeder() {
+    return myTorrentsDirectorySeeder;
   }
 
   public int publishFiles(@NotNull Map<File, String> fileStringMap) throws ArtifactPublishingFailedException {
     return announceBuildArtifacts(fileStringMap.keySet());
+  }
+
+  private boolean announceNewFile(@NotNull File srcFile) {
+    if (!settingsInited()) return true;
+
+    try {
+      if (myArtifactCacheProvider == null || !FileUtil.isAncestor(myArtifactCacheProvider.getCacheDir(), srcFile, true))
+        return true;
+
+      myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(srcFile);
+
+
+      if (myTorrentsDirectorySeeder.shouldCreateTorrentFileFor(srcFile)) {
+        Torrent torrent = Torrent.create(srcFile, myTrackerAnnounceUrl, "teamcity");
+        myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrent, srcFile);
+        log2Build(String.format("Seeding torrent for %s. Hash: %s", srcFile.getAbsolutePath(), torrent.getHexInfoHash()));
+      }
+    } catch (Exception e) {
+      log2Build("Can't start seeding: " + e.getMessage());
+      return false;
+    }
+
+    return true;
   }
 
   private int announceBuildArtifacts(@NotNull Collection<File> artifacts) {
@@ -149,4 +149,10 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
     }
     return num;
   }
+
+  private void log2Build(final String msg) {
+    final BuildMessage1 textMessage = DefaultMessagesInfo.createTextMessage(msg);
+    myBuild.getBuildLogger().logMessage(DefaultMessagesInfo.internalize(textMessage));
+  }
+
 }

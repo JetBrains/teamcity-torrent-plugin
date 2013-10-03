@@ -29,6 +29,10 @@ public class TrackerManagerProxy implements TorrentTrackerConfiguration {
     return (Integer) call("getFileSizeThresholdMb");
   }
 
+  public int getAnnounceIntervalSec() {
+    return (Integer) call("getAnnounceIntervalSec");
+  }
+
   private Object call(@NotNull String methodName) {
     try {
       return myXmlRpcTarget.call(XmlRpcConstants.TORRENT_TRACKER_CONFIGURATION + "." + methodName, new Object[0]);

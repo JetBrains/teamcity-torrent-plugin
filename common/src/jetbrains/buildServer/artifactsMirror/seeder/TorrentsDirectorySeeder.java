@@ -16,52 +16,49 @@
 
 package jetbrains.buildServer.artifactsMirror.seeder;
 
-import jetbrains.buildServer.artifactsMirror.torrent.TorrentSeeder;
-import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
+import com.turn.ttorrent.client.SharedTorrent;
+import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.configuration.ChangeListener;
 import jetbrains.buildServer.configuration.FilesWatcher;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.util.CollectionsUtil;
 import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 public class TorrentsDirectorySeeder {
+
+  public static final String TORRENTS_DIT_PATH = ".teamcity/torrents";
+  public static final int DIRECTORY_SCAN_INTERVAL_SECONDS = 30;
+
+  public static final int TORRENTS_STORAGE_VERSION=2;
+  public static final String TORRENTS_STORAGE_VERSION_FILE = "storage.version";
+
   @NotNull
   private final File myTorrentStorage;
 
-  @NotNull
-  private final TorrentSeeder myTorrentSeeder = new TorrentSeeder();
-  private final FilesWatcher myNewLinksWatcher;
-  private final TorrentFileFactory myTorrentFactory;
-  private volatile boolean myStopped = true;
-  private volatile int myMaxTorrentsToSeed = -1; // no limit by default
 
-  public TorrentsDirectorySeeder(@NotNull File torrentStorage, @NotNull TorrentFileFactory torrentFileFactory) {
+  @NotNull
+  private final TeamcityTorrentClient myTorrentSeeder = new TeamcityTorrentClient();
+  private FilesWatcher myNewLinksWatcher;
+  private volatile boolean myStopped = true;
+  private volatile int myMaxTorrentsToSeed; // no limit by default
+  private volatile int myFileSizeThresholdMb; //default value
+
+  public TorrentsDirectorySeeder(@NotNull File torrentStorage, int maxTorrentsToSeed, int fileSizeThresholdMb) {
+    myMaxTorrentsToSeed = maxTorrentsToSeed;
+    myFileSizeThresholdMb = fileSizeThresholdMb;
     myTorrentStorage = torrentStorage;
-    myTorrentFactory = torrentFileFactory;
-    myNewLinksWatcher = new FilesWatcher(new FilesWatcher.WatchedFilesProvider() {
-      public File[] getWatchedFiles() throws IOException {
-        Collection<File> links = findAllLinks(myMaxTorrentsToSeed);
-        return links.toArray(new File[links.size()]);
-      }
-    });
-    myNewLinksWatcher.registerListener(new ChangeListener() {
-      public void changeOccured(String requestor) {
-        for (File link : CollectionsUtil.join(myNewLinksWatcher.getNewFiles(), myNewLinksWatcher.getModifiedFiles())) {
-          processChangedLink(link);
-        }
-        for (File link : myNewLinksWatcher.getRemovedFiles()) {
-          processRemovedLink(link);
-        }
-      }
-    });
+    checkTorrentsStorageVersion();
+
   }
 
   @NotNull
@@ -89,10 +86,21 @@ public class TorrentsDirectorySeeder {
       return links;
     }
 
+    final Map<File, Long> fileTimeMap = new HashMap<File, Long>();
+
     List<File> sorted = new ArrayList<File>(links);
+    for (File file : sorted) {
+      fileTimeMap.put(file, file.lastModified());
+    }
     Collections.sort(sorted, new Comparator<File>() {
       public int compare(File o1, File o2) {
-        return (int)(o2.lastModified() - o1.lastModified());
+        long o1Time = fileTimeMap.get(o1);
+        long o2Time = fileTimeMap.get(o2);
+        if (o1Time == o2Time){
+          return o1.getAbsolutePath().compareTo(o2.getAbsolutePath());
+        } else {
+          return (o2Time - o1Time) > 0 ? 1 : -1;
+        }
       }
     });
 
@@ -100,15 +108,20 @@ public class TorrentsDirectorySeeder {
   }
 
   private void processRemovedLink(@NotNull File removedLink) {
-    File torrentFile = getTorrentFileByLinkFile(removedLink);
-    if (!torrentFile.exists()) {
-      return;
+    try {
+      if (removedLink.exists()) {
+        File torrentFile = FileLink.getTorrentFile(removedLink);
+        if (!torrentFile.exists()) {
+          return;
+        }
+        stopSeedingTorrent(torrentFile);
+        FileUtil.delete(torrentFile);
+      }
+      cleanupBrokenLink(removedLink);
+    } catch (IOException e) {
+      Loggers.AGENT.warn("Exception during new link removing", e);
     }
-
-    stopSeedingTorrent(torrentFile);
-    FileUtil.delete(torrentFile);
-    cleanupBrokenLink(removedLink);
-  }
+ }
 
   private void cleanupBrokenLink(@NotNull File linkFile) {
     File linkDir = linkFile.getParentFile();
@@ -118,21 +131,30 @@ public class TorrentsDirectorySeeder {
     FileUtil.deleteIfEmpty(linkDir);
   }
 
-  private void processChangedLink(@NotNull File changedLink) {
+  private void startSeeding(File linkFile){
     try {
-      File torrentFile = getTorrentFileByLinkFile(changedLink);
-      if (torrentFile.exists()) {
-        stopSeedingTorrent(torrentFile);
+      File torrentFile = FileLink.getTorrentFile(linkFile);
+      File targetFile = FileLink.getTargetFile(linkFile);
+
+      if (torrentFile.exists() && targetFile.exists() && targetFile.length() >= getFileSizeThresholdMb() * 1024 * 1024){
+        getTorrentSeeder().seedTorrent(torrentFile, targetFile);
       }
+    } catch (IOException e) {
+    } catch (NoSuchAlgorithmException e) {
+    }
+  }
+
+  public void processChangedLink(@NotNull File changedLink) {
+    //do nothing
+    try {
+      File torrentFile = FileLink.getTorrentFile(changedLink);
 
       File targetFile = FileLink.getTargetFile(changedLink);
-      File linkDir = changedLink.getParentFile();
-      if (targetFile.isFile()) {
-        torrentFile = myTorrentFactory.createTorrentFile(targetFile, linkDir);
-        if (torrentFile != null) {
-          myTorrentSeeder.seedTorrent(torrentFile, targetFile);
+      if (!targetFile.isFile()) {
+        if (torrentFile.exists()) {
+          stopSeedingTorrent(torrentFile);
+          FileUtil.delete(torrentFile);
         }
-      } else {
         cleanupBrokenLink(changedLink);
       }
     } catch (IOException e) {
@@ -144,26 +166,44 @@ public class TorrentsDirectorySeeder {
     myTorrentSeeder.stopSeeding(torrentFile);
   }
 
-  public static File getTorrentFileByLinkFile(@NotNull File linkFile) {
-    String linkFileName = linkFile.getName();
-    String name = linkFileName.substring(0, linkFileName.length() - FileLink.LINK_FILE_SUFFIX.length());
-    return new File(linkFile.getParentFile(), name + TorrentUtil.TORRENT_FILE_SUFFIX);
-  }
 
   public boolean isSeeding(@NotNull File torrentFile) throws IOException, NoSuchAlgorithmException {
     return myTorrentSeeder.isSeeding(torrentFile);
   }
 
-  public void start(@NotNull InetAddress address) {
-    start(address, 30);
+  public void start(@NotNull InetAddress[] address,
+                    @Nullable final URI defaultTrackerURI,
+                    final int announceInterval) throws IOException {
+    start(address, defaultTrackerURI, DIRECTORY_SCAN_INTERVAL_SECONDS, announceInterval);
   }
 
-  public void start(@NotNull InetAddress address, int directoryScanIntervalSeconds) {
-    myTorrentSeeder.start(address);
+  public void start(@NotNull InetAddress[] address,
+                    @Nullable final URI defaultTrackerURI,
+                    final int directoryScanIntervalSeconds,
+                    final int announceInterval) throws IOException {
+    myNewLinksWatcher = new FilesWatcher(new FilesWatcher.WatchedFilesProvider() {
+      public File[] getWatchedFiles() throws IOException {
+        final Collection<File> allLinks = findAllLinks(myMaxTorrentsToSeed);
+        return allLinks.toArray(new File[allLinks.size()]);
+      }
+    });
+    myNewLinksWatcher.registerListener(new ChangeListener() {
+      public void changeOccured(String requestor) {
+        for (File link : CollectionsUtil.join(myNewLinksWatcher.getNewFiles(), myNewLinksWatcher.getModifiedFiles())) {
+          processChangedLink(link);
+        }
+        for (File link : myNewLinksWatcher.getRemovedFiles()) {
+          processRemovedLink(link);
+        }
+      }
+    });
+
+    myTorrentSeeder.start(address, defaultTrackerURI, announceInterval);
 
     // initialization: scan all existing links and start seeding them
-    for (File linkFile: findAllLinks(-1)) {
-      processChangedLink(linkFile);
+    final Collection<File> initialLinks = findAllLinks(myMaxTorrentsToSeed);
+    for (File linkFile: initialLinks) {
+      startSeeding(linkFile);
     }
 
     myNewLinksWatcher.setSleepingPeriod(directoryScanIntervalSeconds * 1000);
@@ -174,7 +214,9 @@ public class TorrentsDirectorySeeder {
 
   public void stop() {
     myStopped = true;
-    myNewLinksWatcher.stop();
+    if (myNewLinksWatcher != null) {
+      myNewLinksWatcher.stop();
+    }
     myTorrentSeeder.stop();
   }
 
@@ -186,12 +228,70 @@ public class TorrentsDirectorySeeder {
     return myTorrentSeeder.getNumberOfSeededTorrents();
   }
 
-  public int getMaxTorrentsToSeed() {
-    return myMaxTorrentsToSeed;
+  public int getFileSizeThresholdMb() {
+    return myFileSizeThresholdMb;
+  }
+
+  public void setFileSizeThresholdMb(int fileSizeThresholdMb) {
+    myFileSizeThresholdMb = fileSizeThresholdMb;
+  }
+
+  public void setAnnounceInterval(final int announceInterval){
+    myTorrentSeeder.setAnnounceInterval(announceInterval);
+  }
+
+  public boolean shouldCreateTorrentFileFor(File srcFile) {
+    return srcFile.length() >= myFileSizeThresholdMb * 1024 * 1024;
+  }
+
+  @NotNull
+  public TeamcityTorrentClient getTorrentSeeder() {
+    return myTorrentSeeder;
+  }
+
+  //for tests only
+  FilesWatcher getNewLinksWatcher() {
+    return myNewLinksWatcher;
+  }
+
+  private void checkTorrentsStorageVersion(){
+
+    final File versionFile = new File(myTorrentStorage, TORRENTS_STORAGE_VERSION_FILE);
+    if (versionFile.exists()) {
+      try {
+        final String s = FileUtil.readText(versionFile);
+        if (Integer.parseInt(s) == TORRENTS_STORAGE_VERSION)
+          return;
+        else {
+          Loggers.AGENT.warn("Torrent storage version " + s + " doesn't match expected " + TORRENTS_STORAGE_VERSION);
+          Loggers.AGENT.warn("Torrent storage will be cleaned");
+        }
+      } catch (Exception e) {
+        Loggers.AGENT.warn("IOE during reading storage version. Will clean the storage", e);
+      }
+    } else {
+      Loggers.AGENT.info("No torrent storage version file available. Will clean the storage");
+    }
+    final String[] names = myTorrentStorage.list();
+    for (String name : names) {
+      if (name.equals(TORRENTS_STORAGE_VERSION_FILE))
+        continue;
+      FileUtil.delete(new File(myTorrentStorage, name));
+    }
+
+    try {
+      FileUtil.writeFileAndReportErrors(versionFile, String.valueOf(TORRENTS_STORAGE_VERSION));
+    } catch (IOException e) {
+      Loggers.AGENT.warn("Unable to write versions file. All caches will be cleaned on restart");
+    }
   }
 
   public void setMaxTorrentsToSeed(int maxTorrentsToSeed) {
     myMaxTorrentsToSeed = maxTorrentsToSeed;
+  }
+
+  public Collection<SharedTorrent> getSharedTorrents(){
+    return myTorrentSeeder.getSharedTorrents();
   }
 }
 

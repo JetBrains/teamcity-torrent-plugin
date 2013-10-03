@@ -19,4 +19,11 @@ public interface TorrentTrackerConfiguration {
    * @return see above
    */
   int getFileSizeThresholdMb();
-}
+
+  /**
+  * Returns the announce interval to avoid too frequent or too rare tracker updates
+  * @return update interval in seconds
+  */
+  int getAnnounceIntervalSec();
+
+ }
