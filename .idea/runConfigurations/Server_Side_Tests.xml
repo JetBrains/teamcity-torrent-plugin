@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Server Side Tests" type="TestNG" factoryName="TestNG" folderName="Plugin Tests">
+  <configuration default="false" name="Server side tests" type="TestNG" factoryName="TestNG" folderName="Plugin Tests">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
       <pattern>
         <option name="PATTERN" value="jetbrains.buildServer.artifactsMirror.*" />
