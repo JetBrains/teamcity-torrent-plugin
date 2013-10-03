@@ -99,7 +99,7 @@ public class TorrentsDirectorySeeder {
         if (o1Time == o2Time){
           return o1.getAbsolutePath().compareTo(o2.getAbsolutePath());
         } else {
-          return (int)(o2Time - o1Time);
+          return (o2Time - o1Time) > 0 ? 1 : -1;
         }
       }
     });
