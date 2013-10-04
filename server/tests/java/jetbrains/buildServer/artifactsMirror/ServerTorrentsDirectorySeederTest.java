@@ -117,11 +117,11 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
 
 
   public void new_file_seedeed_old_removed() throws IOException, InterruptedException {
-    myDirectorySeeder.setAnnounceURI(URI.create("http://localhost:6969/announce"));
-    myConfigurator.setTrackerEnabled(true);
-    myConfigurator.setSeederEnabled(true);
+    myConfigurator.setAnnounceUrl("http://localhost:6969/announce");
     myConfigurator.setMaxNumberOfSeededTorrents(3);
     myConfigurator.setFileSizeThresholdMb(1);
+    myConfigurator.setTrackerEnabled(true);
+    myConfigurator.setSeederEnabled(true);
     myDirectorySeeder.startSeeder(3);
 
     final File artifactsDir = createTempDir();

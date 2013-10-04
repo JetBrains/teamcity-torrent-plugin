@@ -42,7 +42,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   }
 
   public void onBeforeAddOrUpdate(@NotNull File file) {
-    LOG.info("onBeforeAddOrUpdate " + file.getAbsolutePath());
+    myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(file);
   }
 
   public void onAfterAddOrUpdate(@NotNull File file) {
@@ -85,12 +85,10 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   }
 
   public void onBeforeDelete(@NotNull File file) {
-    LOG.info("onBeforeDelete " + file.getAbsolutePath());
     myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(file);
   }
 
   public void onAfterDelete(@NotNull File file) {
-    LOG.info("onAfterDelete " + file.getAbsolutePath());
   }
 
   private void log2Build(String msg){
