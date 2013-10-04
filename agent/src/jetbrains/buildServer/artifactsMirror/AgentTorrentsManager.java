@@ -27,7 +27,7 @@ import java.util.*;
  * Date: 10/9/12
  * Time: 5:12 PM
  */
-public class AgentTorrentsManager extends AgentLifeCycleAdapter implements ArtifactsPublisher {
+public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   private final static Logger LOG = Logger.getInstance(AgentTorrentsManager.class.getName());
 
   private static final String TORRENT_FOLDER_NAME = "torrents";
@@ -56,10 +56,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
     if (artifactsCacheProvider != null){
       artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(myTorrentsDirectorySeeder, currentBuildTracker, trackerManager));
     }
-  }
-
-  private boolean settingsInited() {
-    return myTorrentClientStarted && myTrackerAnnounceUrl != null && myFileSizeThresholdMb != null;
   }
 
   private boolean updateSettings() {
@@ -118,45 +114,4 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   public TorrentsDirectorySeeder getTorrentsDirectorySeeder() {
     return myTorrentsDirectorySeeder;
   }
-
-  public int publishFiles(@NotNull Map<File, String> fileStringMap) throws ArtifactPublishingFailedException {
-    return announceBuildArtifacts(fileStringMap.keySet());
-  }
-
-  private boolean announceNewFile(@NotNull File srcFile) {
-    if (!settingsInited()) return true;
-
-    try {
-      if (myArtifactCacheProvider == null || !FileUtil.isAncestor(myArtifactCacheProvider.getCacheDir(), srcFile, true))
-        return true;
-
-      myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(srcFile);
-
-
-      if (myTorrentsDirectorySeeder.shouldCreateTorrentFileFor(srcFile)) {
-        Torrent torrent = Torrent.create(srcFile, myTrackerAnnounceUrl, "teamcity");
-        myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrent, srcFile);
-        log2Build(String.format("Seeding torrent for %s. Hash: %s", srcFile.getAbsolutePath(), torrent.getHexInfoHash()));
-      }
-    } catch (Exception e) {
-      log2Build("Can't start seeding: " + e.getMessage());
-      return false;
-    }
-
-    return true;
-  }
-
-  private int announceBuildArtifacts(@NotNull Collection<File> artifacts) {
-    int num = 0;
-    for (File artifact : artifacts) {
-      if (announceNewFile(artifact)) ++num;
-    }
-    return num;
-  }
-
-  private void log2Build(final String msg) {
-    final BuildMessage1 textMessage = DefaultMessagesInfo.createTextMessage(msg);
-    myBuild.getBuildLogger().logMessage(DefaultMessagesInfo.internalize(textMessage));
-  }
-
 }
