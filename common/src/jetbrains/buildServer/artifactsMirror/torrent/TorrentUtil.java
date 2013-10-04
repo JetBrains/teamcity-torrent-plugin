@@ -2,6 +2,10 @@ package jetbrains.buildServer.artifactsMirror.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.common.Torrent;
+import jetbrains.buildServer.agent.BuildProgressLogger;
+import jetbrains.buildServer.artifactsMirror.TorrentTrackerConfiguration;
+import jetbrains.buildServer.messages.BuildMessage1;
+import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.util.ExceptionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -81,4 +85,15 @@ public class TorrentUtil {
 
     return null;
   }
+
+  public static boolean shouldCreateTorrentFor(@NotNull final long fileSize, @NotNull final TorrentTrackerConfiguration configuration){
+    return (fileSize >= configuration.getFileSizeThresholdMb()*1024*1024) && configuration.getAnnounceUrl() != null;
+  }
+
+  public static void log2Build(final String msg, final BuildProgressLogger buildLogger) {
+    final BuildMessage1 textMessage = DefaultMessagesInfo.createTextMessage(msg);
+    buildLogger.logMessage(DefaultMessagesInfo.internalize(textMessage));
+  }
+
+
 }

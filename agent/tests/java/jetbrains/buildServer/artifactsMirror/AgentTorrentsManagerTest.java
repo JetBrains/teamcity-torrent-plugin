@@ -22,10 +22,8 @@ import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.*;
-import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
-import jetbrains.buildServer.artifacts.CleanableCachedArtifact;
-import jetbrains.buildServer.artifacts.FileCache;
-import jetbrains.buildServer.artifacts.URLContentRetriever;
+import jetbrains.buildServer.agent.impl.CurrentBuildTrackerImpl;
+import jetbrains.buildServer.artifacts.*;
 import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -88,6 +86,11 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
       }
 
       @NotNull
+      public LocalCache getLocalCache() {
+        return null;
+      }
+
+      @NotNull
       public File getCacheDir() {
         return myCacheDir;
       }
@@ -100,10 +103,18 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
       public List<CleanableCachedArtifact> getCleanableArtifacts() {
         throw new NotImplementedException();
       }
+
+      public void addListener(@NotNull ArtifactsCacheListener artifactsCacheListener) {
+
+      }
+
+      public void removeListener(@NotNull ArtifactsCacheListener artifactsCacheListener) {
+
+      }
     };
 
     myTorrentsManager = new AgentTorrentsManager((BuildAgentConfiguration)myConfigurationMock.proxy(),
-            myDispatcher, cacheProvider, trackerConfiguration);
+            myDispatcher, cacheProvider, new CurrentBuildTrackerImpl(myDispatcher), trackerConfiguration);
   }
 
   @AfterMethod

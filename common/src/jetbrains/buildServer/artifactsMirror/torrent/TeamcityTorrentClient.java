@@ -74,14 +74,23 @@ public class TeamcityTorrentClient {
     }
  }
 
+  public boolean isSeedingByPath(File file){
+    final SharedTorrent torrentByName = myClient.getTorrentByFilePath(file);
+    return torrentByName != null;
+  }
+
   private Torrent loadTorrent(File torrentFile) throws IOException, NoSuchAlgorithmException {
     return Torrent.load(torrentFile);
   }
 
-  public boolean isSeeding(@NotNull File torrentFile) throws IOException, NoSuchAlgorithmException {
-    Torrent t = loadTorrent(torrentFile);
-    for (SharedTorrent st: myClient.getTorrents()) {
-      if (st.getHexInfoHash().equals(t.getHexInfoHash())) return true;
+  public boolean isSeeding(@NotNull File torrentFile){
+    try {
+      Torrent t = loadTorrent(torrentFile);
+      for (SharedTorrent st: myClient.getTorrents()) {
+        if (st.getHexInfoHash().equals(t.getHexInfoHash())) return true;
+      }
+    } catch (IOException e) {
+    } catch (NoSuchAlgorithmException e) {
     }
     return false;
   }

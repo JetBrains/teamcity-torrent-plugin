@@ -43,15 +43,19 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter implements Artif
   @Nullable
   private final ArtifactCacheProvider myArtifactCacheProvider;
 
-  public AgentTorrentsManager(@NotNull BuildAgentConfiguration agentConfiguration,
-                              @NotNull EventDispatcher<AgentLifeCycleListener> eventDispatcher,
+  public AgentTorrentsManager(@NotNull final BuildAgentConfiguration agentConfiguration,
+                              @NotNull final EventDispatcher<AgentLifeCycleListener> eventDispatcher,
                               @Nullable final ArtifactCacheProvider artifactsCacheProvider,
-                              @NotNull TorrentTrackerConfiguration trackerManager) throws Exception {
+                              @NotNull final CurrentBuildTracker currentBuildTracker,
+                              @NotNull final TorrentTrackerConfiguration trackerManager) throws Exception {
     eventDispatcher.addListener(this);
-    myArtifactCacheProvider = artifactsCacheProvider;
     File torrentsStorage = agentConfiguration.getCacheDirectory(TORRENT_FOLDER_NAME);
     myTrackerManager = trackerManager;
     myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, -1, 0);
+    myArtifactCacheProvider = artifactsCacheProvider;
+    if (artifactsCacheProvider != null){
+      artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(myTorrentsDirectorySeeder, currentBuildTracker, trackerManager));
+    }
   }
 
   private boolean settingsInited() {

@@ -45,7 +45,6 @@ public class TorrentsDirectorySeeder {
   @NotNull
   private final File myTorrentStorage;
 
-
   @NotNull
   private final TeamcityTorrentClient myTorrentSeeder = new TeamcityTorrentClient();
   private FilesWatcher myNewLinksWatcher;
@@ -166,8 +165,11 @@ public class TorrentsDirectorySeeder {
     myTorrentSeeder.stopSeeding(torrentFile);
   }
 
+  public boolean isSeedingByPath(@NotNull File srcFile){
+    return myTorrentSeeder.isSeeding(srcFile);
+  }
 
-  public boolean isSeeding(@NotNull File torrentFile) throws IOException, NoSuchAlgorithmException {
+  public boolean isSeeding(@NotNull File torrentFile){
     return myTorrentSeeder.isSeeding(torrentFile);
   }
 

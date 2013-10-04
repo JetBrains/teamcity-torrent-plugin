@@ -231,7 +231,7 @@ public class ServerTorrentsDirectorySeeder {
   }
 
   private boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {
-    return (artifact.getSize() >= myFileSizeThreshold * 1024 * 1024);
+    return TorrentUtil.shouldCreateTorrentFor(artifact.getSize(), myConfigurator);
   }
 
   public void setMaxNumberOfSeededTorrents(int maxNumberOfSeededTorrents) {
