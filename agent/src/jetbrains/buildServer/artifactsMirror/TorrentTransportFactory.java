@@ -17,8 +17,6 @@ import jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.http.HttpUtil;
-import jetbrains.buildServer.messages.BuildMessage1;
-import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.StringUtil;
 import org.apache.commons.httpclient.*;
@@ -40,6 +38,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Sergey.Pak
@@ -89,7 +89,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     if (NetworkUtil.isLocalHost(context.getServerUrl().getHost())) {
-      TorrentUtil.log2Build("Shouldn't use torrent transport localhost", buildLogger);
+      TorrentUtil.log2Build("Shouldn't use torrent transport for localhost", buildLogger);
       return null;
     }
 
@@ -115,6 +115,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     private final TeamcityTorrentClient mySeeder;
     private final TorrentsDirectorySeeder myDirectorySeeder;
     private final BuildProgressLogger myBuildLogger;
+    private final AtomicReference<Thread> myCurrentDownload;
+    private final AtomicBoolean myInterrupted;
 
     private final Map<String, String> myTorrentsForArtifacts;
 
@@ -126,6 +128,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       myClient = client;
       myBuildLogger = buildLogger;
       myTorrentsForArtifacts = new HashMap<String, String>();
+      myCurrentDownload = new AtomicReference<Thread>();
+      myInterrupted = new AtomicBoolean(false);
     }
 
     @Nullable
@@ -149,7 +153,17 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
           return null;
         }
         final long startTime = System.currentTimeMillis();
-        mySeeder.downloadAndShareOrFail(torrent, target, target.getParentFile(), getDownloadTimeoutSec(), MIN_SEEDERS_COUNT_TO_TRY);
+
+        final AtomicReference<Exception> occuredException = new AtomicReference<Exception>();
+        Thread th = mySeeder.downloadAndShareOrFailAsync(
+                torrent, target, target.getParentFile(), getDownloadTimeoutSec(), MIN_SEEDERS_COUNT_TO_TRY, myInterrupted, occuredException);
+        myCurrentDownload.set(th);
+        th.join();
+        myCurrentDownload.set(null);
+        if (occuredException.get() != null){
+          throw occuredException.get();
+        }
+
         final long took = System.currentTimeMillis() - startTime + 1; // to avoid division by zero
         final long fileSize = target.length();
         log2Build(String.format("Download successfull. Avg speed %d kb/s. Saving torrent..", fileSize/took));
@@ -175,9 +189,27 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       } catch (RuntimeException ex) {
         log2Build(String.format("Unable to download artifact %s: %s", urlString, ex.getMessage()));
         throw ex;
+      } catch (Exception ex){
+        log2Build(String.format("Unable to download artifact %s: %s", urlString, ex.getMessage()));
+        throw new IOException(ex);
       } finally {
         myBuildLogger.progressFinished();
       }
+    }
+
+    @Nullable
+    public String getDigest(@NotNull final String urlString) throws IOException {
+      ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(urlString);
+      Torrent torrent = downloadTorrent(parsedArtifactUrl);
+      return torrent == null ? null : torrent.getHexInfoHash();
+    }
+
+    public void interrupt() {
+      final Thread thread = myCurrentDownload.get();
+      if (thread != null){
+        thread.interrupt();
+      }
+      myInterrupted.set(true);
     }
 
     private String parseArtifactsList(@NotNull final String teamcityIvyUrl, @NotNull final File target) {
@@ -228,16 +260,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       TorrentUtil.log2Build(msg, myBuildLogger);
     }
 
-    @Nullable
-    public String getDigest(@NotNull final String urlString) throws IOException {
-      ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(urlString);
-      Torrent torrent = downloadTorrent(parsedArtifactUrl);
-      return torrent == null ? null : torrent.getHexInfoHash();
-    }
-
-    public void interrupt() {
-
-    }
 
     private Torrent downloadTorrent(@NotNull final ParsedArtifactPath parsedArtifactUrl) {
       final String torrentRelativePath = myTorrentsForArtifacts.get(parsedArtifactUrl.getArtifactPath());

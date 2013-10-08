@@ -237,6 +237,71 @@ public class TorrentTransportTest extends BaseTestCase {
     }
   }
 
+  public void testInterrupt() throws IOException, InterruptedException, NoSuchAlgorithmException {
+    setTorrentTransportEnabled();
+    setDownloadHonestly(true);
+
+    final File storageDir = new File(myTempDir, "storageDir");
+    storageDir.mkdir();
+    final File downloadDir = new File(myTempDir, "downloadDir");
+    downloadDir.mkdir();
+    final File torrentsDir = new File(myTempDir, "torrentsDir");
+    torrentsDir.mkdir();
+    final String fileName = "MyBuild.31.zip";
+    final File artifactFile = new File(storageDir, fileName);
+    createTempFile(25*1024*1025).renameTo(artifactFile);
+
+    final File teamcityIvyFile = new File("agent/tests/resources/" +  TorrentTransportFactory.TEAMCITY_IVY);
+    myDownloadMap.put("/" + TorrentTransportFactory.TEAMCITY_IVY, teamcityIvyFile);
+    final String ivyUrl = SERVER_PATH +  TorrentTransportFactory.TEAMCITY_IVY;
+    final File ivyFile = new File(myTempDir, TorrentTransportFactory.TEAMCITY_IVY);
+    myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
+    Tracker tracker = new Tracker(6969);
+    List<Client> clientList = new ArrayList<Client>();
+    for (int i=0; i< TorrentTransportFactory.MIN_SEEDERS_COUNT_TO_TRY; i++){
+      clientList.add(new Client());
+    }
+    try {
+      tracker.start(true);
+
+      myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
+
+      final Torrent torrent = Torrent.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
+      final File torrentFile = new File(torrentsDir, fileName + ".torrent");
+      torrent.save(torrentFile);
+      myDownloadMap.put("/.teamcity/torrents/" + fileName + ".torrent", torrentFile);
+      for (Client client : clientList) {
+        client.start(InetAddress.getLocalHost());
+        client.addTorrent(SharedTorrent.fromFile(torrentFile, storageDir, true));
+      }
+      final File targetFile = new File(downloadDir, fileName);
+      new Thread(){
+        @Override
+        public void run() {
+          try {
+            sleep(400);
+            myTorrentTransport.interrupt();
+          } catch (InterruptedException e) {
+            fail("Must not fail here: " + e);
+          }
+        }
+      }.start();
+      String digest = null;
+      try {
+        digest = myTorrentTransport.downloadUrlTo(SERVER_PATH + fileName, targetFile);
+      } catch (IOException ex) {
+        assertNull(digest);
+        assertTrue(ex.getCause() instanceof InterruptedException);
+      }
+      assertFalse(targetFile.exists());
+    } finally {
+      for (Client client : clientList) {
+        client.stop();
+      }
+      tracker.stop();
+    }
+  }
+
   private void setTorrentTransportEnabled(){
     myAgentParametersMap.put(TorrentTransportFactory.TEAMCITY_ARTIFACTS_TRANSPORT,
             TorrentTransportFactory.TorrentTransport.class.getSimpleName());
@@ -253,7 +318,6 @@ public class TorrentTransportTest extends BaseTestCase {
 
   @AfterMethod
   public void tearDown() throws Exception {
-    super.tearDown();
     myServer.stop();
     myDirectorySeeder.stop();
   }

@@ -15,6 +15,8 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TeamcityTorrentClient {
   private final static Logger LOG = Logger.getInstance(TeamcityTorrentClient.class.getName());
@@ -103,11 +105,36 @@ public class TeamcityTorrentClient {
     return myClient.getTorrents().size();
   }
 
+  public Thread downloadAndShareOrFailAsync(@NotNull final Torrent torrent,
+                                            @NotNull final File destFile,
+                                            @NotNull final File destDir,
+                                            final long downloadTimeoutSec,
+                                            final int minSeedersCount,
+                                            final AtomicBoolean isInterrupted,
+                                            final AtomicReference<Exception> occuredException) throws IOException, NoSuchAlgorithmException, InterruptedException {
+    final Thread thread = new Thread(new Runnable() {
+      public void run() {
+        try {
+          downloadAndShareOrFail(torrent, destFile, destDir, downloadTimeoutSec, minSeedersCount,isInterrupted);
+        } catch (IOException e) {
+          occuredException.set(e);
+        } catch (NoSuchAlgorithmException e) {
+          occuredException.set(e);
+        } catch (InterruptedException e) {
+          occuredException.set(e);
+        }
+      }
+    });
+    thread.start();
+    return thread;
+  }
+
   public void downloadAndShareOrFail(@NotNull final Torrent torrent,
                                      @NotNull final File destFile,
                                      @NotNull final File destDir,
                                      final long downloadTimeoutSec,
-                                     final int minSeedersCount) throws IOException, NoSuchAlgorithmException, InterruptedException {
+                                     final int minSeedersCount,
+                                     final AtomicBoolean isInterrupted) throws IOException, NoSuchAlgorithmException, InterruptedException {
     boolean torrentContainsFile = false;
     for (String filePath : torrent.getFilenames()) {
       final String destFileAbsolutePath = destFile.getAbsolutePath();
@@ -130,7 +157,7 @@ public class TeamcityTorrentClient {
     }
     LOG.info(String.format("Will attempt to download uninterruptibly %s into %s. Timeout:%d",
             destFile.getAbsolutePath(), destDir.getAbsolutePath(), downloadTimeoutSec));
-    myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec, minSeedersCount);
+    myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec, minSeedersCount, isInterrupted);
   }
 
   public Collection<SharedTorrent> getSharedTorrents(){
