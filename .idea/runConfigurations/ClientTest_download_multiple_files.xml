@@ -1,20 +1,20 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Server Tests" type="TestNG" factoryName="TestNG" folderName="Plugin Tests">
+  <configuration default="false" name="ClientTest.download_multiple_files" type="TestNG" factoryName="TestNG" folderName="Torrent Lib tests" nameIsGenerated="true">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
       <pattern>
-        <option name="PATTERN" value="jetbrains.buildServer.artifactsMirror.*" />
+        <option name="PATTERN" value="com.turn.ttorrent.client.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
-    <module name="server" />
+    <module name="ttorrent" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
     <option name="ALTERNATIVE_JRE_PATH" value="" />
     <option name="SUITE_NAME" value="" />
-    <option name="PACKAGE_NAME" value="jetbrains.buildServer.artifactsMirror" />
-    <option name="MAIN_CLASS_NAME" value="jetbrains.buildServer.artifactsMirror.ServerTorrentsDirectorySeederTest" />
-    <option name="METHOD_NAME" />
+    <option name="PACKAGE_NAME" value="com.turn.ttorrent.client" />
+    <option name="MAIN_CLASS_NAME" value="com.turn.ttorrent.client.ClientTest" />
+    <option name="METHOD_NAME" value="download_multiple_files" />
     <option name="GROUP_NAME" value="" />
-    <option name="TEST_OBJECT" value="CLASS" />
+    <option name="TEST_OBJECT" value="METHOD" />
     <option name="VM_PARAMETERS" value="-ea" />
     <option name="PARAMETERS" value="" />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
@@ -30,6 +30,14 @@
     <envs />
     <properties />
     <listeners />
+    <RunnerSettings RunnerId="Debug">
+      <option name="DEBUG_PORT" value="65360" />
+      <option name="TRANSPORT" value="0" />
+      <option name="LOCAL" value="true" />
+    </RunnerSettings>
+    <RunnerSettings RunnerId="Run" />
+    <ConfigurationWrapper RunnerId="Debug" />
+    <ConfigurationWrapper RunnerId="Run" />
     <method />
   </configuration>
 </component>
