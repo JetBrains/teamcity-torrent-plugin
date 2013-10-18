@@ -76,7 +76,11 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
               public int getAnnounceIntervalSec() {
                 return 3;
               }
-            });
+
+      public boolean isTransportEnabled() {
+        return false;
+      }
+    });
 
     myCacheListener.onCacheInitialized(new DirectoryCacheProviderImpl(myCacheDir, new SimpleDigestCalculator()));
   }

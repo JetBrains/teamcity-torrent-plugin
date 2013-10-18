@@ -18,6 +18,7 @@ package jetbrains.buildServer.artifactsMirror.seeder;
 
 import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.artifactsMirror.torrent.TeamcityTorrentClient;
+import jetbrains.buildServer.artifactsMirror.torrent.TorrentUtil;
 import jetbrains.buildServer.configuration.ChangeListener;
 import jetbrains.buildServer.configuration.FilesWatcher;
 import jetbrains.buildServer.log.Loggers;
@@ -50,14 +51,11 @@ public class TorrentsDirectorySeeder {
   private FilesWatcher myNewLinksWatcher;
   private volatile boolean myStopped = true;
   private volatile int myMaxTorrentsToSeed; // no limit by default
-  private volatile int myFileSizeThresholdMb; //default value
 
   public TorrentsDirectorySeeder(@NotNull File torrentStorage, int maxTorrentsToSeed, int fileSizeThresholdMb) {
     myMaxTorrentsToSeed = maxTorrentsToSeed;
-    myFileSizeThresholdMb = fileSizeThresholdMb;
     myTorrentStorage = torrentStorage;
     checkTorrentsStorageVersion();
-
   }
 
   @NotNull
@@ -135,7 +133,7 @@ public class TorrentsDirectorySeeder {
       File torrentFile = FileLink.getTorrentFile(linkFile);
       File targetFile = FileLink.getTargetFile(linkFile);
 
-      if (torrentFile.exists() && targetFile.exists() && targetFile.length() >= getFileSizeThresholdMb() * 1024 * 1024){
+      if (torrentFile.exists() && targetFile.exists()){
         getTorrentSeeder().seedTorrent(torrentFile, targetFile);
       }
     } catch (IOException e) {
@@ -230,20 +228,8 @@ public class TorrentsDirectorySeeder {
     return myTorrentSeeder.getNumberOfSeededTorrents();
   }
 
-  public int getFileSizeThresholdMb() {
-    return myFileSizeThresholdMb;
-  }
-
-  public void setFileSizeThresholdMb(int fileSizeThresholdMb) {
-    myFileSizeThresholdMb = fileSizeThresholdMb;
-  }
-
   public void setAnnounceInterval(final int announceInterval){
     myTorrentSeeder.setAnnounceInterval(announceInterval);
-  }
-
-  public boolean shouldCreateTorrentFileFor(File srcFile) {
-    return srcFile.length() >= myFileSizeThresholdMb * 1024 * 1024;
   }
 
   @NotNull
@@ -290,6 +276,10 @@ public class TorrentsDirectorySeeder {
 
   public void setMaxTorrentsToSeed(int maxTorrentsToSeed) {
     myMaxTorrentsToSeed = maxTorrentsToSeed;
+  }
+
+  public int getMaxTorrentsToSeed() {
+    return myMaxTorrentsToSeed;
   }
 
   public Collection<SharedTorrent> getSharedTorrents(){

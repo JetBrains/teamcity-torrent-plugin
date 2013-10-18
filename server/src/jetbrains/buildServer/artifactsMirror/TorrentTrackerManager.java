@@ -1,6 +1,9 @@
 package jetbrains.buildServer.artifactsMirror;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.turn.ttorrent.client.Client;
+import com.turn.ttorrent.common.Cleanable;
+import com.turn.ttorrent.common.CleanupProcessor;
 import com.turn.ttorrent.tracker.PeerCollectorThread;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.Tracker;
@@ -9,13 +12,13 @@ import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.artifactsMirror.web.TrackerController;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.BuildServerListener;
-import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,8 +32,8 @@ public class TorrentTrackerManager {
   private final ConcurrentMap<String, TrackedTorrent> myTorrents;
   private Tracker myTracker;
   private boolean myTrackerRunning;
-  private PeerCollectorThread myCollectorThread;
   private final TorrentConfigurator myConfigurator;
+  private Cleanable myTrackerCleanable;
 
   public TorrentTrackerManager(@NotNull final TorrentConfigurator configurator,
                                @NotNull final EventDispatcher<BuildServerListener> dispatcher) {
@@ -63,7 +66,7 @@ public class TorrentTrackerManager {
   }
 
   public void booleanPropertyChanged(@NotNull final String propertyName, boolean newValue){
-    if (TorrentConfigurator.TRACKER_USES_DEDICATED_PORT.equals(propertyName)){
+    if (TorrentConfigurator.TRACKER_DEDICATED_PORT.equals(propertyName)){
       condRestartTracker();
     } else if (TorrentConfigurator.TRACKER_ENABLED.equals(propertyName)){
       if (newValue){
@@ -77,10 +80,6 @@ public class TorrentTrackerManager {
   public void integerPropertyChanged(@NotNull final String propertyName, int newValue){
     if (TorrentConfigurator.ANNOUNCE_INTERVAL.equals(propertyName)){
       setAnnounceInterval(newValue);
-    } else if (TorrentConfigurator.TRACKER_TORRENT_EXPIRE_TIMEOUT.equals(propertyName)){
-      if (myCollectorThread != null){
-        myCollectorThread.setTorrentExpireTimeoutSec(newValue);
-      }
     }
   }
 
@@ -100,15 +99,22 @@ public class TorrentTrackerManager {
     myTorrents.clear();
 
     // if we don't use individual port, we need nothing. Tracker's controller is already initialized.
-    if (myConfigurator.getTrackerUsesDedicatedPort()){
-      startIndividualPort(myConfigurator.getOwnAddress());
+    if (myConfigurator.isTrackerDedicatedPort()){
+      startIndividualPort(myConfigurator.getResolvedOwnAddress());
     }
 
     //setting peer collection interval to the same as announce interval
-    myCollectorThread = new PeerCollectorThread(myTorrents);
-    myCollectorThread.setTorrentExpireTimeoutSec(myConfigurator.getTrackerTorrentExpireTimeoutSec());
-    myCollectorThread.setName("peer-collector");
-    myCollectorThread.start();
+    myTrackerCleanable = new Cleanable() {
+      public void cleanUp() {
+        for (TrackedTorrent torrent : myTorrents.values()) {
+          torrent.collectUnfreshPeers(myConfigurator.getTrackerTorrentExpireTimeoutSec());
+          if (torrent.getPeers().size() == 0) {
+            myTorrents.remove(torrent.getHexInfoHash());
+          }
+        }
+      }
+    };
+    Client.cleanupProcessor().registerCleanable(myTrackerCleanable);
 
     myTrackerRunning = true;
 
@@ -131,11 +137,7 @@ public class TorrentTrackerManager {
   }
 
   public void stopTracker() {
-    myCollectorThread.interrupt();
-    try {
-      myCollectorThread.join();
-    } catch (InterruptedException e) {
-    }
+    Client.cleanupProcessor().unregisterCleanable(myTrackerCleanable);
     myTrackerRunning = false;
     if (myTracker != null) {
       LOG.info("Stopping torrent tracker");
@@ -148,7 +150,7 @@ public class TorrentTrackerManager {
   }
 
   public boolean isTrackerUsesDedicatedPort() {
-    return myConfigurator.getTrackerUsesDedicatedPort();
+    return myConfigurator.isTrackerDedicatedPort();
   }
 
   public ConcurrentMap<String, TrackedTorrent> getTorrents() {
@@ -182,7 +184,7 @@ public class TorrentTrackerManager {
   }
 
   public URI getAnnounceUri() {
-    if (myConfigurator.getTrackerUsesDedicatedPort()){
+    if (myConfigurator.isTrackerDedicatedPort()){
       return myTracker.getAnnounceURI();
     } else {
       String serverUrl = myConfigurator.getServerAddress();

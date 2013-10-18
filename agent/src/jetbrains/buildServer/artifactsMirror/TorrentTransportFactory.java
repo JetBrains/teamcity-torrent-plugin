@@ -60,11 +60,14 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
   private final AgentTorrentsManager myAgentTorrentsManager;
   private final CurrentBuildTracker myBuildTracker;
+  private final TorrentTrackerConfiguration myConfiguration;
 
   public TorrentTransportFactory(@NotNull final AgentTorrentsManager agentTorrentsManager,
-                                 @NotNull final CurrentBuildTracker currentBuildTracker) {
+                                 @NotNull final CurrentBuildTracker currentBuildTracker,
+                                 @NotNull final TorrentTrackerConfiguration configuration) {
     myAgentTorrentsManager = agentTorrentsManager;
     myBuildTracker = currentBuildTracker;
+    myConfiguration = configuration;
   }
 
   private HttpClient createHttpClient(@NotNull final DependencyResolverContext context) {
@@ -83,7 +86,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   public URLContentRetriever getTransport(@NotNull DependencyResolverContext context) {
 
     final BuildProgressLogger buildLogger = myBuildTracker.getCurrentBuild().getBuildLogger();
-    if (!shouldUseTorrentTransport(myBuildTracker.getCurrentBuild())) {
+    if (!shouldUseTorrentTransport()) {
       TorrentUtil.log2Build("Shouldn't use torrent transport for build type " + myBuildTracker.getCurrentBuild().getBuildTypeId(), buildLogger);
       return null;
     }
@@ -104,9 +107,12 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
             buildLogger);
   }
 
-  private static boolean shouldUseTorrentTransport(@NotNull final AgentRunningBuild build) {
-    final String param = build.getSharedConfigParameters().get(TEAMCITY_ARTIFACTS_TRANSPORT);
-    return param != null && param.equals(TorrentTransport.class.getSimpleName());
+  private boolean shouldUseTorrentTransport() {
+    final String param = myBuildTracker.getCurrentBuild().getSharedConfigParameters().get(TEAMCITY_ARTIFACTS_TRANSPORT);
+    if (param != null) {
+      return param.equals(TorrentTransport.class.getSimpleName());
+    }
+    return myConfiguration.isTransportEnabled();
   }
 
   protected static class TorrentTransport implements URLContentRetriever {

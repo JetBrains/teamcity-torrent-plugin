@@ -64,7 +64,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       if (announceUrl == null) return false;
       myTrackerAnnounceUrl = new URI(announceUrl);
       myFileSizeThresholdMb = myTrackerManager.getFileSizeThresholdMb();
-      myTorrentsDirectorySeeder.setFileSizeThresholdMb(myFileSizeThresholdMb);
       myAnnounceIntervalSec = myTrackerManager.getAnnounceIntervalSec();
       myTorrentsDirectorySeeder.setAnnounceInterval(myAnnounceIntervalSec);
     } catch (Exception e) {

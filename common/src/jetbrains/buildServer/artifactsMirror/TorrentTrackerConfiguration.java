@@ -26,4 +26,9 @@ public interface TorrentTrackerConfiguration {
   */
   int getAnnounceIntervalSec();
 
+  /**
+   * Indicates whether torrent transport is enabled
+   */
+  boolean isTransportEnabled();
+
  }
