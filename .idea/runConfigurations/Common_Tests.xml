@@ -9,12 +9,12 @@
     <module name="common" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
     <option name="ALTERNATIVE_JRE_PATH" value="" />
-    <option name="SUITE_NAME" value="" />
-    <option name="PACKAGE_NAME" value="jetbrains.buildServer.artifactsMirror.seeder" />
-    <option name="MAIN_CLASS_NAME" value="jetbrains.buildServer.artifactsMirror.seeder.TorrentsDirectorySeederTest" />
-    <option name="METHOD_NAME" />
+    <option name="SUITE_NAME" value="$PROJECT_DIR$/common/tests/java/testng.xml" />
+    <option name="PACKAGE_NAME" value="" />
+    <option name="MAIN_CLASS_NAME" value="" />
+    <option name="METHOD_NAME" value="" />
     <option name="GROUP_NAME" value="" />
-    <option name="TEST_OBJECT" value="CLASS" />
+    <option name="TEST_OBJECT" value="SUITE" />
     <option name="VM_PARAMETERS" value="-ea" />
     <option name="PARAMETERS" value="" />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
