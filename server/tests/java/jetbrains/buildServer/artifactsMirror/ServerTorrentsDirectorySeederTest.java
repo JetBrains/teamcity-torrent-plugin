@@ -21,7 +21,6 @@ import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
-import jetbrains.buildServer.TempFiles;
 import jetbrains.buildServer.XmlRpcHandlerManager;
 import jetbrains.buildServer.artifactsMirror.seeder.FileLink;
 import jetbrains.buildServer.serverSide.BuildServerListener;
@@ -33,6 +32,7 @@ import jetbrains.buildServer.serverSide.impl.auth.SecurityContextImpl;
 import jetbrains.buildServer.serverSide.impl.executors.SimpleExecutorServices;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
+import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.core.Constraint;
 import org.testng.annotations.AfterMethod;
@@ -44,6 +44,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author Sergey.Pak
@@ -55,7 +58,8 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
 
   private ServerTorrentsDirectorySeeder myDirectorySeeder;
   private TorrentConfigurator myConfigurator;
-  private Tracker myTracker;
+  private EventDispatcher<BuildServerListener> myDispatcher;
+  private TorrentTrackerManager myTrackerManager;
 
 
   @BeforeMethod
@@ -66,6 +70,9 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
 
     final ServerPaths serverPaths = new ServerPaths(createTempDir().getAbsolutePath());
     final ServerSettings settings = m.mock(ServerSettings.class);
+    m.checking(new Expectations(){{
+      allowing(settings).getRootUrl(); will(returnValue("http://localhost:8111/"));
+    }});
 
     myConfigurator = new TorrentConfigurator(serverPaths, settings, new XmlRpcHandlerManager() {
       public void addHandler(String handlerName, Object handler) {}
@@ -73,26 +80,38 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     });
 
 
-    ExecutorServices services = new SimpleExecutorServices();
+    ExecutorServices services = new ExecutorServices() {
+      private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+      @NotNull
+      public ScheduledExecutorService getNormalExecutorService() {
+        return null;
+      }
 
-    EventDispatcher<BuildServerListener> dispatcher = new BuildServerListenerEventDispatcher(new SecurityContextImpl());
+      @NotNull
+      public ExecutorService getLowPriorityExecutorService() {
+        return executorService;
+      }
+    };
 
-    myDirectorySeeder = new ServerTorrentsDirectorySeeder(serverPaths, myConfigurator, services, dispatcher);
-    dispatcher.getMulticaster().serverStartup();
+    myDispatcher = new BuildServerListenerEventDispatcher(new SecurityContextImpl());
 
-    myTracker = new Tracker(6969);
-    myTracker.start(true);
+
+    myDirectorySeeder = new ServerTorrentsDirectorySeeder(serverPaths, myConfigurator, services, myDispatcher, 3);
+    myTrackerManager = new TorrentTrackerManager(myConfigurator, myDispatcher);
+
   }
 
   public void max_number_of_seeded_torrents_on_startup() throws IOException, NoSuchAlgorithmException, InterruptedException {
-    myConfigurator.setMaxNumberOfSeededTorrents(3);
+    System.setProperty(TorrentConfigurator.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
+    myConfigurator.getConfigurationWatcher().checkForModifications();
     final URI announceURI = URI.create("http://localhost:6969/announce");
     myDirectorySeeder.setAnnounceURI(announceURI);
 
     final File artifactsDir = createTempDir();
     final File torrentsDir = createTempDir();
     final File storageDir = myDirectorySeeder.getTorrentsDirectorySeeder().getStorageDirectory();
-
+    final List<File> torrentFilesList = new ArrayList<File>();
+    final List<File> linkFilesList = new ArrayList<File>();
     final int fileSize = 11 * 1024 * 1024;
     for (int i=0; i<5; i++) {
       File tempFile = createTempFile(fileSize);
@@ -104,25 +123,50 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
       final Torrent torrent = Torrent.create(srcFile, announceURI, "Teamcity torrent plugin test");
       final File torrentFile = new File(torrentsDir, srcFile.getName() + ".torrent");
       torrent.save(torrentFile);
-      FileLink.createLink(srcFile, torrentFile, storageDir);
+      torrentFilesList.add(torrentFile);
+      linkFilesList.add(FileLink.createLink(srcFile, torrentFile, storageDir));
+
     }
 
-    myConfigurator.setSeederEnabled(true);
-    myConfigurator.setTrackerEnabled(true);
+    System.setProperty(TorrentConfigurator.TRACKER_ENABLED, "true");
+    System.setProperty(TorrentConfigurator.SEEDER_ENABLED, "true");
+    myConfigurator.getConfigurationWatcher().checkForModifications();
+    myDispatcher.getMulticaster().serverStartup();
+    new WaitFor(15*1000){
 
-    Thread.sleep(5*1000);
-
+      @Override
+      protected boolean condition() {
+        return myDirectorySeeder.getNumberOfSeededTorrents() == 3;
+      }
+    };
     assertEquals(3, myDirectorySeeder.getNumberOfSeededTorrents());
+    int linksCount = 0;
+    for (File file : linkFilesList) {
+      if (file.exists()){
+        linksCount++;
+      }
+    }
+    assertEquals(3, linksCount);
+
+    int torrentsCount = 0;
+    for (File file : torrentFilesList) {
+      if (file.exists()){
+        torrentsCount++;
+      }
+    }
+    assertEquals(3, torrentsCount);
+
   }
 
 
   public void new_file_seedeed_old_removed() throws IOException, InterruptedException {
-    myConfigurator.setAnnounceUrl("http://localhost:6969/announce");
-    myConfigurator.setMaxNumberOfSeededTorrents(3);
-    myConfigurator.setFileSizeThresholdMb(1);
-    myConfigurator.setTrackerEnabled(true);
-    myConfigurator.setSeederEnabled(true);
-    myDirectorySeeder.startSeeder(3);
+    System.setProperty(TorrentConfigurator.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
+    System.setProperty(TorrentConfigurator.ANNOUNCE_URL, "http://localhost:6969/announce");
+    System.setProperty(TorrentConfigurator.FILE_SIZE_THRESHOLD, "1");
+    System.setProperty(TorrentConfigurator.TRACKER_ENABLED, "true");
+    System.setProperty(TorrentConfigurator.SEEDER_ENABLED, "true");
+    myConfigurator.getConfigurationWatcher().checkForModifications();
+    myDispatcher.getMulticaster().serverStartup();
 
     final File artifactsDir = createTempDir();
     final File torrentsDir = createTempDir();
@@ -177,20 +221,22 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
       if (filesQueue.size() > 3){
         filesQueue.poll();
       }
-      new WaitFor(15*1000){
+      new WaitFor(5*1000){
 
         @Override
         protected boolean condition() {
           final Collection<SharedTorrent> sharedTorrents = myDirectorySeeder.getSharedTorrents();
           if (sharedTorrents.size() <= 3){
             for (SharedTorrent torrent : sharedTorrents) {
-              if (torrent.getName().equals(srcFile.getName()))
+              if (torrent.getName().equals(srcFile.getName())) {
                 return true;
+              }
             }
           }
           return false;
         }
       };
+      assertTrue(myDirectorySeeder.getSharedTorrents().size() <= 3);
       Collection<String> filesFromTorrents = new ArrayList<String>();
       for (SharedTorrent torrent : myDirectorySeeder.getSharedTorrents()) {
         filesFromTorrents.add(torrent.getName());
@@ -255,7 +301,6 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
   protected void tearDown() throws Exception {
     super.tearDown();
     myDirectorySeeder.stopSeeder();
-    myTracker.stop();
   }
 
   private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, NoSuchAlgorithmException, IOException {

@@ -45,7 +45,16 @@ public class ServerTorrentsDirectorySeeder {
   public ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
                                        @NotNull final TorrentConfigurator configurator,
                                        @NotNull final ExecutorServices executorServices,
-                                       @NotNull final EventDispatcher<BuildServerListener> eventDispatcher) {
+                                       @NotNull final EventDispatcher<BuildServerListener> eventDispatcher){
+    this(serverPaths, configurator, executorServices, eventDispatcher, TorrentsDirectorySeeder.DIRECTORY_SCAN_INTERVAL_SECONDS);
+  }
+
+
+  ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
+                                       @NotNull final TorrentConfigurator configurator,
+                                       @NotNull final ExecutorServices executorServices,
+                                       @NotNull final EventDispatcher<BuildServerListener> eventDispatcher,
+                                       final int scanInterval) {
     myIsServerStarted = false;
     File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
     torrentsStorage.mkdirs();
@@ -66,7 +75,7 @@ public class ServerTorrentsDirectorySeeder {
         if (myConfigurator.isSeederEnabled()) {
           executorServices.getLowPriorityExecutorService().submit(new Runnable() {
             public void run() {
-              startSeeder();
+              startSeeder(scanInterval);
             }
           });
         }
@@ -97,7 +106,7 @@ public class ServerTorrentsDirectorySeeder {
           boolean enabled = (Boolean) evt.getNewValue();
           if (myIsServerStarted) {
             if (enabled) {
-              startSeeder();
+              startSeeder(scanInterval);
             } else {
               stopSeeder();
             }
@@ -108,18 +117,14 @@ public class ServerTorrentsDirectorySeeder {
   }
 
 
+
   public void stopSeeder() {
     if (!myTorrentsDirectorySeeder.isStopped()) {
       myTorrentsDirectorySeeder.stop();
     }
   }
 
-  public void startSeeder() {
-    startSeeder(TorrentsDirectorySeeder.DIRECTORY_SCAN_INTERVAL_SECONDS);
-  }
-
-  //for tests
-  /*package internal*/ void startSeeder(int scanInterval) {
+  private void startSeeder(int scanInterval) {
     try {
       InetAddress[] myAddresses = NetworkUtil.getSelfAddresses();
 

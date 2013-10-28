@@ -1,0 +1,8 @@
+<suite name="Server tests">
+  <test name="Server tests">
+    <classes>
+      <class name="jetbrains.buildServer.artifactsMirror.ServerTorrentsDirectorySeederTest"/>
+      <class name="jetbrains.buildServer.artifactsMirror.TorrentTrackerConfiguratorTest"/>
+    </classes>
+  </test>
+</suite>

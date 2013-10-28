@@ -153,7 +153,7 @@ public class TeamcityTorrentClient {
     SharedTorrent downTorrent = new SharedTorrent(torrent, destDir, false);
     if (myClient.getTorrentsMap().containsKey(torrent.getHexInfoHash())){
       LOG.info("Already seeding torrent with hash " + torrent.getHexInfoHash() + ". Will stop seeding it");
-      myClient.removeTorrent(torrent);
+      return;
     }
     LOG.info(String.format("Will attempt to download uninterruptibly %s into %s. Timeout:%d",
             destFile.getAbsolutePath(), destDir.getAbsolutePath(), downloadTimeoutSec));

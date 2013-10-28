@@ -311,11 +311,11 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     private long getDownloadTimeoutSec() {
-      String strValue = System.getProperty("teamcity.torrent.download.timeout", "20");
+      String strValue = System.getProperty("teamcity.torrent.download.timeout", "10");
       try {
         return Long.parseLong(strValue);
       } catch (NumberFormatException e) {
-        return 20;
+        return 10;
       }
     }
 

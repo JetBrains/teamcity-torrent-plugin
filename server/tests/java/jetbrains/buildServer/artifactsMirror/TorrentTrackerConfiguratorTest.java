@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *         Time: 12:43 PM
  */
 @Test
-public class TestTorrentTrackerConfigurator extends BaseTestCase {
+public class TorrentTrackerConfiguratorTest extends BaseTestCase {
 
   private TorrentConfigurator myConfigurator;
   private EventDispatcher<BuildServerListener> myDispatcher;
@@ -88,7 +88,6 @@ public class TestTorrentTrackerConfigurator extends BaseTestCase {
   }
 
   public void test_enable_disable_tracker(){
-    assertFalse(myTrackerManager.isTrackerRunning());
     assertTrue(myTrackerManager.isTrackerRunning());
     System.setProperty(TorrentConfigurator.TRACKER_ENABLED, "false");
     myConfigurator.getConfigurationWatcher().checkForModifications();
@@ -102,19 +101,16 @@ public class TestTorrentTrackerConfigurator extends BaseTestCase {
   }
 
   public void test_tracker_dedicated_port(){
-    final TorrentTrackerManager trackerManager = new TorrentTrackerManager(myConfigurator, myDispatcher);
-    assertFalse(trackerManager.isTrackerRunning());
-    myDispatcher.getMulticaster().serverStartup();
-    assertTrue(trackerManager.isTrackerRunning());
+    assertTrue(myTrackerManager.isTrackerRunning());
     System.setProperty(TorrentConfigurator.TRACKER_DEDICATED_PORT, "true");
     myConfigurator.getConfigurationWatcher().checkForModifications();
-    assertTrue(trackerManager.isTrackerRunning());
-    assertTrue(trackerManager.getAnnounceUri().toString().endsWith(":6969/announce"));
+    assertTrue(myTrackerManager.isTrackerRunning());
+    assertTrue(myTrackerManager.getAnnounceUri().toString().endsWith(":6969/announce"));
 
     System.setProperty(TorrentConfigurator.TRACKER_DEDICATED_PORT, "false");
     myConfigurator.getConfigurationWatcher().checkForModifications();
-    assertTrue(trackerManager.isTrackerRunning());
-    assertEquals("http://localhost:8111/trackerAnnounce.html", trackerManager.getAnnounceUri().toString());
+    assertTrue(myTrackerManager.isTrackerRunning());
+    assertEquals("http://localhost:8111/trackerAnnounce.html", myTrackerManager.getAnnounceUri().toString());
   }
 
   public void test_enable_disable_seeder(){

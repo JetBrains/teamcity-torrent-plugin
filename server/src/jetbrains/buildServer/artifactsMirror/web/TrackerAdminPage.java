@@ -46,6 +46,7 @@ public class TrackerAdminPage extends AdminPage {
       @Override
       protected ModelAndView doHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) throws Exception {
         if (request.getParameter("save") != null) {
+/*
           boolean trackerEnabled = request.getParameter("trackerEnabled") != null;
           boolean seederEnabled = request.getParameter("seederEnabled") != null;
           String threshold = request.getParameter("fileSizeThresholdMb");
@@ -60,8 +61,7 @@ public class TrackerAdminPage extends AdminPage {
           try { myTorrentConfigurator.setMaxNumberOfSeededTorrents(Integer.parseInt(maxTorrentsNum));} catch (NumberFormatException e) {}
           try { myTorrentConfigurator.setTrackerTorrentExpireTimeoutSec(Integer.parseInt(trackerTorrentExpireTimeout));} catch (NumberFormatException e) {}
           try { myTorrentConfigurator.setAnnounceIntervalSec(Integer.parseInt(announceInterval));} catch (NumberFormatException e) {}
-
-
+*/
           myTorrentConfigurator.persistConfiguration();
         }
         return new ModelAndView(new RedirectView(request.getContextPath() + "/admin/admin.html?item=" + TAB_ID));

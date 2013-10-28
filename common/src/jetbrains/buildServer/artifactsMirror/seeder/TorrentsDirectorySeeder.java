@@ -121,11 +121,14 @@ public class TorrentsDirectorySeeder {
  }
 
   private void cleanupBrokenLink(@NotNull File linkFile) {
-    File linkDir = linkFile.getParentFile();
     FileUtil.delete(linkFile);
 
-    if (linkDir.equals(myTorrentStorage)) return;
-    FileUtil.deleteIfEmpty(linkDir);
+    File dir = linkFile.getParentFile();
+    while (FileUtil.isEmptyDir(dir)) {
+      if (dir.equals(myTorrentStorage)) return;
+      FileUtil.deleteIfEmpty(dir);
+      dir = dir.getParentFile();
+    }
   }
 
   private void startSeeding(File linkFile){
@@ -201,9 +204,15 @@ public class TorrentsDirectorySeeder {
     myTorrentSeeder.start(address, defaultTrackerURI, announceInterval);
 
     // initialization: scan all existing links and start seeding them
+    final Collection<File> allLinks = findAllLinks(-1);
     final Collection<File> initialLinks = findAllLinks(myMaxTorrentsToSeed);
     for (File linkFile: initialLinks) {
       startSeeding(linkFile);
+    }
+    for (File allLink : allLinks) {
+      if (!initialLinks.contains(allLink)){
+        processRemovedLink(allLink);
+      }
     }
 
     myNewLinksWatcher.setSleepingPeriod(directoryScanIntervalSeconds * 1000);
