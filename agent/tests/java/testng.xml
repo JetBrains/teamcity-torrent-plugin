@@ -3,6 +3,7 @@
     <classes>
       <class name="jetbrains.buildServer.artifactsMirror.AgentTorrentsManagerTest"/>
       <class name="jetbrains.buildServer.artifactsMirror.TorrentTransportTest"/>
+      <class name="jetbrains.buildServer.artifactsMirror.TorrentArtifactCacheListenerTest"/>
     </classes>
   </test>
 </suite>
