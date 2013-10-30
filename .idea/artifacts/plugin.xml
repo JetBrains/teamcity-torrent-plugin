@@ -9,8 +9,8 @@
     </properties>
     <root id="root">
       <element id="directory" name="agent">
-        <element id="archive" name="artifacts-mirror.zip">
-          <element id="archive" name="artifacts-mirror-agent.jar">
+        <element id="archive" name="torrent-plugin.zip">
+          <element id="archive" name="torrent-plugin-agent.jar">
             <element id="module-output" name="agent" />
           </element>
           <element id="file-copy" path="$PROJECT_DIR$/agent/teamcity-agent-plugin.xml" output-file-name="teamcity-plugin.xml" />
@@ -19,10 +19,10 @@
         </element>
       </element>
       <element id="directory" name="server">
-        <element id="archive" name="artifacts-mirror-server.jar">
+        <element id="archive" name="torrent-plugin-server.jar">
           <element id="module-output" name="server" />
         </element>
-        <element id="archive" name="artifacts-mirror-resources.jar">
+        <element id="archive" name="torrent-plugin-resources.jar">
           <element id="directory" name="buildServerResources">
             <element id="dir-copy" path="$PROJECT_DIR$/server/resources" />
           </element>
