@@ -9,8 +9,21 @@
   <th>Torrent tracker announce URL:</th>
   <td><c:out value="${torrentConfigurator.announceUrl}"/></td>
 </tr>
+    <c:if test="${torrentConfigurator.trackerEnabled}">
+      <tr>
+        <th>Torrent tracker information:</th>
+        <td>
+          <ul style="margin-top:0; padding-left: 1em;">
+            <li>announced torrents: <strong>${announcedTorrentsNum}</strong></li>
+            <li>connected/downloading clients: <strong>${connectedClientsNum}</strong></li>
+            <li>number of currently seeded torrents: <strong>${seededTorrentsNum}
+              (of ${torrentConfigurator.maxNumberOfSeededTorrents})</strong></li>
+          </ul>
+        </td>
+      </tr>
+    </c:if>
   <tr>
-    <th></th>
+    <th>Settings:</th>
     <td>
       <div>
         <forms:checkbox name="transportEnabled" checked="${torrentConfigurator.transportEnabled}"/>
@@ -25,17 +38,5 @@
   <tr>
     <td colspan="2"><forms:submit label="Save" name="save"/></td>
   </tr>
-<tr>
-  <th>Torrent tracker:</th>
-  <td>
-    <c:if test="${torrentConfigurator.trackerEnabled}">
-    <ul style="margin-top:0; padding-left: 1em;">
-      <li>announced torrents: <strong>${announcedTorrentsNum}</strong></li>
-      <li>connected/downloading clients: <strong>${connectedClientsNum}</strong></li>
-      <li>number of currently seeded torrents: <strong>${seededTorrentsNum} (of ${torrentConfigurator.maxNumberOfSeededTorrents})</strong></li>
-    </ul>
-    </c:if>
-  </td>
-</tr>
-</table>
+  </table>
 </form>

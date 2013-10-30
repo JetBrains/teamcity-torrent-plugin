@@ -133,16 +133,6 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
     assertFalse(TorrentUtil.shouldCreateTorrentFor(200 * 1024 * 1024 - 1, myConfigurator));
   }
 
-  public void test_transport_enabled(){
-    System.setProperty(TorrentConfigurator.TRANSPORT_ENABLED, "false");
-    myConfigurator.getConfigurationWatcher().checkForModifications();
-    assertFalse(myConfigurator.isTransportEnabled());
-
-    System.setProperty(TorrentConfigurator.TRANSPORT_ENABLED, "true");
-    myConfigurator.getConfigurationWatcher().checkForModifications();
-    assertTrue(myConfigurator.isTransportEnabled());
-  }
-
   public void test_announce_interval() throws IOException, TrackerMessage.MessageValidationException {
     System.setProperty(TorrentConfigurator.ANNOUNCE_INTERVAL, "10");
     myConfigurator.getConfigurationWatcher().checkForModifications();
