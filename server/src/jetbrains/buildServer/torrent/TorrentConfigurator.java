@@ -222,6 +222,12 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
     try {
       fileReader = new FileReader(configFile);
       properties.load(fileReader);
+      if (properties.get(TRANSPORT_ENABLED) == null){
+        properties.put(TRANSPORT_ENABLED, false);
+      }
+      if (properties.get(DOWNLOAD_ENABLED) == null){
+        properties.put(DOWNLOAD_ENABLED, false);
+      }
     } catch (IOException e) {
       Loggers.SERVER.warn("Failed to load configuration file: " + configFile.getAbsolutePath() + ", error: " + e.toString());
     } finally {
