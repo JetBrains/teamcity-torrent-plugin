@@ -2,14 +2,14 @@ package jetbrains.buildServer.torrent;
 
 import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.BaseTestCase;
-import jetbrains.buildServer.agent.AgentRunningBuild;
-import jetbrains.buildServer.agent.BaseServerLoggerFacade;
-import jetbrains.buildServer.agent.BuildProgressLogger;
-import jetbrains.buildServer.agent.CurrentBuildTracker;
+import jetbrains.buildServer.agent.*;
+import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
+import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.impl.DirectoryCacheProviderImpl;
 import jetbrains.buildServer.artifacts.impl.SimpleDigestCalculator;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.messages.BuildMessage1;
+import jetbrains.buildServer.util.EventDispatcher;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jmock.Expectations;
@@ -58,31 +58,49 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
       }
     };
     final CurrentBuildTracker buildTracker = m.mock(CurrentBuildTracker.class);
+    final BuildAgentConfiguration buildAgentConf = m.mock(BuildAgentConfiguration.class);
+    final ArtifactCacheProvider cacheProvider = m.mock(ArtifactCacheProvider.class);
+
     m.checking(new Expectations(){{
       allowing(buildTracker).getCurrentBuild(); will(returnValue(build));
       allowing(build).getBuildLogger(); will(returnValue(logger));
+      allowing(build).getAgentConfiguration(); will(returnValue(buildAgentConf));
+      allowing(buildAgentConf).getCacheDirectory(AgentTorrentsManager.TORRENT_FOLDER_NAME); will(returnValue(myLinksDir));
+      allowing(cacheProvider).addListener(with(any(ArtifactsCacheListener.class)));
     }});
 
-    myCacheListener = new TorrentArtifactCacheListener(mySeeder,buildTracker, new TorrentTrackerConfiguration() {
-              @Nullable
-              public String getAnnounceUrl() {
-                return "http://localhost:6969/announce";
-              }
+    final TorrentConfiguration configuration = new TorrentConfiguration() {
+      @Nullable
+      public String getAnnounceUrl() {
+        return "http://localhost:6969/announce";
+      }
 
-              public int getFileSizeThresholdMb() {
-                return 1;
-              }
+      public int getFileSizeThresholdMb() {
+        return 1;
+      }
 
-              public int getAnnounceIntervalSec() {
-                return 3;
-              }
+      public int getAnnounceIntervalSec() {
+        return 3;
+      }
 
       public boolean isTransportEnabled() {
         return false;
       }
-    });
+
+      public boolean isTorrentEnabled() {
+        return true;
+      }
+    };
+
+    AgentTorrentsManager manager = new AgentTorrentsManager(
+            build.getAgentConfiguration(),
+            EventDispatcher.create(AgentLifeCycleListener.class),
+            cacheProvider, buildTracker, configuration);
+
+    myCacheListener = new TorrentArtifactCacheListener(mySeeder,buildTracker, configuration, manager);
 
     myCacheListener.onCacheInitialized(new DirectoryCacheProviderImpl(myCacheDir, new SimpleDigestCalculator()));
+    manager.checkReady();
   }
 
 

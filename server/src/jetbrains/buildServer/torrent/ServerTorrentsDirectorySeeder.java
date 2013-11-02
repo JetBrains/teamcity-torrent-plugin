@@ -84,7 +84,7 @@ public class ServerTorrentsDirectorySeeder {
 
       @Override
       public void buildFinished(SRunningBuild build) {
-        if (myConfigurator.isTrackerEnabled()) {
+        if (myConfigurator.isTorrentEnabled()) {
           announceBuildArtifacts(build);
         }
       }
@@ -93,16 +93,16 @@ public class ServerTorrentsDirectorySeeder {
     configurator.addPropertyChangeListener(new PropertyChangeListener() {
       public void propertyChange(PropertyChangeEvent evt) {
         String propertyName = evt.getPropertyName();
-        if (TorrentConfigurator.FILE_SIZE_THRESHOLD.equals(propertyName)){
+        if (TorrentConfiguration.FILE_SIZE_THRESHOLD.equals(propertyName)){
           setFileSizeThreshold((Integer) evt.getNewValue());
-        } else if (TorrentConfigurator.MAX_NUMBER_OF_SEEDED_TORRENTS.equals(propertyName)){
+        } else if (TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS.equals(propertyName)){
           setMaxNumberOfSeededTorrents((Integer) evt.getNewValue());
           myTorrentsDirectorySeeder.setMaxTorrentsToSeed(myMaxTorrentsToSeed);
-        } else if (TorrentConfigurator.ANNOUNCE_INTERVAL.equals(propertyName)){
+        } else if (TorrentConfiguration.ANNOUNCE_INTERVAL.equals(propertyName)){
           myTorrentsDirectorySeeder.setAnnounceInterval((Integer)evt.getNewValue());
-        } else if (TorrentConfigurator.ANNOUNCE_URL.equals(propertyName)){
+        } else if (TorrentConfiguration.ANNOUNCE_URL.equals(propertyName)){
           setAnnounceURI(URI.create(String.valueOf(evt.getNewValue())));
-        } else if (TorrentConfigurator.SEEDER_ENABLED.equals(propertyName)){
+        } else if (TorrentConfiguration.SEEDER_ENABLED.equals(propertyName)){
           boolean enabled = (Boolean) evt.getNewValue();
           if (myIsServerStarted) {
             if (enabled) {
@@ -110,6 +110,15 @@ public class ServerTorrentsDirectorySeeder {
             } else {
               stopSeeder();
             }
+          }
+        } else if (TorrentConfiguration.TORRENT_ENABLED.equals(propertyName)){
+          boolean enabled = (Boolean) evt.getNewValue();
+          if (enabled){
+            if (myIsServerStarted && myConfigurator.isSeederEnabled()){
+              startSeeder(scanInterval);
+            }
+          } else {
+            stopSeeder();
           }
         }
       }

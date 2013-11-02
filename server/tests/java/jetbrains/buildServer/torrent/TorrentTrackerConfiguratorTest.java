@@ -86,11 +86,11 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
 
   public void test_enable_disable_tracker(){
     assertTrue(myTrackerManager.isTrackerRunning());
-    System.setProperty(TorrentConfigurator.TRACKER_ENABLED, "false");
+    System.setProperty(TorrentConfiguration.TRACKER_ENABLED, "false");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertFalse(myTrackerManager.isTrackerRunning());
 
-    System.setProperty(TorrentConfigurator.TRACKER_ENABLED, "true");
+    System.setProperty(TorrentConfiguration.TRACKER_ENABLED, "true");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertTrue(myTrackerManager.isTrackerRunning());
 
@@ -99,23 +99,23 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
 
   public void test_tracker_dedicated_port(){
     assertTrue(myTrackerManager.isTrackerRunning());
-    System.setProperty(TorrentConfigurator.TRACKER_DEDICATED_PORT, "true");
+    System.setProperty(TorrentConfiguration.TRACKER_DEDICATED_PORT, "true");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertTrue(myTrackerManager.isTrackerRunning());
     assertTrue(myTrackerManager.getAnnounceUri().toString().endsWith(":6969/announce"));
 
-    System.setProperty(TorrentConfigurator.TRACKER_DEDICATED_PORT, "false");
+    System.setProperty(TorrentConfiguration.TRACKER_DEDICATED_PORT, "false");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertTrue(myTrackerManager.isTrackerRunning());
     assertEquals("http://localhost:8111/trackerAnnounce.html", myTrackerManager.getAnnounceUri().toString());
   }
 
   public void test_enable_disable_seeder(){
-    System.setProperty(TorrentConfigurator.SEEDER_ENABLED, "false");
+    System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "false");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertTrue(myDirectorySeeder.getTorrentsDirectorySeeder().isStopped());
 
-    System.setProperty(TorrentConfigurator.SEEDER_ENABLED, "true");
+    System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "true");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     new WaitFor(5 * 1000) {
       @Override
@@ -127,14 +127,14 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
   }
 
   public void test_file_size_threshold(){
-    System.setProperty(TorrentConfigurator.FILE_SIZE_THRESHOLD, "200");
+    System.setProperty(TorrentConfiguration.FILE_SIZE_THRESHOLD, "200");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertTrue(TorrentUtil.shouldCreateTorrentFor(200 * 1024 * 1024, myConfigurator));
     assertFalse(TorrentUtil.shouldCreateTorrentFor(200 * 1024 * 1024 - 1, myConfigurator));
   }
 
   public void test_announce_interval() throws IOException, TrackerMessage.MessageValidationException {
-    System.setProperty(TorrentConfigurator.ANNOUNCE_INTERVAL, "10");
+    System.setProperty(TorrentConfiguration.ANNOUNCE_INTERVAL, "10");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertEquals(10, myConfigurator.getAnnounceIntervalSec());
     assertEquals(10, myTrackerManager.getTrackerService().getAnnounceInterval());
@@ -161,7 +161,7 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
   }
 
   public void test_torrent_expire_timeout() throws IOException, TrackerMessage.MessageValidationException, InterruptedException {
-    System.setProperty(TorrentConfigurator.TRACKER_TORRENT_EXPIRE_TIMEOUT, "5");
+    System.setProperty(TorrentConfiguration.TRACKER_TORRENT_EXPIRE_TIMEOUT, "5");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertEquals(5, myConfigurator.getTrackerTorrentExpireTimeoutSec());
     final String uriCompleted = "http://localhost:8111/trackerAnnounce.html" +
@@ -230,7 +230,7 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
   }
 
   public void test_max_number_of_seeded_torrents(){
-    System.setProperty(TorrentConfigurator.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
+    System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertEquals(3, myConfigurator.getMaxNumberOfSeededTorrents());
 
@@ -241,15 +241,15 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
   @Override
   protected void tearDown() throws Exception {
     super.tearDown();
-    System.getProperties().remove(TorrentConfigurator.TRACKER_ENABLED);
-    System.getProperties().remove(TorrentConfigurator.TRACKER_DEDICATED_PORT);
-    System.getProperties().remove(TorrentConfigurator.OWN_ADDRESS);
-    System.getProperties().remove(TorrentConfigurator.SEEDER_ENABLED);
-    System.getProperties().remove(TorrentConfigurator.FILE_SIZE_THRESHOLD);
-    System.getProperties().remove(TorrentConfigurator.TRANSPORT_ENABLED);
-    System.getProperties().remove(TorrentConfigurator.ANNOUNCE_INTERVAL);
-    System.getProperties().remove(TorrentConfigurator.TRACKER_TORRENT_EXPIRE_TIMEOUT);
-    System.getProperties().remove(TorrentConfigurator.MAX_NUMBER_OF_SEEDED_TORRENTS);
+    System.getProperties().remove(TorrentConfiguration.TRACKER_ENABLED);
+    System.getProperties().remove(TorrentConfiguration.TRACKER_DEDICATED_PORT);
+    System.getProperties().remove(TorrentConfiguration.OWN_ADDRESS);
+    System.getProperties().remove(TorrentConfiguration.SEEDER_ENABLED);
+    System.getProperties().remove(TorrentConfiguration.FILE_SIZE_THRESHOLD);
+    System.getProperties().remove(TorrentConfiguration.TRANSPORT_ENABLED);
+    System.getProperties().remove(TorrentConfiguration.ANNOUNCE_INTERVAL);
+    System.getProperties().remove(TorrentConfiguration.TRACKER_TORRENT_EXPIRE_TIMEOUT);
+    System.getProperties().remove(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS);
     myDispatcher.getMulticaster().serverShutdown();
   }
 }

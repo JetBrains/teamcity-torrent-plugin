@@ -26,14 +26,17 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   private final TorrentsDirectorySeeder myTorrentsDirectorySeeder;
   private final CurrentBuildTracker myBuildTracker;
   private ArtifactCacheProvider myArtifactCacheProvider;
-  private final TorrentTrackerConfiguration myConfiguration;
+  private final TorrentConfiguration myConfiguration;
+  private final AgentTorrentsManager myTorrentsManager;
 
   public TorrentArtifactCacheListener(@NotNull final TorrentsDirectorySeeder torrentsDirectorySeeder,
                                       @NotNull final CurrentBuildTracker currentBuildTracker,
-                                      @NotNull final TorrentTrackerConfiguration configuration) {
+                                      @NotNull final TorrentConfiguration configuration,
+                                      @NotNull final AgentTorrentsManager torrentsManager) {
     myTorrentsDirectorySeeder = torrentsDirectorySeeder;
     myBuildTracker = currentBuildTracker;
     myConfiguration = configuration;
+    myTorrentsManager = torrentsManager;
   }
 
   public void onCacheInitialized(@NotNull final ArtifactCacheProvider artifactCacheProvider) {
@@ -42,10 +45,14 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   }
 
   public void onBeforeAddOrUpdate(@NotNull File file) {
+    if (!myTorrentsManager.isTorrentEnabled())
+      return;
     myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(file);
   }
 
   public void onAfterAddOrUpdate(@NotNull File file) {
+    if (!myTorrentsManager.isTorrentEnabled())
+      return;
     final String absolutePath = file.getAbsolutePath();
     LOG.info("onAfterAddOrUpdate " + absolutePath);
     if (myTorrentsDirectorySeeder.isSeedingByPath(file)) {
@@ -85,6 +92,8 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   }
 
   public void onBeforeDelete(@NotNull File file) {
+    if (!myTorrentsManager.isTorrentEnabled())
+      return;
     myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(file);
   }
 

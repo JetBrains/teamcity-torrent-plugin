@@ -12,11 +12,11 @@ import org.jetbrains.annotations.Nullable;
  * Date: 10/12/12
  * Time: 4:06 PM
  */
-public class TrackerManagerProxy implements TorrentTrackerConfiguration {
+public class TorrentManagerProxy implements TorrentConfiguration {
   @NotNull
   private final XmlRpcTarget myXmlRpcTarget;
 
-  public TrackerManagerProxy(@NotNull BuildAgent buildAgent) {
+  public TorrentManagerProxy(@NotNull BuildAgent buildAgent) {
     myXmlRpcTarget = XmlRpcFactory.getInstance().create(buildAgent.getConfiguration().getServerUrl(), "TeamCity Agent", 30000, false);
   }
 
@@ -37,9 +37,13 @@ public class TrackerManagerProxy implements TorrentTrackerConfiguration {
     return (Boolean) call("isTransportEnabled");
   }
 
+  public boolean isTorrentEnabled() {
+    return (Boolean) call("isTorrentEnabled");
+  }
+
   private Object call(@NotNull String methodName) {
     try {
-      return myXmlRpcTarget.call(XmlRpcConstants.TORRENT_TRACKER_CONFIGURATION + "." + methodName, new Object[0]);
+      return myXmlRpcTarget.call(XmlRpcConstants.TORRENT_CONFIGURATION + "." + methodName, new Object[0]);
     } catch (RemoteCallException e) {
       return null;
     }

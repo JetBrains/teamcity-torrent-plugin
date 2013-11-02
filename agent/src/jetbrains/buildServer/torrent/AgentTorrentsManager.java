@@ -6,12 +6,12 @@ import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
-import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.*;
 
 /**
@@ -22,13 +22,15 @@ import java.net.*;
 public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   private final static Logger LOG = Logger.getInstance(AgentTorrentsManager.class.getName());
 
-  private static final String TORRENT_FOLDER_NAME = "torrents";
+  public static final String TORRENT_FOLDER_NAME = "torrents";
 
   @NotNull
-  private final TorrentTrackerConfiguration myTrackerManager;
+  private final TorrentConfiguration myTrackerManager;
   private volatile URI myTrackerAnnounceUrl;
   private volatile Integer myFileSizeThresholdMb = TorrentDefaults.FILESIZE_THRESHOLD_MB;
   private volatile Integer myAnnounceIntervalSec = TorrentDefaults.ANNOUNCE_INTERVAL_SEC;
+  private boolean myTorrentEnabled = false;
+  private boolean myTorrentTransportEnabled = false;
   private TorrentsDirectorySeeder myTorrentsDirectorySeeder;
   private AgentRunningBuild myBuild;
   private boolean myTorrentClientStarted = false;
@@ -39,14 +41,14 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
                               @NotNull final EventDispatcher<AgentLifeCycleListener> eventDispatcher,
                               @Nullable final ArtifactCacheProvider artifactsCacheProvider,
                               @NotNull final CurrentBuildTracker currentBuildTracker,
-                              @NotNull final TorrentTrackerConfiguration trackerManager) throws Exception {
+                              @NotNull final TorrentConfiguration trackerManager) throws Exception {
     eventDispatcher.addListener(this);
     File torrentsStorage = agentConfiguration.getCacheDirectory(TORRENT_FOLDER_NAME);
     myTrackerManager = trackerManager;
     myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, -1, 0);
     myArtifactCacheProvider = artifactsCacheProvider;
     if (artifactsCacheProvider != null){
-      artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(myTorrentsDirectorySeeder, currentBuildTracker, trackerManager));
+      artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(myTorrentsDirectorySeeder, currentBuildTracker, trackerManager, this));
     }
   }
 
@@ -58,6 +60,16 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       myFileSizeThresholdMb = myTrackerManager.getFileSizeThresholdMb();
       myAnnounceIntervalSec = myTrackerManager.getAnnounceIntervalSec();
       myTorrentsDirectorySeeder.setAnnounceInterval(myAnnounceIntervalSec);
+      myTorrentTransportEnabled = myTrackerManager.isTransportEnabled();
+      boolean enabledNow = myTrackerManager.isTorrentEnabled();
+      if (myTorrentEnabled != enabledNow){
+        myTorrentEnabled = enabledNow;
+        if (myTorrentEnabled){
+          startIfNecessary();
+        } else {
+          stopIfNecessary();
+        }
+      }
     } catch (Exception e) {
       LOG.warn("Error updating torrent settings", e);
       return false;
@@ -71,18 +83,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   }
 
   public void checkReady(){
-    if (myTorrentClientStarted){
-      updateSettings();
-      return;
-    }
-    try {
-      if (updateSettings()) {
-        myTorrentsDirectorySeeder.start(NetworkUtil.getSelfAddresses(), myTrackerAnnounceUrl, myAnnounceIntervalSec);
-        myTorrentClientStarted = true;
-      }
-    } catch (Exception e) {
-      Loggers.AGENT.warn("Failed to start torrent seeder", e);
-    }
+    updateSettings();
   }
 
   @Override
@@ -91,18 +92,33 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     myBuild = runningBuild;
   }
 
-  @Override
-  public void agentShutdown() {
+  public void startIfNecessary() throws IOException {
+    if (myTorrentEnabled) {
+      myTorrentsDirectorySeeder.start(NetworkUtil.getSelfAddresses(), myTrackerAnnounceUrl, myAnnounceIntervalSec);
+      myTorrentClientStarted = true;
+    }
+  }
+
+  public void stopIfNecessary(){
     if (!myTorrentsDirectorySeeder.isStopped()) {
       myTorrentsDirectorySeeder.stop();
     }
   }
 
-  public boolean isTorrentClientStarted() {
-    return myTorrentClientStarted;
+  @Override
+  public void agentShutdown() {
+    stopIfNecessary();
+  }
+
+  public boolean isTransportEnabled() {
+    return myTorrentClientStarted && myTorrentTransportEnabled;
   }
 
   public TorrentsDirectorySeeder getTorrentsDirectorySeeder() {
     return myTorrentsDirectorySeeder;
+  }
+
+  public boolean isTorrentEnabled() {
+    return myTorrentEnabled;
   }
 }

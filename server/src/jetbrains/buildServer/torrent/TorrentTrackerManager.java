@@ -63,11 +63,19 @@ public class TorrentTrackerManager {
   }
 
   public void booleanPropertyChanged(@NotNull final String propertyName, boolean newValue){
-    if (TorrentConfigurator.TRACKER_DEDICATED_PORT.equals(propertyName)){
+    if (TorrentConfiguration.TRACKER_DEDICATED_PORT.equals(propertyName)){
       condRestartTracker();
-    } else if (TorrentConfigurator.TRACKER_ENABLED.equals(propertyName)){
+    } else if (TorrentConfiguration.TRACKER_ENABLED.equals(propertyName)){
       if (newValue){
         startTracker();
+      } else {
+        stopTracker();
+      }
+    } else if (TorrentConfiguration.TORRENT_ENABLED.equals(propertyName)){
+      if (newValue){
+        if (myConfigurator.isTrackerEnabled()) {
+          startTracker();
+        }
       } else {
         stopTracker();
       }
@@ -75,7 +83,7 @@ public class TorrentTrackerManager {
   }
 
   public void integerPropertyChanged(@NotNull final String propertyName, int newValue){
-    if (TorrentConfigurator.ANNOUNCE_INTERVAL.equals(propertyName)){
+    if (TorrentConfiguration.ANNOUNCE_INTERVAL.equals(propertyName)){
       setAnnounceInterval(newValue);
     }
   }

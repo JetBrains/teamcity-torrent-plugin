@@ -59,11 +59,11 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
   private final AgentTorrentsManager myAgentTorrentsManager;
   private final CurrentBuildTracker myBuildTracker;
-  private final TorrentTrackerConfiguration myConfiguration;
+  private final TorrentConfiguration myConfiguration;
 
   public TorrentTransportFactory(@NotNull final AgentTorrentsManager agentTorrentsManager,
                                  @NotNull final CurrentBuildTracker currentBuildTracker,
-                                 @NotNull final TorrentTrackerConfiguration configuration) {
+                                 @NotNull final TorrentConfiguration configuration) {
     myAgentTorrentsManager = agentTorrentsManager;
     myBuildTracker = currentBuildTracker;
     myConfiguration = configuration;
@@ -96,7 +96,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
 
-    if (!myAgentTorrentsManager.isTorrentClientStarted()){
+    if (!myAgentTorrentsManager.isTransportEnabled()){
       TorrentUtil.log2Build("Agent torrent manager didn't start. Torrent transport is unavailable", buildLogger);
       return null;
     }

@@ -100,7 +100,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
   }
 
   public void max_number_of_seeded_torrents_on_startup() throws IOException, NoSuchAlgorithmException, InterruptedException {
-    System.setProperty(TorrentConfigurator.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
+    System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     final URI announceURI = URI.create("http://localhost:6969/announce");
     myDirectorySeeder.setAnnounceURI(announceURI);
@@ -126,8 +126,8 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
 
     }
 
-    System.setProperty(TorrentConfigurator.TRACKER_ENABLED, "true");
-    System.setProperty(TorrentConfigurator.SEEDER_ENABLED, "true");
+    System.setProperty(TorrentConfiguration.TRACKER_ENABLED, "true");
+    System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "true");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     myDispatcher.getMulticaster().serverStartup();
     new WaitFor(15*1000){
@@ -158,11 +158,11 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
 
 
   public void new_file_seedeed_old_removed() throws IOException, InterruptedException {
-    System.setProperty(TorrentConfigurator.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
-    System.setProperty(TorrentConfigurator.ANNOUNCE_URL, "http://localhost:6969/announce");
-    System.setProperty(TorrentConfigurator.FILE_SIZE_THRESHOLD, "1");
-    System.setProperty(TorrentConfigurator.TRACKER_ENABLED, "true");
-    System.setProperty(TorrentConfigurator.SEEDER_ENABLED, "true");
+    System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
+    System.setProperty(TorrentConfiguration.ANNOUNCE_URL, "http://localhost:6969/announce");
+    System.setProperty(TorrentConfiguration.FILE_SIZE_THRESHOLD, "1");
+    System.setProperty(TorrentConfiguration.TRACKER_ENABLED, "true");
+    System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "true");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     myDispatcher.getMulticaster().serverStartup();
 

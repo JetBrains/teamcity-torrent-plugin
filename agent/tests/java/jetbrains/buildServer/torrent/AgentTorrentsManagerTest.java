@@ -63,14 +63,13 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
     myConfigurationMock.stubs().method("getCacheDirectory").will(returnValue(myLinkDir));
 
     Mockery m = new Mockery();
-    final TorrentTrackerConfiguration trackerConfiguration = m.mock(TorrentTrackerConfiguration.class);
+    final TorrentConfiguration trackerConfiguration = m.mock(TorrentConfiguration.class);
     m.checking(new Expectations() {{
-      allowing(trackerConfiguration).getFileSizeThresholdMb();
-      will(returnValue(0));
-      allowing(trackerConfiguration).getAnnounceUrl();
-      will(returnValue("http://localhost:6969/announce"));
-      allowing(trackerConfiguration).getAnnounceIntervalSec();
-      will(returnValue(60));
+      allowing(trackerConfiguration).getFileSizeThresholdMb();will(returnValue(0));
+      allowing(trackerConfiguration).getAnnounceUrl();will(returnValue("http://localhost:6969/announce"));
+      allowing(trackerConfiguration).getAnnounceIntervalSec();will(returnValue(60));
+      allowing(trackerConfiguration).isTransportEnabled();will(returnValue(false));
+      allowing(trackerConfiguration).isTorrentEnabled();will(returnValue(true));
     }});
 
     final ArtifactCacheProvider cacheProvider = new ArtifactCacheProvider() {

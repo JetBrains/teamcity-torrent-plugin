@@ -23,6 +23,7 @@ import jetbrains.buildServer.configuration.ChangeProvider;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.serverSide.impl.ServerSettings;
+import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.PropertiesUtil;
 import org.apache.commons.lang.StringUtils;
@@ -38,19 +39,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 
-public class TorrentConfigurator implements TorrentTrackerConfiguration {
-  public final static String TRACKER_ENABLED = "torrent.tracker.enabled";
-  public final static String OWN_ADDRESS = "torrent.ownAddress";
-  public final static String SEEDER_ENABLED = "torrent.seeder.enabled";
-  public final static String FILE_SIZE_THRESHOLD = "torrent.file.size.threshold.mb";
-  public final static String TRANSPORT_ENABLED = "torrent.transport.enabled";
-  public final static String DOWNLOAD_ENABLED = "torrent.download.enabled";
-  public final static String ANNOUNCE_INTERVAL = "torrent.announce.interval.sec";
-  public final static String TRACKER_TORRENT_EXPIRE_TIMEOUT = "torrent.tracker.expire.timeout.sec";
-  public final static String MAX_NUMBER_OF_SEEDED_TORRENTS = "torrent.max.seeded.number";
-  public final static String TRACKER_DEDICATED_PORT ="torrent.tracker.dedicated.port";
-  // this is fake option to multicast announce url changes;
-  public static final String ANNOUNCE_URL = "announce.url";
+public class TorrentConfigurator implements TorrentConfiguration {
 
   private final ServerPaths myServerPaths;
   private final ServerSettings myServerSettings;
@@ -70,18 +59,19 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
     }
     loadConfiguration(configFile);
 
-    xmlRpcHandlerManager.addHandler(XmlRpcConstants.TORRENT_TRACKER_CONFIGURATION, this);
+    xmlRpcHandlerManager.addHandler(XmlRpcConstants.TORRENT_CONFIGURATION, this);
+    myConfiguration = new Properties();
 
     myConfigurationWatcher = new TorrentConfigurationWatcher();
     myConfigurationWatcher.registerListener(new ChangeListener() {
       public void changeOccured(String requestor) {
-        setTrackerEnabled(getBooleanValue(TRACKER_ENABLED, true));
-        setSeederEnabled(getBooleanValue(SEEDER_ENABLED, true));
-        setTrackerUsesDedicatedPort(getBooleanValue(TRACKER_DEDICATED_PORT, false));
-        setMaxNumberOfSeededTorrents(getIntegerValue(MAX_NUMBER_OF_SEEDED_TORRENTS, 1000));
-        setFileSizeThresholdMb(getIntegerValue(FILE_SIZE_THRESHOLD, 10));
-        setTrackerTorrentExpireTimeoutSec(getIntegerValue(TRACKER_TORRENT_EXPIRE_TIMEOUT, 180));
-        setAnnounceIntervalSec(getIntegerValue(ANNOUNCE_INTERVAL, 60));
+        setTrackerEnabled(TorrentUtil.getBooleanValue(TRACKER_ENABLED, true));
+        setSeederEnabled(TorrentUtil.getBooleanValue(SEEDER_ENABLED, true));
+        setTrackerUsesDedicatedPort(TorrentUtil.getBooleanValue(TRACKER_DEDICATED_PORT, false));
+        setMaxNumberOfSeededTorrents(TorrentUtil.getIntegerValue(MAX_NUMBER_OF_SEEDED_TORRENTS, 1000));
+        setFileSizeThresholdMb(TorrentUtil.getIntegerValue(FILE_SIZE_THRESHOLD, 10));
+        setTrackerTorrentExpireTimeoutSec(TorrentUtil.getIntegerValue(TRACKER_TORRENT_EXPIRE_TIMEOUT, 180));
+        setAnnounceIntervalSec(TorrentUtil.getIntegerValue(ANNOUNCE_INTERVAL, 60));
       }
     });
 
@@ -94,6 +84,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
       Properties props = new Properties();
       props.setProperty(TRANSPORT_ENABLED, "false");
       props.setProperty(DOWNLOAD_ENABLED, "false");
+      props.setProperty(TORRENT_ENABLED, "false");
       PropertiesUtil.storeProperties(props, configFile, "");
     } catch (IOException e) {
       Loggers.SERVER.warn("Failed to create configuration file: " + configFile.getAbsolutePath() + ", error: " + e.toString());
@@ -101,7 +92,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   private void setTrackerEnabled(boolean enabled) {
-    boolean oldValue = getBooleanValue(myConfiguration, TRACKER_ENABLED, true);
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, TRACKER_ENABLED, true);
     if (oldValue != enabled) {
       myConfiguration.setProperty(TRACKER_ENABLED, System.getProperty(TRACKER_ENABLED));
       propertyChanged(TRACKER_ENABLED, oldValue, enabled);
@@ -109,7 +100,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   private void setSeederEnabled(boolean enabled) {
-    boolean oldValue = getBooleanValue(myConfiguration, SEEDER_ENABLED, true);
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, SEEDER_ENABLED, true);
     if  (oldValue != enabled){
       myConfiguration.setProperty(SEEDER_ENABLED, System.getProperty(SEEDER_ENABLED));
       propertyChanged(SEEDER_ENABLED, oldValue, enabled);
@@ -117,7 +108,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   private void setFileSizeThresholdMb(int threshold) {
-    int oldValue = getIntegerValue(myConfiguration, FILE_SIZE_THRESHOLD, 10);
+    int oldValue = TorrentUtil.getIntegerValue(myConfiguration, FILE_SIZE_THRESHOLD, 10);
     if (oldValue != threshold){
       myConfiguration.setProperty(FILE_SIZE_THRESHOLD, System.getProperty(FILE_SIZE_THRESHOLD));
       propertyChanged(FILE_SIZE_THRESHOLD, oldValue, threshold);
@@ -125,7 +116,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   private void setMaxNumberOfSeededTorrents(int number) {
-    int oldValue = getIntegerValue(myConfiguration, MAX_NUMBER_OF_SEEDED_TORRENTS, 1000);
+    int oldValue = TorrentUtil.getIntegerValue(myConfiguration, MAX_NUMBER_OF_SEEDED_TORRENTS, 1000);
     if (oldValue != number){
       myConfiguration.setProperty(MAX_NUMBER_OF_SEEDED_TORRENTS, System.getProperty(MAX_NUMBER_OF_SEEDED_TORRENTS));
       propertyChanged(MAX_NUMBER_OF_SEEDED_TORRENTS, oldValue, number);
@@ -133,7 +124,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   private void setAnnounceIntervalSec(int sec){
-    int oldValue = getIntegerValue(myConfiguration, ANNOUNCE_INTERVAL, 60);
+    int oldValue = TorrentUtil.getIntegerValue(myConfiguration, ANNOUNCE_INTERVAL, 60);
     if (oldValue != sec){
       myConfiguration.setProperty(ANNOUNCE_INTERVAL, System.getProperty(ANNOUNCE_INTERVAL));
       propertyChanged(ANNOUNCE_INTERVAL, oldValue, sec);
@@ -141,7 +132,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   private void setTrackerTorrentExpireTimeoutSec(int sec){
-    int oldValue = getIntegerValue(myConfiguration, TRACKER_TORRENT_EXPIRE_TIMEOUT, 180);
+    int oldValue = TorrentUtil.getIntegerValue(myConfiguration, TRACKER_TORRENT_EXPIRE_TIMEOUT, 180);
     if (oldValue != sec){
       myConfiguration.setProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT, System.getProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT));
       propertyChanged(TRACKER_TORRENT_EXPIRE_TIMEOUT, oldValue, sec);
@@ -149,7 +140,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   private void setTrackerUsesDedicatedPort(boolean enabled){
-    boolean oldValue = getBooleanValue(myConfiguration, TRACKER_DEDICATED_PORT, false);
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, TRACKER_DEDICATED_PORT, false);
     if  (oldValue != enabled){
       myConfiguration.setProperty(TRACKER_DEDICATED_PORT, System.getProperty(TRACKER_DEDICATED_PORT));
       propertyChanged(TRACKER_DEDICATED_PORT, oldValue, enabled);
@@ -157,7 +148,7 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   public void setTransportEnabled(boolean enabled){
-    boolean oldValue = getBooleanValue(myConfiguration, TRANSPORT_ENABLED, false);
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, TRANSPORT_ENABLED, false);
     if  (oldValue != enabled){
       myConfiguration.setProperty(TRANSPORT_ENABLED, String.valueOf(enabled));
       propertyChanged(TRANSPORT_ENABLED, oldValue, enabled);
@@ -165,35 +156,43 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   public void setDownloadEnabled(boolean enabled){
-    boolean oldValue = getBooleanValue(myConfiguration, DOWNLOAD_ENABLED, false);
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, DOWNLOAD_ENABLED, false);
     if  (oldValue != enabled){
       myConfiguration.setProperty(DOWNLOAD_ENABLED, String.valueOf(enabled));
       propertyChanged(DOWNLOAD_ENABLED, oldValue, enabled);
     }
   }
 
+  public void setTorrentEnabled(boolean enabled){
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, TORRENT_ENABLED, false);
+    if  (oldValue != enabled){
+      myConfiguration.setProperty(TORRENT_ENABLED, String.valueOf(enabled));
+      propertyChanged(TORRENT_ENABLED, oldValue, enabled);
+    }
+  }
+
   public boolean isDownloadEnabled(){
-    return getBooleanValue(myConfiguration, DOWNLOAD_ENABLED, false);
+    return TorrentUtil.getBooleanValue(myConfiguration, DOWNLOAD_ENABLED, false);
   }
 
   public int getMaxNumberOfSeededTorrents() {
-    return getIntegerValue(MAX_NUMBER_OF_SEEDED_TORRENTS, 1000);
+    return TorrentUtil.getIntegerValue(MAX_NUMBER_OF_SEEDED_TORRENTS, 2000);
   }
 
   public int getFileSizeThresholdMb() {
-    return getIntegerValue(FILE_SIZE_THRESHOLD, 10);
+    return TorrentUtil.getIntegerValue(FILE_SIZE_THRESHOLD, 10);
   }
 
   public int getAnnounceIntervalSec() {
-    return getIntegerValue(ANNOUNCE_INTERVAL, 60);
+    return TorrentUtil.getIntegerValue(ANNOUNCE_INTERVAL, 60);
   }
 
   public int getTrackerTorrentExpireTimeoutSec() {
-    return getIntegerValue(TRACKER_TORRENT_EXPIRE_TIMEOUT, 180);
+    return TorrentUtil.getIntegerValue(TRACKER_TORRENT_EXPIRE_TIMEOUT, 180);
   }
 
   public boolean isTrackerDedicatedPort(){
-    return getBooleanValue(TRACKER_DEDICATED_PORT, false);
+    return TorrentUtil.getBooleanValue(TRACKER_DEDICATED_PORT, false);
   }
 
   public void persistConfiguration() throws IOException {
@@ -201,15 +200,19 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
   }
 
   public boolean isTrackerEnabled() {
-    return getBooleanValue(TRACKER_ENABLED, true);
+    return TorrentUtil.getBooleanValue(TRACKER_ENABLED, true);
   }
 
   public boolean isSeederEnabled() {
-    return getBooleanValue(SEEDER_ENABLED, true);
+    return TorrentUtil.getBooleanValue(SEEDER_ENABLED, true);
   }
 
   public boolean isTransportEnabled(){
-    return getBooleanValue(myConfiguration, TRANSPORT_ENABLED, false);
+    return TorrentUtil.getBooleanValue(myConfiguration, TRANSPORT_ENABLED, false);
+  }
+
+  public boolean isTorrentEnabled() {
+    return TorrentUtil.getBooleanValue(myConfiguration, TORRENT_ENABLED, false);
   }
 
   private File getConfigFile() {
@@ -228,13 +231,14 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
       if (properties.get(DOWNLOAD_ENABLED) == null){
         properties.put(DOWNLOAD_ENABLED, Boolean.FALSE.toString());
       }
+      myConfiguration = properties;
+      myConfiguration.put(TORRENT_ENABLED, String.valueOf(isDownloadEnabled() || isTransportEnabled()));
     } catch (IOException e) {
       Loggers.SERVER.warn("Failed to load configuration file: " + configFile.getAbsolutePath() + ", error: " + e.toString());
     } finally {
       FileUtil.close(fileReader);
     }
 
-    myConfiguration = properties;
   }
 
   public String getAnnounceUrl() {
@@ -286,33 +290,6 @@ public class TorrentConfigurator implements TorrentTrackerConfiguration {
       try {
       listener.propertyChange(event);
       } catch (Exception ex){}
-    }
-  }
-
-  private static boolean getBooleanValue(final String systemPropertyName, final boolean defaultValue){
-    return getBooleanValue(System.getProperties(), systemPropertyName, defaultValue);
-  }
-
-  private static boolean getBooleanValue(final Properties properties, final String propertyName, final boolean defaultValue){
-    final String value = properties.getProperty(propertyName);
-    if (Boolean.TRUE.toString().equalsIgnoreCase(value)){
-      return true;
-    } else if (Boolean.FALSE.toString().equalsIgnoreCase(value)){
-      return false;
-    } else {
-      return defaultValue;
-    }
-  }
-
-  private static int getIntegerValue(final String systemPropertyName, final int defaultValue){
-    return getIntegerValue(System.getProperties(), systemPropertyName, defaultValue);
-  }
-  private static int getIntegerValue(final Properties properties, final String systemPropertyName, final int defaultValue){
-    final String value = properties.getProperty(systemPropertyName);
-    try {
-      return Integer.parseInt(value);
-    } catch (NumberFormatException ex) {
-      return defaultValue;
     }
   }
 

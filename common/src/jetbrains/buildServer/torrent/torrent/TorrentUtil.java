@@ -3,7 +3,7 @@ package jetbrains.buildServer.torrent.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.agent.BuildProgressLogger;
-import jetbrains.buildServer.torrent.TorrentTrackerConfiguration;
+import jetbrains.buildServer.torrent.TorrentConfiguration;
 import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.util.ExceptionUtil;
@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Properties;
 
 public class TorrentUtil {
   private final static Logger LOG = Logger.getInstance(TorrentUtil.class.getName());
@@ -86,7 +87,7 @@ public class TorrentUtil {
     return null;
   }
 
-  public static boolean shouldCreateTorrentFor(@NotNull final long fileSize, @NotNull final TorrentTrackerConfiguration configuration){
+  public static boolean shouldCreateTorrentFor(@NotNull final long fileSize, @NotNull final TorrentConfiguration configuration){
     return (fileSize >= configuration.getFileSizeThresholdMb()*1024*1024) && configuration.getAnnounceUrl() != null;
   }
 
@@ -96,4 +97,31 @@ public class TorrentUtil {
   }
 
 
+  public static boolean getBooleanValue(final String systemPropertyName, final boolean defaultValue){
+    return getBooleanValue(System.getProperties(), systemPropertyName, defaultValue);
+  }
+
+  public static boolean getBooleanValue(final Properties properties, final String propertyName, final boolean defaultValue){
+    final String value = properties.getProperty(propertyName);
+    if (Boolean.TRUE.toString().equalsIgnoreCase(value)){
+      return true;
+    } else if (Boolean.FALSE.toString().equalsIgnoreCase(value)){
+      return false;
+    } else {
+      return defaultValue;
+    }
+  }
+
+  public static int getIntegerValue(final String systemPropertyName, final int defaultValue){
+    return getIntegerValue(System.getProperties(), systemPropertyName, defaultValue);
+  }
+
+  public static int getIntegerValue(final Properties properties, final String systemPropertyName, final int defaultValue){
+    final String value = properties.getProperty(systemPropertyName);
+    try {
+      return Integer.parseInt(value);
+    } catch (NumberFormatException ex) {
+      return defaultValue;
+    }
+  }
 }

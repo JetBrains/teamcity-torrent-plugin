@@ -6,5 +6,5 @@ package jetbrains.buildServer.torrent;
  * Time: 4:04 PM
  */
 final class XmlRpcConstants {
-  static final String TORRENT_TRACKER_CONFIGURATION = "TorrentTrackerConfiguration";
+  static final String TORRENT_CONFIGURATION = "TorrentConfiguration";
 }

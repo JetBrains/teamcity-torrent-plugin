@@ -24,20 +24,19 @@ import java.util.Map;
  * @author Maxim Podkolzine (maxim.podkolzine@jetbrains.com)
  * @since 8.0
  */
-public class TrackerAdminPage extends AdminPage {
-  private static final String TAB_ID = "torrentTracker";
+public class TorrentSettingsAdminPage extends AdminPage {
+  private static final String TAB_ID = "torrentSettings";
   private final TorrentTrackerManager myTorrentTrackerManager;
   private final TorrentConfigurator myTorrentConfigurator;
   private final ServerTorrentsDirectorySeeder myTorrentSeeder;
 
-  protected TrackerAdminPage(@NotNull PagePlaces pagePlaces,
-                             @NotNull WebControllerManager controllerManager,
-                             @NotNull PluginDescriptor descriptor,
-                             @NotNull TorrentTrackerManager torrentTrackerManager,
-                             @NotNull TorrentConfigurator torrentConfigurator,
-                             @NotNull ServerTorrentsDirectorySeeder torrentSeeder) {
-    super(pagePlaces, TAB_ID, descriptor.getPluginResourcesPath("torrentTracker.jsp"), "Torrent Settings");
-    addJsFile(descriptor.getPluginResourcesPath("torrentTracker.js"));
+  public TorrentSettingsAdminPage(@NotNull PagePlaces pagePlaces,
+                                     @NotNull WebControllerManager controllerManager,
+                                     @NotNull PluginDescriptor descriptor,
+                                     @NotNull TorrentTrackerManager torrentTrackerManager,
+                                     @NotNull TorrentConfigurator torrentConfigurator,
+                                     @NotNull ServerTorrentsDirectorySeeder torrentSeeder) {
+    super(pagePlaces, TAB_ID, descriptor.getPluginResourcesPath("torrentSettings.jsp"), "Torrent Settings");
     myTorrentTrackerManager = torrentTrackerManager;
     myTorrentConfigurator = torrentConfigurator;
     myTorrentSeeder = torrentSeeder;
@@ -48,9 +47,10 @@ public class TrackerAdminPage extends AdminPage {
       protected ModelAndView doHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) throws Exception {
         if (request.getParameter("save") != null) {
           boolean transportEnabled = request.getParameter("transportEnabled")!=null;
-          boolean downloadEnabled = transportEnabled && request.getParameter("downloadEnabled")!=null;
+          boolean downloadEnabled = request.getParameter("downloadEnabled")!=null;
           myTorrentConfigurator.setTransportEnabled(transportEnabled);
           myTorrentConfigurator.setDownloadEnabled(downloadEnabled);
+          myTorrentConfigurator.setTorrentEnabled(downloadEnabled || transportEnabled);
           myTorrentConfigurator.persistConfiguration();
         }
         return new ModelAndView(new RedirectView(request.getContextPath() + "/admin/admin.html?item=" + TAB_ID));
