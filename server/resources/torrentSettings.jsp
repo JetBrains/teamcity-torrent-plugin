@@ -27,11 +27,11 @@
     <td>
       <div>
         <forms:checkbox name="transportEnabled" checked="${torrentConfigurator.transportEnabled}"/>
-        <label for="transportEnabled">Use BitTorrent protocol for artifact dependencies</label>
+        <label for="transportEnabled">Use BitTorrent for artifact dependencies</label>
       </div>
       <div>
         <forms:checkbox name="downloadEnabled" checked="${torrentConfigurator.downloadEnabled}"/>
-        <label for="downloadEnabled">Allow users to download artifacts via BitTorrent client</label>
+        <label for="downloadEnabled">Allow users to download artifacts via a BitTorrent client</label>
       </div>
     </td>
   </tr>
