@@ -41,6 +41,7 @@ public class ServerTorrentsDirectorySeeder {
   private URI myAnnounceURI;
   private int myMaxTorrentsToSeed;
   private boolean myIsServerStarted;
+  private final ExecutorServices myExecutor;
 
   public ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
                                        @NotNull final TorrentConfigurator configurator,
@@ -56,6 +57,7 @@ public class ServerTorrentsDirectorySeeder {
                                        @NotNull final EventDispatcher<BuildServerListener> eventDispatcher,
                                        final int scanInterval) {
     myIsServerStarted = false;
+    myExecutor = executorServices;
     File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
     torrentsStorage.mkdirs();
     myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage,
@@ -73,13 +75,8 @@ public class ServerTorrentsDirectorySeeder {
       @Override
       public void serverStartup() {
         if (myConfigurator.isSeederEnabled()) {
-          executorServices.getLowPriorityExecutorService().submit(new Runnable() {
-            public void run() {
-              startSeeder(scanInterval);
-            }
-          });
+          startSeederAsync(scanInterval);
         }
-        myIsServerStarted = true;
       }
 
       @Override
@@ -106,7 +103,7 @@ public class ServerTorrentsDirectorySeeder {
           boolean enabled = (Boolean) evt.getNewValue();
           if (myIsServerStarted) {
             if (enabled) {
-              startSeeder(scanInterval);
+              startSeederAsync(scanInterval);
             } else {
               stopSeeder();
             }
@@ -115,7 +112,7 @@ public class ServerTorrentsDirectorySeeder {
           boolean enabled = (Boolean) evt.getNewValue();
           if (enabled){
             if (myIsServerStarted && myConfigurator.isSeederEnabled()){
-              startSeeder(scanInterval);
+              startSeederAsync(scanInterval);
             }
           } else {
             stopSeeder();
@@ -131,6 +128,15 @@ public class ServerTorrentsDirectorySeeder {
     if (!myTorrentsDirectorySeeder.isStopped()) {
       myTorrentsDirectorySeeder.stop();
     }
+  }
+
+  private void startSeederAsync(final int scanInterval){
+    myExecutor.getLowPriorityExecutorService().submit(new Runnable() {
+      public void run() {
+        startSeeder(scanInterval);
+      }
+    });
+    myIsServerStarted = true;
   }
 
   private void startSeeder(int scanInterval) {
