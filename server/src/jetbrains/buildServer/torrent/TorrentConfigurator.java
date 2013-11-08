@@ -84,6 +84,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
       props.setProperty(TRANSPORT_ENABLED, "false");
       props.setProperty(DOWNLOAD_ENABLED, "false");
       props.setProperty(TORRENT_ENABLED, "false");
+      configFile.getParentFile().mkdirs();
       PropertiesUtil.storeProperties(props, configFile, "");
     } catch (IOException e) {
       Loggers.SERVER.warn("Failed to create configuration file: " + configFile.getAbsolutePath() + ", error: " + e.toString());
