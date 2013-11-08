@@ -60,7 +60,6 @@ public class TorrentConfigurator implements TorrentConfiguration {
     loadConfiguration(configFile);
 
     xmlRpcHandlerManager.addHandler(XmlRpcConstants.TORRENT_CONFIGURATION, this);
-    myConfiguration = new Properties();
 
     myConfigurationWatcher = new TorrentConfigurationWatcher();
     myConfigurationWatcher.registerListener(new ChangeListener() {
