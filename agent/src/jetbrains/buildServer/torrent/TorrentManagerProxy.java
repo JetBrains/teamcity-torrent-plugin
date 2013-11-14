@@ -22,30 +22,35 @@ public class TorrentManagerProxy implements TorrentConfiguration {
 
   @Nullable
   public String getAnnounceUrl() {
-    return (String) call("getAnnounceUrl");
+    return call("getAnnounceUrl", "http://localhost:8111/trackerAnnounce.html");
   }
 
   public int getFileSizeThresholdMb() {
-    return (Integer) call("getFileSizeThresholdMb");
+    return call("getFileSizeThresholdMb", TorrentConfiguration.DEFAULT_FILE_SIZE_THRESHOLD);
   }
 
   public int getAnnounceIntervalSec() {
-    return (Integer) call("getAnnounceIntervalSec");
+    return call("getAnnounceIntervalSec", TorrentConfiguration.DEFAULT_ANNOUNCE_INTERVAL);
   }
 
   public boolean isTransportEnabled() {
-    return (Boolean) call("isTransportEnabled");
+    return call("isTransportEnabled", TorrentConfiguration.DEFAULT_TRANSPORT_ENABLED);
   }
 
   public boolean isTorrentEnabled() {
-    return (Boolean) call("isTorrentEnabled");
+    return call("isTorrentEnabled", TorrentConfiguration.DEFAULT_TORRENT_ENABLED);
   }
 
-  private Object call(@NotNull String methodName) {
+  @NotNull
+  private <T> T call(@NotNull String methodName, @NotNull final T defaultValue) {
     try {
-      return myXmlRpcTarget.call(XmlRpcConstants.TORRENT_CONFIGURATION + "." + methodName, new Object[0]);
-    } catch (RemoteCallException e) {
-      return null;
+      final Object retval = myXmlRpcTarget.call(XmlRpcConstants.TORRENT_CONFIGURATION + "." + methodName, new Object[0]);
+      if (retval != null)
+        return (T) retval;
+      else
+        return defaultValue;
+    } catch (Exception e) {
+      return defaultValue;
     }
   }
 }
