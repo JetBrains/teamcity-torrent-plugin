@@ -127,4 +127,22 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     myCacheListener.onBeforeDelete(newLocation);
     assertEquals(0, mySeeder.getNumberOfSeededTorrents());
   }
+
+  public void test_torrent_like_file() throws IOException {
+    File file = createTempFile(Integer.MAX_VALUE+":sourcesUpdated\n" +
+            Integer.MAX_VALUE+":runnerFinished:Fetch artifacts (Ant)\n" +
+            Integer.MAX_VALUE+":runnerFinished:IntelliJ IDEA Project");
+
+    File newLocation = new File(myCacheDir, CONTEXT_PATH + file.getName());
+    FileUtils.moveFile(file, newLocation);
+    final long totalBefore = Runtime.getRuntime().totalMemory();
+    final int ONEGB = 1024 * 1024 * 1024;
+    if (totalBefore >= ONEGB) {
+      throw new RuntimeException("Memory total 1GB before the test!");
+    }
+    myCacheListener.onAfterAddOrUpdate(newLocation);
+    final long totalAfter = Runtime.getRuntime().totalMemory();
+    assertTrue(totalAfter-totalBefore < ONEGB/10);
+    assertEquals(0, mySeeder.getNumberOfSeededTorrents());
+  }
 }
