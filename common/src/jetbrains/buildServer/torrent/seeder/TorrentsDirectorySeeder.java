@@ -166,7 +166,7 @@ public class TorrentsDirectorySeeder {
   }
 
   public boolean isSeedingByPath(@NotNull File srcFile){
-    return myTorrentSeeder.isSeeding(srcFile);
+    return myTorrentSeeder.isSeedingByPath(srcFile);
   }
 
   public boolean isSeeding(@NotNull File torrentFile){
