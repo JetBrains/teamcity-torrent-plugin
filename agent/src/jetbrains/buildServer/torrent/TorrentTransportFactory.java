@@ -94,10 +94,13 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       TorrentUtil.log2Build("Shouldn't use torrent transport for localhost", buildLogger);
       return null;
     }
-
+    if (!myAgentTorrentsManager.isTorrentEnabled()){
+      TorrentUtil.log2Build("Torrent plugin is disabled. Build artifacts won't be available as torrents.", buildLogger);
+      return null;
+    }
 
     if (!myAgentTorrentsManager.isTransportEnabled()){
-      TorrentUtil.log2Build("Agent torrent manager didn't start. Torrent transport is unavailable", buildLogger);
+      TorrentUtil.log2Build("Torrent transport is disabled", buildLogger);
       return null;
     }
 
