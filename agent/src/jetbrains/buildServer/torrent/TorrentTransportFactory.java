@@ -165,7 +165,19 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         final AtomicReference<Exception> occuredException = new AtomicReference<Exception>();
         if (mySeeder.isSeeding(torrent)){
           log2Build(String.format("Already seeding torrent (name: %s, hash: %s)", torrent.getName(), torrent.getHexInfoHash()));
-          return torrent.getHexInfoHash();
+          if (!target.exists()){
+            log2Build("Target file does not exist. Will copy it from local storage");
+            final File parentFolder = mySeeder.findSeedingTorrentFolder(torrent);
+            File srcFile = new File(parentFolder, torrent.getName());
+            if (srcFile.exists()) {
+              FileUtil.copy(srcFile, target);
+            }
+          }
+          if (target.exists()) {
+            return torrent.getHexInfoHash();
+          } else {
+            mySeeder.stopSeeding(torrent);
+          }
         }
         Thread th = mySeeder.downloadAndShareOrFailAsync(
                 torrent, target, target.getParentFile(), getDownloadTimeoutSec(), MIN_SEEDERS_COUNT_TO_TRY, myInterrupted, occuredException);

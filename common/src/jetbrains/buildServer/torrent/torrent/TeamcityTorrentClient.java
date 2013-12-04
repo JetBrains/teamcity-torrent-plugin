@@ -4,6 +4,7 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.common.TorrentHash;
 import com.turn.ttorrent.tracker.TrackerHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -66,6 +67,10 @@ public class TeamcityTorrentClient {
       LOG.warn(e.toString());
     }
   }
+  public void stopSeeding(@NotNull TorrentHash torrentHash) {
+    if (myClient == null) return;
+    myClient.removeTorrent(torrentHash);
+  }
 
   public void stopSeedingByPath(File file){
     final SharedTorrent torrentByName = myClient.getTorrentByFilePath(file);
@@ -93,11 +98,17 @@ public class TeamcityTorrentClient {
     return false;
   }
 
-  public boolean isSeeding(@NotNull Torrent torrent) {
+  public boolean isSeeding(@NotNull TorrentHash torrent) {
+    return findSeedingTorrentFolder(torrent) != null;
+  }
+
+  public File findSeedingTorrentFolder(@NotNull TorrentHash torrent){
     for (SharedTorrent st : myClient.getTorrents()) {
-      if (st.getHexInfoHash().equals(torrent.getHexInfoHash())) return true;
+      if (st.getHexInfoHash().equals(torrent.getHexInfoHash())){
+        return st.getParentFile();
+      }
     }
-    return false;
+    return null;
   }
 
   public void setAnnounceInterval(final int announceInterval){
