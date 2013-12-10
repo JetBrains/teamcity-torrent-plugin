@@ -40,7 +40,6 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   }
 
   public void onCacheInitialized(@NotNull final ArtifactCacheProvider artifactCacheProvider) {
-    LOG.info("onCacheInitialized");
     myArtifactCacheProvider = artifactCacheProvider;
   }
 
@@ -51,16 +50,17 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   }
 
   public void onAfterAddOrUpdate(@NotNull File file) {
-    if (!myTorrentsManager.isTorrentEnabled())
-      return;
     final String absolutePath = file.getAbsolutePath();
-    LOG.info("onAfterAddOrUpdate " + absolutePath);
+    if (!myTorrentsManager.isTorrentEnabled()){
+      LOG.debug("Torrent plugin disabled. Won't seed " + absolutePath);
+      return;
+    }
     if (myTorrentsDirectorySeeder.isSeedingByPath(file)) {
-      LOG.info("Already seeding " + absolutePath);
+      LOG.debug("Already seeding " + absolutePath);
       return;
     }
     if (!TorrentUtil.shouldCreateTorrentFor(file.length(), myConfiguration)) {
-      LOG.info("Won't create torrent for " + absolutePath);
+      LOG.debug("Won't create torrent for " + absolutePath + ". Artifact is too small: " + file.length());
       return;
     }
     final String relativePath = FileUtil.getRelativePath(myArtifactCacheProvider.getCacheDir(), file);
