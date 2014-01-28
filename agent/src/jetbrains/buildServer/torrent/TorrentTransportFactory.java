@@ -11,6 +11,7 @@ import jetbrains.buildServer.agent.CurrentBuildTracker;
 import jetbrains.buildServer.artifacts.DependencyResolverContext;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
+import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.FileLink;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
@@ -329,12 +330,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     private long getDownloadTimeoutSec() {
-      String strValue = System.getProperty("teamcity.torrent.download.timeout", "10");
-      try {
-        return Long.parseLong(strValue);
-      } catch (NumberFormatException e) {
-        return 10;
-      }
+      return TeamCityProperties.getLong("teamcity.torrent.download.timeout", 10L);
     }
 
   }

@@ -241,15 +241,6 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
   @Override
   protected void tearDown() throws Exception {
     super.tearDown();
-    System.getProperties().remove(TorrentConfiguration.TRACKER_ENABLED);
-    System.getProperties().remove(TorrentConfiguration.TRACKER_DEDICATED_PORT);
-    System.getProperties().remove(TorrentConfiguration.OWN_ADDRESS);
-    System.getProperties().remove(TorrentConfiguration.SEEDER_ENABLED);
-    System.getProperties().remove(TorrentConfiguration.FILE_SIZE_THRESHOLD);
-    System.getProperties().remove(TorrentConfiguration.TRANSPORT_ENABLED);
-    System.getProperties().remove(TorrentConfiguration.ANNOUNCE_INTERVAL);
-    System.getProperties().remove(TorrentConfiguration.TRACKER_TORRENT_EXPIRE_TIMEOUT);
-    System.getProperties().remove(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS);
     myDispatcher.getMulticaster().serverShutdown();
   }
 }

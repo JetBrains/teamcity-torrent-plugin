@@ -22,6 +22,7 @@ import jetbrains.buildServer.configuration.ChangeObserver;
 import jetbrains.buildServer.configuration.ChangeProvider;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.ServerPaths;
+import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.serverSide.impl.ServerSettings;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.FileUtil;
@@ -64,13 +65,13 @@ public class TorrentConfigurator implements TorrentConfiguration {
     myConfigurationWatcher = new TorrentConfigurationWatcher();
     myConfigurationWatcher.registerListener(new ChangeListener() {
       public void changeOccured(String requestor) {
-        setTrackerEnabled(TorrentUtil.getBooleanValue(TRACKER_ENABLED, DEFAULT_TRACKER_ENABLED));
-        setSeederEnabled(TorrentUtil.getBooleanValue(SEEDER_ENABLED, DEFAULT_SEEDER_ENABLED));
-        setTrackerUsesDedicatedPort(TorrentUtil.getBooleanValue(TRACKER_DEDICATED_PORT, DEFAULT_TRACKER_DEDICATED_PORT));
-        setMaxNumberOfSeededTorrents(TorrentUtil.getIntegerValue(MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS));
-        setFileSizeThresholdMb(TorrentUtil.getIntegerValue(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD));
-        setTrackerTorrentExpireTimeoutSec(TorrentUtil.getIntegerValue(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT));
-        setAnnounceIntervalSec(TorrentUtil.getIntegerValue(ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL));
+        setTrackerEnabled(TeamCityProperties.getBooleanOrTrue(TRACKER_ENABLED));
+        setSeederEnabled(TeamCityProperties.getBooleanOrTrue(SEEDER_ENABLED));
+        setTrackerUsesDedicatedPort(TeamCityProperties.getBoolean(TRACKER_DEDICATED_PORT));
+        setMaxNumberOfSeededTorrents(TeamCityProperties.getInteger(MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS));
+        setFileSizeThresholdMb(TeamCityProperties.getInteger(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD));
+        setTrackerTorrentExpireTimeoutSec(TeamCityProperties.getInteger(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT));
+        setAnnounceIntervalSec(TeamCityProperties.getInteger(ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL));
       }
     });
 
@@ -94,7 +95,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
   private void setTrackerEnabled(boolean enabled) {
     boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, TRACKER_ENABLED, DEFAULT_TRACKER_ENABLED);
     if (oldValue != enabled) {
-      myConfiguration.setProperty(TRACKER_ENABLED, System.getProperty(TRACKER_ENABLED));
+      myConfiguration.setProperty(TRACKER_ENABLED, String.valueOf(enabled));
       propertyChanged(TRACKER_ENABLED, oldValue, enabled);
     }
   }
@@ -102,7 +103,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
   private void setSeederEnabled(boolean enabled) {
     boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, SEEDER_ENABLED, DEFAULT_SEEDER_ENABLED);
     if  (oldValue != enabled){
-      myConfiguration.setProperty(SEEDER_ENABLED, System.getProperty(SEEDER_ENABLED));
+      myConfiguration.setProperty(SEEDER_ENABLED, String.valueOf(enabled));
       propertyChanged(SEEDER_ENABLED, oldValue, enabled);
     }
   }
@@ -110,7 +111,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
   private void setFileSizeThresholdMb(int threshold) {
     int oldValue = TorrentUtil.getIntegerValue(myConfiguration, FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
     if (oldValue != threshold){
-      myConfiguration.setProperty(FILE_SIZE_THRESHOLD, System.getProperty(FILE_SIZE_THRESHOLD));
+      myConfiguration.setProperty(FILE_SIZE_THRESHOLD, String.valueOf(threshold));
       propertyChanged(FILE_SIZE_THRESHOLD, oldValue, threshold);
     }
   }
@@ -118,7 +119,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
   private void setMaxNumberOfSeededTorrents(int number) {
     int oldValue = TorrentUtil.getIntegerValue(myConfiguration, MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS);
     if (oldValue != number){
-      myConfiguration.setProperty(MAX_NUMBER_OF_SEEDED_TORRENTS, System.getProperty(MAX_NUMBER_OF_SEEDED_TORRENTS));
+      myConfiguration.setProperty(MAX_NUMBER_OF_SEEDED_TORRENTS, String.valueOf(number));
       propertyChanged(MAX_NUMBER_OF_SEEDED_TORRENTS, oldValue, number);
     }
   }
@@ -126,7 +127,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
   private void setAnnounceIntervalSec(int sec){
     int oldValue = TorrentUtil.getIntegerValue(myConfiguration, ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL);
     if (oldValue != sec){
-      myConfiguration.setProperty(ANNOUNCE_INTERVAL, System.getProperty(ANNOUNCE_INTERVAL));
+      myConfiguration.setProperty(ANNOUNCE_INTERVAL, String.valueOf(sec));
       propertyChanged(ANNOUNCE_INTERVAL, oldValue, sec);
     }
   }
@@ -134,7 +135,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
   private void setTrackerTorrentExpireTimeoutSec(int sec){
     int oldValue = TorrentUtil.getIntegerValue(myConfiguration, TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT);
     if (oldValue != sec){
-      myConfiguration.setProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT, System.getProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT));
+      myConfiguration.setProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT, String.valueOf(sec));
       propertyChanged(TRACKER_TORRENT_EXPIRE_TIMEOUT, oldValue, sec);
     }
   }
@@ -142,7 +143,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
   private void setTrackerUsesDedicatedPort(boolean enabled){
     boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, TRACKER_DEDICATED_PORT, DEFAULT_TRACKER_DEDICATED_PORT);
     if  (oldValue != enabled){
-      myConfiguration.setProperty(TRACKER_DEDICATED_PORT, System.getProperty(TRACKER_DEDICATED_PORT));
+      myConfiguration.setProperty(TRACKER_DEDICATED_PORT, String.valueOf(enabled));
       propertyChanged(TRACKER_DEDICATED_PORT, oldValue, enabled);
     }
   }
@@ -176,23 +177,23 @@ public class TorrentConfigurator implements TorrentConfiguration {
   }
 
   public int getMaxNumberOfSeededTorrents() {
-    return TorrentUtil.getIntegerValue(MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS);
+    return TeamCityProperties.getInteger(MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS);
   }
 
   public int getFileSizeThresholdMb() {
-    return TorrentUtil.getIntegerValue(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
+    return TeamCityProperties.getInteger(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
   }
 
   public int getAnnounceIntervalSec() {
-    return TorrentUtil.getIntegerValue(ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL);
+    return TeamCityProperties.getInteger(ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL);
   }
 
   public int getTrackerTorrentExpireTimeoutSec() {
-    return TorrentUtil.getIntegerValue(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT);
+    return TeamCityProperties.getInteger(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT);
   }
 
   public boolean isTrackerDedicatedPort(){
-    return TorrentUtil.getBooleanValue(TRACKER_DEDICATED_PORT, DEFAULT_TRACKER_DEDICATED_PORT);
+    return TeamCityProperties.getBoolean(TRACKER_DEDICATED_PORT);
   }
 
   public void persistConfiguration() throws IOException {
@@ -200,11 +201,11 @@ public class TorrentConfigurator implements TorrentConfiguration {
   }
 
   public boolean isTrackerEnabled() {
-    return TorrentUtil.getBooleanValue(TRACKER_ENABLED, DEFAULT_TRACKER_ENABLED);
+    return TeamCityProperties.getBooleanOrTrue(TRACKER_ENABLED);
   }
 
   public boolean isSeederEnabled() {
-    return TorrentUtil.getBooleanValue(SEEDER_ENABLED, DEFAULT_SEEDER_ENABLED);
+    return TeamCityProperties.getBooleanOrTrue(SEEDER_ENABLED);
   }
 
   public boolean isTransportEnabled(){
@@ -315,22 +316,22 @@ public class TorrentConfigurator implements TorrentConfiguration {
 
     public boolean changesDetected() {
       for (String s : myStoredProperties.keySet()) {
-        if (!StringUtils.equals(myStoredProperties.get(s), System.getProperty(s)))
+        if (!StringUtils.equals(myStoredProperties.get(s), TeamCityProperties.getProperty(s)))
           return true;
       }
       return false;
     }
 
     public void resetChanged() {
-      myStoredProperties.put(TRACKER_ENABLED, System.getProperty(TRACKER_ENABLED));
-      myStoredProperties.put(OWN_ADDRESS, System.getProperty(OWN_ADDRESS));
-      myStoredProperties.put(SEEDER_ENABLED, System.getProperty(SEEDER_ENABLED));
-      myStoredProperties.put(FILE_SIZE_THRESHOLD, System.getProperty(FILE_SIZE_THRESHOLD));
-      myStoredProperties.put(TRANSPORT_ENABLED, System.getProperty(TRANSPORT_ENABLED));
-      myStoredProperties.put(ANNOUNCE_INTERVAL, System.getProperty(ANNOUNCE_INTERVAL));
-      myStoredProperties.put(TRACKER_TORRENT_EXPIRE_TIMEOUT, System.getProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT));
-      myStoredProperties.put(MAX_NUMBER_OF_SEEDED_TORRENTS, System.getProperty(MAX_NUMBER_OF_SEEDED_TORRENTS));
-      myStoredProperties.put(TRACKER_DEDICATED_PORT, System.getProperty(TRACKER_DEDICATED_PORT));
+      myStoredProperties.put(TRACKER_ENABLED, TeamCityProperties.getProperty(TRACKER_ENABLED));
+      myStoredProperties.put(OWN_ADDRESS, TeamCityProperties.getProperty(OWN_ADDRESS));
+      myStoredProperties.put(SEEDER_ENABLED, TeamCityProperties.getProperty(SEEDER_ENABLED));
+      myStoredProperties.put(FILE_SIZE_THRESHOLD, TeamCityProperties.getProperty(FILE_SIZE_THRESHOLD));
+      myStoredProperties.put(TRANSPORT_ENABLED, TeamCityProperties.getProperty(TRANSPORT_ENABLED));
+      myStoredProperties.put(ANNOUNCE_INTERVAL, TeamCityProperties.getProperty(ANNOUNCE_INTERVAL));
+      myStoredProperties.put(TRACKER_TORRENT_EXPIRE_TIMEOUT, TeamCityProperties.getProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT));
+      myStoredProperties.put(MAX_NUMBER_OF_SEEDED_TORRENTS, TeamCityProperties.getProperty(MAX_NUMBER_OF_SEEDED_TORRENTS));
+      myStoredProperties.put(TRACKER_DEDICATED_PORT, TeamCityProperties.getProperty(TRACKER_DEDICATED_PORT));
     }
 
     @Nullable
