@@ -205,7 +205,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
   }
 
   public boolean isSeederEnabled() {
-    return TeamCityProperties.getBooleanOrTrue(SEEDER_ENABLED);
+    return TeamCityProperties.getBooleanOrTrue(SEEDER_ENABLED) && isTorrentEnabled();
   }
 
   public boolean isTransportEnabled(){
