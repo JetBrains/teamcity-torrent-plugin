@@ -71,6 +71,7 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
     };
 
     myDirectorySeeder = new ServerTorrentsDirectorySeeder(serverPaths, myConfigurator, services, myDispatcher);
+    myConfigurator.setTorrentEnabled(true);
     myTrackerManager = new TorrentTrackerManager(myConfigurator, myDispatcher);
 
     myDispatcher.getMulticaster().serverStartup();

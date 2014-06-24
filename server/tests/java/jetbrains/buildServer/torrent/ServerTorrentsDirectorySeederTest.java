@@ -76,6 +76,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
       public void addHandler(String handlerName, Object handler) {}
       public void addSessionHandler(String handlerName, Object handler) {}
     });
+    myConfigurator.setTorrentEnabled(true);
 
 
     ExecutorServices services = new ExecutorServices() {
