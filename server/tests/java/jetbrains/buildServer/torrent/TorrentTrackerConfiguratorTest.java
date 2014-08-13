@@ -14,6 +14,7 @@ import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.serverSide.impl.ServerSettings;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
+import jetbrains.buildServer.util.executors.ExecutorsFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
@@ -72,7 +73,17 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
 
     myDirectorySeeder = new ServerTorrentsDirectorySeeder(serverPaths, myConfigurator, services, myDispatcher);
     myConfigurator.setTorrentEnabled(true);
-    myTrackerManager = new TorrentTrackerManager(myConfigurator, myDispatcher);
+    myTrackerManager = new TorrentTrackerManager(myConfigurator, new ExecutorServices() {
+      @NotNull
+      public ScheduledExecutorService getNormalExecutorService() {
+        return ExecutorsFactory.newFixedScheduledExecutor("aaa", 1);
+      }
+
+      @NotNull
+      public ExecutorService getLowPriorityExecutorService() {
+        return null;
+      }
+    }, myDispatcher);
 
     myDispatcher.getMulticaster().serverStartup();
 

@@ -96,7 +96,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
 
 
     myDirectorySeeder = new ServerTorrentsDirectorySeeder(serverPaths, myConfigurator, services, myDispatcher, 3);
-    myTrackerManager = new TorrentTrackerManager(myConfigurator, myDispatcher);
+    myTrackerManager = new TorrentTrackerManager(myConfigurator, services, myDispatcher);
 
   }
 

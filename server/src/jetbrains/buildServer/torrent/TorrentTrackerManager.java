@@ -1,12 +1,11 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
-import com.turn.ttorrent.client.Client;
-import com.turn.ttorrent.common.Cleanable;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.Tracker;
 import com.turn.ttorrent.tracker.TrackerRequestProcessor;
 import jetbrains.buildServer.NetworkUtil;
+import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.torrent.web.TrackerController;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.BuildServerListener;
@@ -18,8 +17,7 @@ import java.beans.PropertyChangeListener;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.*;
 
 public class TorrentTrackerManager {
 
@@ -30,11 +28,16 @@ public class TorrentTrackerManager {
   private Tracker myTracker;
   private boolean myTrackerRunning;
   private final TorrentConfigurator myConfigurator;
-  private Cleanable myTrackerCleanable;
+  private final ScheduledExecutorService myExecutorService;
+  private ScheduledFuture<?> myCleanupTaskFuture;
+
 
   public TorrentTrackerManager(@NotNull final TorrentConfigurator configurator,
+                               @NotNull final ExecutorServices executorServices,
                                @NotNull final EventDispatcher<BuildServerListener> dispatcher) {
     myConfigurator = configurator;
+    myExecutorService = executorServices.getNormalExecutorService();
+
     myTrackerService = new TrackerRequestProcessor();
     myTrackerService.setAcceptForeignTorrents(true);
     myTorrents = new ConcurrentHashMap<String, TrackedTorrent>();
@@ -109,17 +112,20 @@ public class TorrentTrackerManager {
     }
 
     //setting peer collection interval to the same as announce interval
-    myTrackerCleanable = new Cleanable() {
-      public void cleanUp() {
-        for (TrackedTorrent torrent : myTorrents.values()) {
-          torrent.collectUnfreshPeers(myConfigurator.getTrackerTorrentExpireTimeoutSec());
-          if (torrent.getPeers().size() == 0) {
-            myTorrents.remove(torrent.getHexInfoHash());
+    myCleanupTaskFuture = myExecutorService.scheduleWithFixedDelay(new Runnable() {
+      public void run() {
+        try {
+          for (TrackedTorrent torrent : myTorrents.values()) {
+            torrent.collectUnfreshPeers(myConfigurator.getTrackerTorrentExpireTimeoutSec());
+            if (torrent.getPeers().size() == 0) {
+              myTorrents.remove(torrent.getHexInfoHash());
+            }
           }
+        } catch (Exception ex) {
+          LOG.warn(ex.toString());
         }
       }
-    };
-    Client.cleanupProcessor().registerCleanable(myTrackerCleanable);
+    }, 0, 5, TimeUnit.SECONDS);
 
     myTrackerRunning = true;
 
@@ -142,7 +148,9 @@ public class TorrentTrackerManager {
   }
 
   public void stopTracker() {
-    Client.cleanupProcessor().unregisterCleanable(myTrackerCleanable);
+    if (myCleanupTaskFuture != null) {
+      myCleanupTaskFuture.cancel(true);
+    }
     myTrackerRunning = false;
     if (myTracker != null) {
       LOG.info("Stopping torrent tracker");
