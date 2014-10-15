@@ -45,6 +45,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * @author Sergey.Pak
@@ -57,7 +58,6 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
   private ServerTorrentsDirectorySeeder myDirectorySeeder;
   private TorrentConfigurator myConfigurator;
   private EventDispatcher<BuildServerListener> myDispatcher;
-  private TorrentTrackerManager myTrackerManager;
 
 
   @BeforeMethod
@@ -83,7 +83,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
       private final ExecutorService executorService = Executors.newSingleThreadExecutor();
       @NotNull
       public ScheduledExecutorService getNormalExecutorService() {
-        return null;
+        return new ScheduledThreadPoolExecutor(1);
       }
 
       @NotNull
@@ -96,8 +96,6 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
 
 
     myDirectorySeeder = new ServerTorrentsDirectorySeeder(serverPaths, myConfigurator, services, myDispatcher, 3);
-    myTrackerManager = new TorrentTrackerManager(myConfigurator, services, myDispatcher);
-
   }
 
   public void max_number_of_seeded_torrents_on_startup() throws IOException, NoSuchAlgorithmException, InterruptedException {
