@@ -38,6 +38,9 @@ public class TeamcityTorrentClient {
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) throws IOException, NoSuchAlgorithmException {
     Torrent torrent = loadTorrent(torrentFile);
     if (!TrackerHelper.tryTracker(torrent)){
+      if (myClient.getDefaultTrackerURI() == null){
+        return false;
+      }
       torrent = torrent.createWithNewTracker(myClient.getDefaultTrackerURI());
       torrent.save(torrentFile);
     }
