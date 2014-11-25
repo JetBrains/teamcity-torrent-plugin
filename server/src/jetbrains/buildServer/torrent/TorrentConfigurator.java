@@ -72,6 +72,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
         setFileSizeThresholdMb(TeamCityProperties.getInteger(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD));
         setTrackerTorrentExpireTimeoutSec(TeamCityProperties.getInteger(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT));
         setAnnounceIntervalSec(TeamCityProperties.getInteger(ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL));
+        setAnnounceUrl(TeamCityProperties.getProperty(ANNOUNCE_URL));
       }
     });
 
