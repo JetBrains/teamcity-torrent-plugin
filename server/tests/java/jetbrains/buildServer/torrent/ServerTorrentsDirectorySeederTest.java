@@ -132,7 +132,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "true");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     myDispatcher.getMulticaster().serverStartup();
-    new WaitFor(1500*1000){
+    new WaitFor(15*1000){
 
       @Override
       protected boolean condition() {
