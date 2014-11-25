@@ -99,10 +99,13 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
   }
 
   public void max_number_of_seeded_torrents_on_startup() throws IOException, NoSuchAlgorithmException, InterruptedException {
+    final String announceURIStr = "http://localhost:6969/announce";
+    final URI announceURI = URI.create(announceURIStr);
+
     System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
+    System.setProperty(TorrentConfiguration.ANNOUNCE_URL, announceURIStr);
+
     myConfigurator.getConfigurationWatcher().checkForModifications();
-    final URI announceURI = URI.create("http://localhost:6969/announce");
-    myDirectorySeeder.setAnnounceURI(announceURI);
 
     final File artifactsDir = createTempDir();
     final File torrentsDir = createTempDir();
@@ -129,7 +132,7 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "true");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     myDispatcher.getMulticaster().serverStartup();
-    new WaitFor(15*1000){
+    new WaitFor(1500*1000){
 
       @Override
       protected boolean condition() {
