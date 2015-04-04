@@ -43,7 +43,9 @@
               var idx2 = href.indexOf("/", idx1 + 1);
 
               var path = href.substr(idx2+1);
-              if (filesWithTorrents[path] || filesWithTorrents[path.replace(/\+/g, ' ')]) {
+              if (filesWithTorrents[path]
+                      || filesWithTorrents[path.replace(/\+/g, ' ')]
+                      || filesWithTorrents[decodeURIComponent(path)]) {
                 var url = window['base_uri'] + "/downloadTorrent.html?buildId=" + buildId + "&file=" + path;
 
                 var img = $('<img class="tree-torrent-icon"/>').attr({

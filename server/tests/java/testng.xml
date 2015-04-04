@@ -1,0 +1,8 @@
+<suite name="Server tests">
+  <test name="Server tests">
+    <classes>
+      <class name="jetbrains.buildServer.torrent.ServerTorrentsDirectorySeederTest"/>
+      <class name="jetbrains.buildServer.torrent.TorrentTrackerConfiguratorTest"/>
+    </classes>
+  </test>
+</suite>

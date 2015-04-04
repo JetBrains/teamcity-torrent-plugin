@@ -1,0 +1,9 @@
+<suite name="Agent tests">
+  <test name="Agent tests">
+    <classes>
+      <class name="jetbrains.buildServer.torrent.AgentTorrentsManagerTest"/>
+      <class name="jetbrains.buildServer.torrent.TorrentTransportTest"/>
+      <class name="jetbrains.buildServer.torrent.TorrentArtifactCacheListenerTest"/>
+    </classes>
+  </test>
+</suite>

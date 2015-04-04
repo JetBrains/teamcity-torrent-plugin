@@ -1,0 +1,8 @@
+<suite name="Common tests">
+  <test name="Common tests">
+    <classes>
+      <class name="jetbrains.buildServer.torrent.seeder.FileLinkTest"/>
+      <class name="jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeederTest"/>
+    </classes>
+  </test>
+</suite>
