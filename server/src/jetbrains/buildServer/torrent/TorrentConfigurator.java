@@ -16,6 +16,7 @@
 
 package jetbrains.buildServer.torrent;
 
+import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
 import jetbrains.buildServer.configuration.ChangeListener;
 import jetbrains.buildServer.configuration.ChangeObserver;
@@ -28,6 +29,8 @@ import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.PropertiesUtil;
+import jetbrains.buildServer.util.StringUtil;
+import jetbrains.buildServer.util.StringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -44,17 +47,18 @@ import java.util.*;
 public class TorrentConfigurator implements TorrentConfiguration {
 
   private final ServerPaths myServerPaths;
-  private final ServerSettings myServerSettings;
+  @NotNull
+  private final RootUrlHolder myRootUrlHolder;
   private volatile Properties myConfiguration;
   private List<PropertyChangeListener> myChangeListeners = new ArrayList<PropertyChangeListener>();
   private String myAnnounceUrl;
   private final TorrentConfigurationWatcher myConfigurationWatcher;
 
   public TorrentConfigurator(@NotNull final ServerPaths serverPaths,
-                             @NotNull final ServerSettings serverSettings,
+                             @NotNull final RootUrlHolder rootUrlHolder,
                              @NotNull final XmlRpcHandlerManager xmlRpcHandlerManager) {
     myServerPaths = serverPaths;
-    myServerSettings = serverSettings;
+    myRootUrlHolder = rootUrlHolder;
     File configFile = getConfigFile();
     if (!configFile.isFile()) {
       initConfigFile(configFile);
@@ -276,7 +280,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
 
   @NotNull
   public String getServerAddress(){
-    return myServerSettings.getRootUrl();
+    return myRootUrlHolder.getRootUrl();
   }
 
   public void addPropertyChangeListener(@NotNull final PropertyChangeListener listener){
@@ -318,7 +322,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
 
     public boolean changesDetected() {
       for (String s : myStoredProperties.keySet()) {
-        if (!StringUtils.equals(myStoredProperties.get(s), TeamCityProperties.getProperty(s)))
+        if (!StringUtil.areEqual(myStoredProperties.get(s), TeamCityProperties.getProperty(s)))
           return true;
       }
       return false;

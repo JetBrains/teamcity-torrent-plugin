@@ -20,6 +20,7 @@ import com.intellij.util.WaitFor;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.BaseTestCase;
+import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
 import jetbrains.buildServer.torrent.seeder.FileLink;
 import jetbrains.buildServer.serverSide.BuildServerListener;
@@ -68,12 +69,12 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     final Mockery m = new Mockery();
 
     final ServerPaths serverPaths = new ServerPaths(createTempDir().getAbsolutePath());
-    final ServerSettings settings = m.mock(ServerSettings.class);
+    final RootUrlHolder rootUrlHolder = m.mock(RootUrlHolder.class);
     m.checking(new Expectations(){{
-      allowing(settings).getRootUrl(); will(returnValue("http://localhost:8111/"));
+      allowing(rootUrlHolder).getRootUrl(); will(returnValue("http://localhost:8111/"));
     }});
 
-    myConfigurator = new TorrentConfigurator(serverPaths, settings, new XmlRpcHandlerManager() {
+    myConfigurator = new TorrentConfigurator(serverPaths, rootUrlHolder, new XmlRpcHandlerManager() {
       public void addHandler(String handlerName, Object handler) {}
       public void addSessionHandler(String handlerName, Object handler) {}
     });
