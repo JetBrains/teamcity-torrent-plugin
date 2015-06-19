@@ -1,6 +1,11 @@
 package jetbrains.buildServer.torrent;
 
+import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
+import jetbrains.buildServer.agent.AgentLifeCycleListener;
+import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildAgent;
+import jetbrains.buildServer.util.EventDispatcher;
+import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.xmlrpc.RemoteCallException;
 import jetbrains.buildServer.xmlrpc.XmlRpcFactory;
 import jetbrains.buildServer.xmlrpc.XmlRpcTarget;
@@ -13,11 +18,17 @@ import org.jetbrains.annotations.Nullable;
  * Time: 4:06 PM
  */
 public class TorrentManagerProxy implements TorrentConfiguration {
-  @NotNull
-  private final XmlRpcTarget myXmlRpcTarget;
+  private XmlRpcTarget myXmlRpcTarget;
 
-  public TorrentManagerProxy(@NotNull BuildAgent buildAgent) {
-    myXmlRpcTarget = XmlRpcFactory.getInstance().create(buildAgent.getConfiguration().getServerUrl(), "TeamCity Agent", 30000, false);
+  public TorrentManagerProxy(@NotNull final EventDispatcher<AgentLifeCycleListener> dispatcher) {
+    dispatcher.addListener(new AgentLifeCycleAdapter(){
+      @Override
+      public void afterAgentConfigurationLoaded(@NotNull BuildAgent agent) {
+        if (StringUtil.isNotEmpty(agent.getConfiguration().getServerUrl())){
+          myXmlRpcTarget = XmlRpcFactory.getInstance().create(agent.getConfiguration().getServerUrl(), "TeamCity Agent", 30000, false);
+        }
+      }
+    });
   }
 
   @Nullable
@@ -43,6 +54,9 @@ public class TorrentManagerProxy implements TorrentConfiguration {
 
   @NotNull
   private <T> T call(@NotNull String methodName, @NotNull final T defaultValue) {
+    if (myXmlRpcTarget == null) {
+      return defaultValue;
+    }
     try {
       final Object retval = myXmlRpcTarget.call(XmlRpcConstants.TORRENT_CONFIGURATION + "." + methodName, new Object[0]);
       if (retval != null)
