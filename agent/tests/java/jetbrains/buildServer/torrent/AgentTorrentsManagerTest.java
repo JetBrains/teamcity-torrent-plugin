@@ -77,6 +77,15 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
         throw new UnsupportedOperationException();
       }
 
+      public void shutdownFlushExecutor() {
+        throw new UnsupportedOperationException();
+      }
+
+      @NotNull
+      public List<CleanableCachedArtifact> getCleanableArtifacts() {
+        throw new UnsupportedOperationException();
+      }
+
       @NotNull
       public LocalCache getLocalCache() {
         return null;
