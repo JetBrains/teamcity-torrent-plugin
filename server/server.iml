@@ -50,14 +50,11 @@
     <orderEntry type="library" name="spring" level="project" />
     <orderEntry type="library" name="TeamCity server runtime" level="project" />
     <orderEntry type="module" module-name="common" />
-    <orderEntry type="module" module-name="ttorrent" />
-    <orderEntry type="library" name="Simple" level="project" />
     <orderEntry type="library" scope="TEST" name="testng" level="project" />
     <orderEntry type="library" scope="TEST" name="Test-Api" level="project" />
     <orderEntry type="library" scope="TEST" name="Test-Api libs" level="project" />
     <orderEntry type="library" scope="TEST" name="jmock" level="project" />
-    <orderEntry type="library" name="BuildServer" level="project" />
     <orderEntry type="library" name="Common-Impl" level="project" />
+    <orderEntry type="library" name="ttorrent-1.2" level="project" />
   </component>
 </module>
-

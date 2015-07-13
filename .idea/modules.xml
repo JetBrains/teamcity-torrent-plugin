@@ -7,8 +7,6 @@
       <module fileurl="file://$PROJECT_DIR$/idea-resolve-helper.iml" filepath="$PROJECT_DIR$/idea-resolve-helper.iml" />
       <module fileurl="file://$PROJECT_DIR$/root.iml" filepath="$PROJECT_DIR$/root.iml" />
       <module fileurl="file://$PROJECT_DIR$/server/server.iml" filepath="$PROJECT_DIR$/server/server.iml" />
-      <module fileurl="file://$PROJECT_DIR$/torrent/ttorrent.iml" filepath="$PROJECT_DIR$/torrent/ttorrent.iml" />
     </modules>
   </component>
 </project>
-

@@ -24,7 +24,6 @@
         <sourceTestOutputDir name="build\generated-test-sources\test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="ttorrent" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -32,4 +31,3 @@
     </bytecodeTargetLevel>
   </component>
 </project>
-
