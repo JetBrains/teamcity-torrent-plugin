@@ -23,8 +23,8 @@ import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.agent.impl.CurrentBuildTrackerImpl;
 import jetbrains.buildServer.artifacts.*;
-import jetbrains.buildServer.torrent.seeder.FileLink;
 import jetbrains.buildServer.messages.BuildMessage1;
+import jetbrains.buildServer.torrent.seeder.FileLink;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
 import org.jetbrains.annotations.NotNull;
@@ -35,7 +35,6 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,7 +74,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
     final ArtifactCacheProvider cacheProvider = new ArtifactCacheProvider() {
       @NotNull
       public FileCache getHttpCache(@NotNull URLContentRetriever urlContentRetriever) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
       }
 
       @NotNull
@@ -86,15 +85,6 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
       @NotNull
       public File getCacheDir() {
         return myCacheDir;
-      }
-
-      public void shutdownFlushExecutor() {
-        throw new NotImplementedException();
-      }
-
-      @NotNull
-      public List<CleanableCachedArtifact> getCleanableArtifacts() {
-        throw new NotImplementedException();
       }
 
       public void addListener(@NotNull ArtifactsCacheListener artifactsCacheListener) {

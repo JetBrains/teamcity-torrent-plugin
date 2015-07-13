@@ -24,14 +24,10 @@ import jetbrains.buildServer.configuration.ChangeProvider;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
-import jetbrains.buildServer.serverSide.impl.*;
-import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.PropertiesUtil;
 import jetbrains.buildServer.util.StringUtil;
-import jetbrains.buildServer.util.StringUtils;
-import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -343,6 +339,11 @@ public class TorrentConfigurator implements TorrentConfiguration {
     @Nullable
     public String getRequestor() {
       return TorrentConfigurationWatcher.class.getName();
+    }
+
+    @NotNull
+    public String describe(boolean verbose) {
+      return "TeamCity Torrent plugin configuration file watcher";
     }
   }
 }
