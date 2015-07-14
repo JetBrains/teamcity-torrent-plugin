@@ -15,7 +15,7 @@
           </element>
           <element id="file-copy" path="$PROJECT_DIR$/agent/teamcity-agent-plugin.xml" output-file-name="teamcity-plugin.xml" />
           <element id="artifact" artifact-name="common-jar" />
-          <element id="artifact" artifact-name="ttorrent:jar" />
+          <element id="library" level="project" name="ttorrent-1.2" />
         </element>
       </element>
       <element id="directory" name="server">
@@ -26,9 +26,10 @@
           <element id="directory" name="buildServerResources">
             <element id="dir-copy" path="$PROJECT_DIR$/server/resources" />
           </element>
+          <element id="library" level="project" name="ttorrent-1.2" />
         </element>
         <element id="artifact" artifact-name="common-jar" />
-        <element id="artifact" artifact-name="ttorrent:jar" />
+        <element id="library" level="project" name="ttorrent-1.2" />
       </element>
       <element id="file-copy" path="$PROJECT_DIR$/server/teamcity-server-plugin.xml" output-file-name="teamcity-plugin.xml" />
     </root>
