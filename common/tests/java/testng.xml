@@ -1,6 +1,7 @@
 <suite name="Common tests">
   <test name="Common tests">
     <classes>
+      <class name="jetbrains.buildServer.torrent.seeder.TorrentFilesDBTest"/>
       <class name="jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeederTest"/>
     </classes>
   </test>
