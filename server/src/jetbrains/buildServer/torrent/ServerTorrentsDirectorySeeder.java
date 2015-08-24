@@ -6,7 +6,6 @@ package jetbrains.buildServer.torrent;
 
 import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.NetworkUtil;
-import jetbrains.buildServer.torrent.seeder.FileLink;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.log.Loggers;
@@ -26,7 +25,6 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
-import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -46,23 +44,12 @@ public class ServerTorrentsDirectorySeeder {
   public ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
                                        @NotNull final TorrentConfigurator configurator,
                                        @NotNull final ExecutorServices executorServices,
-                                       @NotNull final EventDispatcher<BuildServerListener> eventDispatcher){
-    this(serverPaths, configurator, executorServices, eventDispatcher, TorrentsDirectorySeeder.DIRECTORY_SCAN_INTERVAL_SECONDS);
-  }
-
-
-  ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
-                                       @NotNull final TorrentConfigurator configurator,
-                                       @NotNull final ExecutorServices executorServices,
-                                       @NotNull final EventDispatcher<BuildServerListener> eventDispatcher,
-                                       final int scanInterval) {
+                                       @NotNull final EventDispatcher<BuildServerListener> eventDispatcher) {
     myIsServerStarted = false;
     myExecutor = executorServices;
     File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
     torrentsStorage.mkdirs();
-    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage,
-            configurator.getMaxNumberOfSeededTorrents(),
-            configurator.getFileSizeThresholdMb());
+    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, configurator.getMaxNumberOfSeededTorrents());
     setMaxNumberOfSeededTorrents(configurator.getMaxNumberOfSeededTorrents());
     setFileSizeThreshold(configurator.getFileSizeThresholdMb());
     myConfigurator = configurator;
@@ -75,7 +62,7 @@ public class ServerTorrentsDirectorySeeder {
       @Override
       public void serverStartup() {
         if (myConfigurator.isSeederEnabled()) {
-          startSeederAsync(scanInterval);
+          startSeederAsync();
         }
       }
 
@@ -103,7 +90,7 @@ public class ServerTorrentsDirectorySeeder {
           boolean enabled = (Boolean) evt.getNewValue();
           if (myIsServerStarted) {
             if (enabled) {
-              startSeederAsync(scanInterval);
+              startSeederAsync();
             } else {
               stopSeeder();
             }
@@ -112,7 +99,7 @@ public class ServerTorrentsDirectorySeeder {
           boolean enabled = (Boolean) evt.getNewValue();
           if (enabled){
             if (myIsServerStarted && myConfigurator.isSeederEnabled()){
-              startSeederAsync(scanInterval);
+              startSeederAsync();
             }
           } else {
             stopSeeder();
@@ -130,16 +117,16 @@ public class ServerTorrentsDirectorySeeder {
     }
   }
 
-  private void startSeederAsync(final int scanInterval){
+  private void startSeederAsync(){
     myExecutor.getLowPriorityExecutorService().submit(new Runnable() {
       public void run() {
-        startSeeder(scanInterval);
+        startSeeder();
       }
     });
     myIsServerStarted = true;
   }
 
-  private void startSeeder(int scanInterval) {
+  private void startSeeder() {
     try {
 
       final InetAddress[] addresses;
@@ -149,10 +136,7 @@ public class ServerTorrentsDirectorySeeder {
         addresses = NetworkUtil.getSelfAddresses();
       }
 
-      myTorrentsDirectorySeeder.start(addresses,
-              myAnnounceURI,
-              scanInterval,
-              myConfigurator.getAnnounceIntervalSec());
+      myTorrentsDirectorySeeder.start(addresses, myAnnounceURI, myConfigurator.getAnnounceIntervalSec());
     } catch (Exception e) {
       Loggers.SERVER.warn("Failed to start torrent seeder", e);
     }
@@ -199,12 +183,11 @@ public class ServerTorrentsDirectorySeeder {
     final File torrentsDir = getTorrentFilesBaseDir(build);
     BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT);
     final File artifactsDirectory = build.getArtifactsDirectory();
-    final File linkDir = getLinkDir(build);
     torrentsDir.mkdirs();
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
       @NotNull
       public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
-        processArtifactInternal(artifact, artifactsDirectory, linkDir, torrentsDir);
+        processArtifactInternal(artifact, artifactsDirectory, torrentsDir);
         return BuildArtifacts.BuildArtifactsProcessor.Continuation.CONTINUE;
       }
 
@@ -212,36 +195,20 @@ public class ServerTorrentsDirectorySeeder {
   }
 
   protected void processArtifactInternal(@NotNull final BuildArtifact artifact,
-                                       @NotNull final File artifactsDirectory,
-                                       @NotNull final File linkDir,
-                                       @NotNull final File torrentsDir) {
+                                         @NotNull final File artifactsDirectory,
+                                         @NotNull final File torrentsDir) {
     if (artifact.isDirectory()){
       for (BuildArtifact childArtifacts : artifact.getChildren()) {
-        processArtifactInternal(childArtifacts, artifactsDirectory, linkDir, torrentsDir);
+        processArtifactInternal(childArtifacts, artifactsDirectory, torrentsDir);
       }
       return;
     }
 
     if (shouldCreateTorrentFor(artifact)) {
       File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
+      File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
 
-      linkDir.mkdirs();
-
-      try {
-        File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
-        FileLink.createLink(artifactFile, torrentFile, linkDir);
-        if (myConfigurator.isSeederEnabled()) {
-          myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrentFile, artifactFile);
-          if (myTorrentsDirectorySeeder.getNumberOfSeededTorrents() >= myMaxTorrentsToSeed){
-            Loggers.SERVER.debug("Reached max number of seeded torrents. The last one will be cleaned out");
-          }
-        }
-
-      } catch (IOException e) {
-        e.printStackTrace();
-      } catch (NoSuchAlgorithmException e) {
-        e.printStackTrace();
-      }
+      myTorrentsDirectorySeeder.addTorrentFile(torrentFile, artifactFile, myConfigurator.isSeederEnabled());
     }
   }
 
@@ -268,17 +235,12 @@ public class ServerTorrentsDirectorySeeder {
     myAnnounceURI = announceURI;
   }
 
-  private File getLinkDir(@NotNull SBuild build) {
-    return new File(myTorrentsDirectorySeeder.getStorageDirectory(),
-            build.getBuildTypeId() + File.separator + build.getBuildId());
-  }
-
   public Collection<SharedTorrent> getSharedTorrents(){
     return myTorrentsDirectorySeeder.getSharedTorrents();
   }
 
   //for tests
-  /*package internal*/ TorrentsDirectorySeeder getTorrentsDirectorySeeder() {
+  TorrentsDirectorySeeder getTorrentsDirectorySeeder() {
     return myTorrentsDirectorySeeder;
   }
 }

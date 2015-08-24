@@ -6,7 +6,6 @@ import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
-import jetbrains.buildServer.torrent.seeder.FileLink;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.FileUtil;
@@ -76,11 +75,8 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
         torrent = Torrent.create(file, URI.create(myConfiguration.getAnnounceUrl()), "teamcity torrent plugin");
         torrentFile.getParentFile().mkdirs();
         torrent.save(torrentFile);
-        final File linkDir = new File(myTorrentsDirectorySeeder.getStorageDirectory(), artifactPath.getRelativeLinkPath()).getParentFile();
-        linkDir.mkdirs();
 
-        FileLink.createLink(file, torrentFile, linkDir);
-
+        myTorrentsManager.getTorrentsDirectorySeeder().addTorrentFile(torrentFile, file, true);
       } else {
         torrent = Torrent.load(torrentFile);
       }

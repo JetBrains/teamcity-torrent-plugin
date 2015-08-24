@@ -26,7 +26,6 @@ import jetbrains.buildServer.agent.BaseServerLoggerFacade;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.messages.BuildMessage1;
-import jetbrains.buildServer.util.FileUtil;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.server.Server;
@@ -123,7 +122,7 @@ public class TorrentTransportTest extends BaseTestCase {
       allowing(myBuild).getBuildLogger(); will (returnValue(myLogger));
     }});
 
-    myDirectorySeeder = new TorrentsDirectorySeeder(createTempDir(), -1, 1);
+    myDirectorySeeder = new TorrentsDirectorySeeder(createTempDir(), 1000);
 
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(myDirectorySeeder,
                     new HttpClient(), myBuild.getBuildLogger()){

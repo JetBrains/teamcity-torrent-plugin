@@ -27,8 +27,6 @@ import jetbrains.buildServer.serverSide.BuildServerListener;
 import jetbrains.buildServer.serverSide.BuildServerListenerEventDispatcher;
 import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
-import jetbrains.buildServer.serverSide.impl.*;
-import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.serverSide.impl.auth.SecurityContextImpl;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
@@ -97,69 +95,8 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     myDispatcher = new BuildServerListenerEventDispatcher(new SecurityContextImpl());
 
 
-    myDirectorySeeder = new ServerTorrentsDirectorySeeder(serverPaths, myConfigurator, services, myDispatcher, 3);
+    myDirectorySeeder = new ServerTorrentsDirectorySeeder(serverPaths, myConfigurator, services, myDispatcher);
   }
-
-  public void max_number_of_seeded_torrents_on_startup() throws IOException, NoSuchAlgorithmException, InterruptedException {
-    final String announceURIStr = "http://localhost:6969/announce";
-    final URI announceURI = URI.create(announceURIStr);
-
-    System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
-    System.setProperty(TorrentConfiguration.ANNOUNCE_URL, announceURIStr);
-
-    myConfigurator.getConfigurationWatcher().checkForModifications();
-
-    final File artifactsDir = createTempDir();
-    final File torrentsDir = createTempDir();
-    final File storageDir = myDirectorySeeder.getTorrentsDirectorySeeder().getStorageDirectory();
-    final List<File> torrentFilesList = new ArrayList<File>();
-    final List<File> linkFilesList = new ArrayList<File>();
-    final int fileSize = 11 * 1024 * 1024;
-    for (int i=0; i<5; i++) {
-      File tempFile = createTempFile(fileSize);
-      // move to artifacts dir;
-      final File srcFile = new File(artifactsDir, tempFile.getName());
-      tempFile.renameTo(srcFile);
-      tempFile = null;
-
-      final Torrent torrent = Torrent.create(srcFile, announceURI, "Teamcity torrent plugin test");
-      final File torrentFile = new File(torrentsDir, srcFile.getName() + ".torrent");
-      torrent.save(torrentFile);
-      torrentFilesList.add(torrentFile);
-      linkFilesList.add(FileLink.createLink(srcFile, torrentFile, storageDir));
-
-    }
-
-    System.setProperty(TorrentConfiguration.TRACKER_ENABLED, "true");
-    System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "true");
-    myConfigurator.getConfigurationWatcher().checkForModifications();
-    myDispatcher.getMulticaster().serverStartup();
-    new WaitFor(15*1000){
-
-      @Override
-      protected boolean condition() {
-        return myDirectorySeeder.getNumberOfSeededTorrents() == 3;
-      }
-    };
-    assertEquals(3, myDirectorySeeder.getNumberOfSeededTorrents());
-    int linksCount = 0;
-    for (File file : linkFilesList) {
-      if (file.exists()){
-        linksCount++;
-      }
-    }
-    assertEquals(3, linksCount);
-
-    int torrentsCount = 0;
-    for (File file : torrentFilesList) {
-      if (file.exists()){
-        torrentsCount++;
-      }
-    }
-    assertEquals(3, torrentsCount);
-
-  }
-
 
   public void new_file_seedeed_old_removed() throws IOException, InterruptedException {
     System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
@@ -172,7 +109,6 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
 
     final File artifactsDir = createTempDir();
     final File torrentsDir = createTempDir();
-    final File storageDirectory = myDirectorySeeder.getTorrentsDirectorySeeder().getStorageDirectory();
 
     final int fileSize = 1 * 1024 * 1024;
     final Queue<String> filesQueue = new ArrayDeque<String>();
@@ -209,15 +145,11 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
         public String getRelativePath() {
           return srcFile.getName();
         }
-      }, artifactsDir, storageDirectory, torrentsDir);
+      }, artifactsDir, torrentsDir);
 
       File torrentFile = new File(torrentsDir, srcFile.getName() + ".torrent");
       assertTrue(torrentFile.exists());
       allTorrents.add(torrentFile);
-
-      File linkFile = new File(storageDirectory, srcFile.getName() + ".link");
-      assertTrue(linkFile.exists());
-      allLinks.add(linkFile);
 
       filesQueue.add(srcFile.getName());
       if (filesQueue.size() > 3){

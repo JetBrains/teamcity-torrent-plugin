@@ -5,6 +5,7 @@ import com.turn.ttorrent.TorrentDefaults;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
+import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
@@ -27,15 +28,11 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   @NotNull
   private final TorrentConfiguration myTrackerManager;
   private volatile URI myTrackerAnnounceUrl;
-  private volatile Integer myFileSizeThresholdMb = TorrentDefaults.FILESIZE_THRESHOLD_MB;
   private volatile Integer myAnnounceIntervalSec = TorrentDefaults.ANNOUNCE_INTERVAL_SEC;
   private boolean myTorrentEnabled = false;
   private boolean myTorrentTransportEnabled = false;
   private TorrentsDirectorySeeder myTorrentsDirectorySeeder;
-  private AgentRunningBuild myBuild;
   private boolean myTorrentClientStarted = false;
-  @Nullable
-  private final ArtifactCacheProvider myArtifactCacheProvider;
 
   public AgentTorrentsManager(@NotNull final BuildAgentConfiguration agentConfiguration,
                               @NotNull final EventDispatcher<AgentLifeCycleListener> eventDispatcher,
@@ -45,8 +42,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     eventDispatcher.addListener(this);
     File torrentsStorage = agentConfiguration.getCacheDirectory(TORRENT_FOLDER_NAME);
     myTrackerManager = trackerManager;
-    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, -1, 0);
-    myArtifactCacheProvider = artifactsCacheProvider;
+    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, TeamCityProperties.getInteger("teamcity.torrents.agent.maxSeededTorrents", 5000));
     if (artifactsCacheProvider != null){
       artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(myTorrentsDirectorySeeder, currentBuildTracker, trackerManager, this));
     }
@@ -57,7 +53,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       String announceUrl = myTrackerManager.getAnnounceUrl();
       if (announceUrl == null) return false;
       myTrackerAnnounceUrl = new URI(announceUrl);
-      myFileSizeThresholdMb = myTrackerManager.getFileSizeThresholdMb();
       myAnnounceIntervalSec = myTrackerManager.getAnnounceIntervalSec();
       myTorrentsDirectorySeeder.setAnnounceInterval(myAnnounceIntervalSec);
       myTorrentTransportEnabled = myTrackerManager.isTransportEnabled();
@@ -89,7 +84,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   @Override
   public void buildStarted(@NotNull AgentRunningBuild runningBuild) {
     checkReady();
-    myBuild = runningBuild;
   }
 
   public void startIfNecessary() throws IOException {

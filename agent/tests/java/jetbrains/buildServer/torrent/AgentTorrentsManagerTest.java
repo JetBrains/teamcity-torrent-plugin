@@ -24,7 +24,6 @@ import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.agent.impl.CurrentBuildTrackerImpl;
 import jetbrains.buildServer.artifacts.*;
 import jetbrains.buildServer.messages.BuildMessage1;
-import jetbrains.buildServer.torrent.seeder.FileLink;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
 import org.jetbrains.annotations.NotNull;
@@ -125,7 +124,8 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
         final File torrentFile = new File(torrentDir, artifactFile.getName() + ".torrent");
         torrentHashes.add(torrent.getHexInfoHash());
         torrent.save(torrentFile);
-        FileLink.createLink(artifactFile, torrentFile, myLinkDir);
+
+        myTorrentsManager.getTorrentsDirectorySeeder().addTorrentFile(torrentFile, artifactFile, true);
       }
 
       Mock buildAgentMock = mock(BuildAgent.class);
@@ -150,127 +150,5 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
       myTorrentsManager.agentShutdown();
       tracker.stop();
     }
-  }
-
-  public void test_links_created_when_artifact_is_published() throws Exception {
-    throw new SkipException("Temporary skipped");
-/*
-    buildStarted();
-    myTorrentsManager.getTorrentsDirectorySeeder().setFileSizeThresholdMb(0);
-    Map<File, String> files = new HashMap<File, String>();
-    for (int i=0; i<3; i++) {
-      files.put(createTempFile(), "");
-    }
-
-    myTorrentsManager.publishFiles(files);
-
-    Collection<File> links = FileUtil.findFiles(new FileFilter() {
-      public boolean accept(File file) {
-        return FileLink.isLink(file);
-      }
-    }, new File(myLinkDir, "bt1"));
-
-    assertEquals(3, links.size());
-    for (File l: links) {
-      assertTrue(files.containsKey(FileLink.getTargetFile(l)));
-    }
-*/
-  }
-
-  public void test_links_created_when_artifact_is_published_take_checkout_dir_into_account() throws Exception {
-    throw new SkipException("Temporary skipped");
-/*
-    Mock buildMock = buildStarted();
-
-    myTorrentsManager.getTorrentsDirectorySeeder().setFileSizeThresholdMb(0);
-
-    AgentRunningBuild build = (AgentRunningBuild) buildMock.proxy();
-    Map<File, String> files = new HashMap<File, String>();
-    files.put(new File(build.getCheckoutDirectory(), "a/b/f.jar"), "");
-    files.put(new File(build.getCheckoutDirectory(), "a/f.jar"), "");
-    files.put(new File(build.getCheckoutDirectory(), "f.jar"), "");
-
-    for (File f: files.keySet()) {
-      f.getParentFile().mkdirs();
-      assertTrue(f.createNewFile());
-    }
-
-    myTorrentsManager.publishFiles(files);
-
-    Collection<File> links = FileUtil.findFiles(new FileFilter() {
-      public boolean accept(File file) {
-        return FileLink.isLink(file);
-      }
-    }, new File(myLinkDir, "bt1"));
-
-    assertEquals(3, links.size());
-    for (File l: links) {
-      assertTrue(files.keySet().contains(FileLink.getTargetFile(l)));
-    }
-
-    assertTrue(new File(myLinkDir, "bt1/a/b/f.jar.link").isFile());
-    assertTrue(new File(myLinkDir, "bt1/a/f.jar.link").isFile());
-    assertTrue(new File(myLinkDir, "bt1/f.jar.link").isFile());
-*/
-  }
-
-  public void agent_started_event() {
-    throw new SkipException("Skipped");
-/*
-    Mock buildAgentMock = mock(BuildAgent.class);
-    buildAgentMock.stubs().method("getConfiguration").will(returnValue(myConfigurationMock.proxy()));
-    myConfigurationMock.stubs().method("getOwnAddress").will(returnValue("127.0.0.1"));
-
-    try {
-      myTorrentsManager.agentStarted((BuildAgent) buildAgentMock.proxy());
-    } finally {
-      myTorrentsManager.agentShutdown();
-    }
-*/
-  }
-
-  public void test_dont_seed_from_non_cache_folder() throws IOException {
-    throw new SkipException("Skipped");
-/*
-    myCacheDir = createTempDir();
-    final File file1 = new File(myCacheDir, "art1.dat");
-    createTempFile(512).renameTo(file1);
-    final File otherDir = createTempDir();
-    final File file2 = new File(otherDir, "art2.dat");
-    createTempFile(1024).renameTo(file2);
-
-    Mock buildAgentMock = mock(BuildAgent.class);
-    myTorrentsManager.agentStarted((BuildAgent) buildAgentMock.proxy());
-    myTorrentsManager.buildStarted((AgentRunningBuild) buildStarted().proxy());
-
-    final HashMap<File, String> fileStringMap = new HashMap<File, String>();
-    fileStringMap.put(file1, file1.getName());
-    fileStringMap.put(file2, file2.getName());
-    myTorrentsManager.publishFiles(fileStringMap);
-    final Collection<SharedTorrent> sharedTorrents = myTorrentsManager.getTorrentsDirectorySeeder().getSharedTorrents();
-    assertEquals(1, sharedTorrents.size());
-    assertEquals("art1.dat", sharedTorrents.iterator().next().getName());
-*/
-  }
-
-  @NotNull
-  private Mock buildStarted() throws IOException {
-    Mock buildMock = mock(AgentRunningBuild.class);
-    buildMock.stubs().method("getBuildTypeId").will(returnValue("bt1"));
-    buildMock.stubs().method("getCheckoutDirectory").will(returnValue(createTempDir()));
-    buildMock.stubs().method("getBuildLogger").will(returnValue(new BaseServerLoggerFacade() {
-      @Override
-      public void flush() {
-
-      }
-
-      @Override
-      protected void log(BuildMessage1 buildMessage1) {
-
-      }
-    }));
-    AgentRunningBuild build = (AgentRunningBuild) buildMock.proxy();
-    myDispatcher.getMulticaster().buildStarted(build);
-    return buildMock;
   }
 }

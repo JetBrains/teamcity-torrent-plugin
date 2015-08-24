@@ -12,7 +12,6 @@ import jetbrains.buildServer.artifacts.DependencyResolverContext;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
-import jetbrains.buildServer.torrent.seeder.FileLink;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
@@ -191,17 +190,13 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
         final long took = System.currentTimeMillis() - startTime + 1; // to avoid division by zero
         final long fileSize = target.length();
-        log2Build(String.format("Download successfull. Avg speed %d kb/s. Saving torrent..", fileSize/took));
+        log2Build(String.format("Download successfull. Avg speed %d kb/s. Saving torrent..", fileSize / took));
         File parentDir = getRealParentDir(target, parsedArtifactUrl.getArtifactPath());
         File torrentFile = new File(parentDir, parsedArtifactUrl.getTorrentPath());
         torrentFile.getParentFile().mkdirs();
         torrent.save(torrentFile);
 
-
-        final File linkDir = new File(myDirectorySeeder.getStorageDirectory(), parsedArtifactUrl.getRelativeLinkPath()).getParentFile();
-        linkDir.mkdirs();
-
-        FileLink.createLink(target, torrentFile, linkDir);
+        myDirectorySeeder.addTorrentFile(torrentFile, target, true);
         return torrent.getHexInfoHash();
 
       } catch (IOException e) {

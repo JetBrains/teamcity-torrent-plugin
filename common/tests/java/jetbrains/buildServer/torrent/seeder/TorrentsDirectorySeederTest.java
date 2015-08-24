@@ -41,80 +41,23 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
     super.setUp();
     myStorageDir = createTempDir();
     announceURI = new URI("http://localhost:6969/announce");
-    myDirectorySeeder = new TorrentsDirectorySeeder(myStorageDir, -1, 1);
+    myDirectorySeeder = new TorrentsDirectorySeeder(myStorageDir, 100);
     myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, null, 3);
   }
 
-  public void link_removed() throws IOException, NoSuchAlgorithmException, InterruptedException {
-    File srcFile = createTempFile(65536);
-    final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
-    final File linkFile = FileLink.createLink(srcFile, torrentFile, myStorageDir);
-    myDirectorySeeder.getTorrentSeeder().seedTorrent(Torrent.load(torrentFile), srcFile);
-
-    assertTrue(torrentFile.isFile());
-    assertTrue(myDirectorySeeder.isSeeding(torrentFile));
-    myDirectorySeeder.getNewLinksWatcher().checkForModifications();
-
-    FileUtil.delete(linkFile);
-    myDirectorySeeder.getNewLinksWatcher().checkForModifications();
-
-    assertFalse(linkFile.isFile());
-  }
-
-  public void target_file_removed() throws IOException, NoSuchAlgorithmException, InterruptedException {
+  public void src_file_removed() throws IOException, NoSuchAlgorithmException, InterruptedException {
     final File srcFile = createTempFile(65535);
     final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
-    final File linkFile = FileLink.createLink(srcFile, torrentFile, myStorageDir);
-    myDirectorySeeder.getTorrentSeeder().seedTorrent(Torrent.load(torrentFile), srcFile);
+    myDirectorySeeder.addTorrentFile(torrentFile, srcFile, false);
 
     assertTrue(torrentFile.isFile());
     assertTrue(myDirectorySeeder.isSeeding(torrentFile));
-
-    myDirectorySeeder.getNewLinksWatcher().checkForModifications();
 
     FileUtil.delete(srcFile);
     assertFalse(srcFile.exists());
-    myDirectorySeeder.getNewLinksWatcher().checkForModifications();
+    myDirectorySeeder.checkForBrokenFiles();
 
-    assertTrue(!torrentFile.isFile() && !linkFile.isFile());
-
-    assertFalse(torrentFile.isFile());
-    assertFalse(linkFile.isFile());
-  }
-
-  public void empty_dirs_removed() throws IOException, NoSuchAlgorithmException, InterruptedException {
-    File srcFile = createTempFile();
-    final File linkDir = new File(myStorageDir, "subdir");
-    final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
-    final File linkFile = FileLink.createLink(srcFile, torrentFile, linkDir);
-
-    assertTrue(torrentFile.isFile());
-    myDirectorySeeder.getNewLinksWatcher().checkForModifications();
-
-    FileUtil.delete(linkFile);
-    myDirectorySeeder.getNewLinksWatcher().checkForModifications();
-
-    assertFalse(linkDir.isDirectory());
-  }
-
-  public void testStorageVersionTest() throws IOException {
-    int oldVersion = TorrentsDirectorySeeder.TORRENTS_STORAGE_VERSION-1;
-    final File storageDir = createTempDir();
-    final File innerDir = new File(storageDir, "innerDir");
-    innerDir.mkdir();
-    final File link1 = new File(innerDir, "link1.link");
-    link1.createNewFile();
-    final File link2 = new File(storageDir, "link2.link");
-    link2.createNewFile();
-    final File storageVersionFile = new File(storageDir, TorrentsDirectorySeeder.TORRENTS_STORAGE_VERSION_FILE);
-    FileUtil.writeFileAndReportErrors(
-            storageVersionFile, String.valueOf(oldVersion));
-    assertTrue(link1.exists());
-    assertTrue(link2.exists());
-    new TorrentsDirectorySeeder(storageDir, 1, 1);
-    assertFalse(link1.exists());
-    assertFalse(link2.exists());
-    assertEquals(String.valueOf(TorrentsDirectorySeeder.TORRENTS_STORAGE_VERSION), FileUtil.readText(storageVersionFile));
+    assertFalse(myDirectorySeeder.isSeeding(torrentFile));
   }
 
   private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, NoSuchAlgorithmException, IOException {

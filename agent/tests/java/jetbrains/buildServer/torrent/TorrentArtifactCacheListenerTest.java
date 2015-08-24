@@ -43,7 +43,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
 
     myCacheDir = createTempDir();
     myLinksDir = createTempDir();
-    mySeeder = new TorrentsDirectorySeeder(myLinksDir, 10, 1);
+    mySeeder = new TorrentsDirectorySeeder(myLinksDir, 10);
 
     Mockery m = new Mockery();
     final AgentRunningBuild build = m.mock(AgentRunningBuild.class);
