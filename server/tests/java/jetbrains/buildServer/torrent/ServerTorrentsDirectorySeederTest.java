@@ -22,7 +22,6 @@ import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
-import jetbrains.buildServer.torrent.seeder.FileLink;
 import jetbrains.buildServer.serverSide.BuildServerListener;
 import jetbrains.buildServer.serverSide.BuildServerListenerEventDispatcher;
 import jetbrains.buildServer.serverSide.ServerPaths;
