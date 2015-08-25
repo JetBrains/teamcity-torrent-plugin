@@ -50,9 +50,9 @@ public class TorrentsDirectorySeeder {
   private volatile boolean myStopped = true;
   private volatile int myMaxTorrentsToSeed; // no limit by default
 
-  public TorrentsDirectorySeeder(@NotNull File torrentStorage, int maxTorrentsToSeed) {
+  public TorrentsDirectorySeeder(@NotNull File torrentStorage, int maxTorrentsToSeed, @Nullable PathConverter pathConverter) {
     myMaxTorrentsToSeed = maxTorrentsToSeed;
-    myTorrentFilesDB = new TorrentFilesDB(new File(torrentStorage, "torrents.db"), maxTorrentsToSeed);
+    myTorrentFilesDB = new TorrentFilesDB(new File(torrentStorage, "torrents.db"), maxTorrentsToSeed, pathConverter);
     myExecutor = ExecutorsFactory.newFixedScheduledDaemonExecutor(EXECUTOR_NAME, 1);
   }
 

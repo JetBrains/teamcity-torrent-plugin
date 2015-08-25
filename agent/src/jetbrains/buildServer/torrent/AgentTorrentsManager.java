@@ -6,6 +6,7 @@ import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
+import jetbrains.buildServer.torrent.seeder.ParentDirConverter;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
@@ -40,7 +41,13 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     eventDispatcher.addListener(this);
     File torrentsStorage = agentConfiguration.getCacheDirectory(TORRENT_FOLDER_NAME);
     myTrackerManager = trackerManager;
-    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, TeamCityProperties.getInteger("teamcity.torrents.agent.maxSeededTorrents", 5000));
+    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, TeamCityProperties.getInteger("teamcity.torrents.agent.maxSeededTorrents", 5000), new ParentDirConverter() {
+      @NotNull
+      @Override
+      public File getParentDir() {
+        return agentConfiguration.getSystemDirectory();
+      }
+    });
     if (artifactsCacheProvider != null){
       artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(myTorrentsDirectorySeeder, currentBuildTracker, trackerManager, this));
     }

@@ -6,6 +6,7 @@ package jetbrains.buildServer.torrent;
 
 import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.NetworkUtil;
+import jetbrains.buildServer.torrent.seeder.ParentDirConverter;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.log.Loggers;
@@ -40,6 +41,7 @@ public class ServerTorrentsDirectorySeeder {
   private final ExecutorServices myExecutor;
 
   public ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
+                                       @NotNull final ServerSettings serverSettings,
                                        @NotNull final TorrentConfigurator configurator,
                                        @NotNull final ExecutorServices executorServices,
                                        @NotNull final EventDispatcher<BuildServerListener> eventDispatcher) {
@@ -47,7 +49,13 @@ public class ServerTorrentsDirectorySeeder {
     myExecutor = executorServices;
     File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
     torrentsStorage.mkdirs();
-    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, configurator.getMaxNumberOfSeededTorrents());
+    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, configurator.getMaxNumberOfSeededTorrents(), new ParentDirConverter() {
+      @NotNull
+      @Override
+      public File getParentDir() {
+        return serverSettings.getArtifactDirectories().get(0);
+      }
+    });
     setMaxNumberOfSeededTorrents(configurator.getMaxNumberOfSeededTorrents());
     myConfigurator = configurator;
     eventDispatcher.addListener(new BuildServerAdapter() {

@@ -8,6 +8,7 @@ import com.turn.ttorrent.tracker.TrackerRequestProcessor;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
+import jetbrains.buildServer.serverSide.impl.auth.SecurityContextImpl;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.serverSide.BuildServerListener;
 import jetbrains.buildServer.serverSide.ServerPaths;
@@ -30,51 +31,15 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * @author Sergey.Pak
- *         Date: 10/16/13
- *         Time: 12:43 PM
- */
 @Test
-public class TorrentTrackerConfiguratorTest extends BaseTestCase {
-
-  private TorrentConfigurator myConfigurator;
-  private EventDispatcher<BuildServerListener> myDispatcher;
-  private ServerTorrentsDirectorySeeder myDirectorySeeder;
+public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase {
   private TorrentTrackerManager myTrackerManager;
 
   @BeforeMethod
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    final Mockery m = new Mockery();
 
-    final ServerPaths serverPaths = new ServerPaths(createTempDir().getAbsolutePath());
-    final RootUrlHolder rootUrlHolder = m.mock(RootUrlHolder.class);
-    m.checking(new Expectations(){{
-      allowing(rootUrlHolder).getRootUrl(); will(returnValue("http://localhost:8111"));
-    }});
-
-    myConfigurator = new TorrentConfigurator(serverPaths, rootUrlHolder, new XmlRpcHandlerManager() {
-      public void addHandler(String handlerName, Object handler) {}
-      public void addSessionHandler(String handlerName, Object handler) {}
-    });
-    myDispatcher = EventDispatcher.create(BuildServerListener.class);
-
-    ExecutorServices services = new ExecutorServices() {
-      @NotNull
-      public ScheduledExecutorService getNormalExecutorService() {
-        return null;
-      }
-
-      @NotNull
-      public ExecutorService getLowPriorityExecutorService() {
-        return Executors.newSingleThreadExecutor();
-      }
-    };
-
-    myDirectorySeeder = new ServerTorrentsDirectorySeeder(serverPaths, myConfigurator, services, myDispatcher);
-    myConfigurator.setTorrentEnabled(true);
     myTrackerManager = new TorrentTrackerManager(myConfigurator, new ExecutorServices() {
       @NotNull
       public ScheduledExecutorService getNormalExecutorService() {
@@ -92,10 +57,10 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
     new WaitFor(5 * 1000) {
       @Override
       protected boolean condition() {
-        return !myDirectorySeeder.getTorrentsDirectorySeeder().isStopped();
+        return !myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped();
       }
     };
-    assertFalse(myDirectorySeeder.getTorrentsDirectorySeeder().isStopped());
+    assertFalse(myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped());
   }
 
   public void test_enable_disable_tracker(){
@@ -127,17 +92,17 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
   public void test_enable_disable_seeder(){
     System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "false");
     myConfigurator.getConfigurationWatcher().checkForModifications();
-    assertTrue(myDirectorySeeder.getTorrentsDirectorySeeder().isStopped());
+    assertTrue(myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped());
 
     System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "true");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     new WaitFor(5 * 1000) {
       @Override
       protected boolean condition() {
-        return !myDirectorySeeder.getTorrentsDirectorySeeder().isStopped();
+        return !myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped();
       }
     };
-    assertFalse(myDirectorySeeder.getTorrentsDirectorySeeder().isStopped());
+    assertFalse(myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped());
   }
 
   public void test_file_size_threshold(){
@@ -248,13 +213,6 @@ public class TorrentTrackerConfiguratorTest extends BaseTestCase {
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertEquals(3, myConfigurator.getMaxNumberOfSeededTorrents());
 
-    assertEquals(3, myDirectorySeeder.getTorrentsDirectorySeeder().getMaxTorrentsToSeed());
-  }
-
-  @AfterMethod
-  @Override
-  protected void tearDown() throws Exception {
-    super.tearDown();
-    myDispatcher.getMulticaster().serverShutdown();
+    assertEquals(3, myTorrentsSeeder.getTorrentsDirectorySeeder().getMaxTorrentsToSeed());
   }
 }

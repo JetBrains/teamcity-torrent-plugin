@@ -19,6 +19,7 @@ package jetbrains.buildServer.torrent.seeder;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.ThreadUtil;
+import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -35,7 +36,7 @@ public class TorrentFilesDBTest extends BaseTestCase {
     File srcFile = createTempFile();
     File torrentFile = createTempFile();
 
-    TorrentFilesDB db = new TorrentFilesDB(dbFile, 10);
+    TorrentFilesDB db = new TorrentFilesDB(dbFile, 10, null);
     db.addFileAndTorrent(srcFile, torrentFile);
     db.flush();
 
@@ -49,7 +50,7 @@ public class TorrentFilesDBTest extends BaseTestCase {
 
     Map<File, File> expectedMap = new HashMap<File, File>();
 
-    TorrentFilesDB db = new TorrentFilesDB(dbFile, 10);
+    TorrentFilesDB db = new TorrentFilesDB(dbFile, 10, null);
     for (int i=0; i<10; i++) {
       File srcFile = createTempFile();
       File torrentFile = createTempFile();
@@ -58,7 +59,7 @@ public class TorrentFilesDBTest extends BaseTestCase {
     }
     db.flush();
 
-    db = new TorrentFilesDB(dbFile, 10);
+    db = new TorrentFilesDB(dbFile, 10, null);
     assertEquals(expectedMap, db.getFileAndTorrentMap());
   }
 
@@ -67,7 +68,7 @@ public class TorrentFilesDBTest extends BaseTestCase {
 
     Map<File, File> expectedMap = new HashMap<File, File>();
 
-    TorrentFilesDB db = new TorrentFilesDB(dbFile, 10);
+    TorrentFilesDB db = new TorrentFilesDB(dbFile, 10, null);
     for (int i=0; i<20; i++) {
       File srcFile = createTempFile();
       File torrentFile = createTempFile();
@@ -86,7 +87,7 @@ public class TorrentFilesDBTest extends BaseTestCase {
 
     Map<File, File> expectedMap = new HashMap<File, File>();
 
-    TorrentFilesDB db = new TorrentFilesDB(dbFile, 10);
+    TorrentFilesDB db = new TorrentFilesDB(dbFile, 10, null);
     for (int i=0; i<10; i++) {
       ThreadUtil.sleep(10);
       File srcFile = createTempFile();
@@ -100,5 +101,51 @@ public class TorrentFilesDBTest extends BaseTestCase {
 
     db.setMaxTorrents(5);
     assertEquals(expectedMap, db.getFileAndTorrentMap());
+  }
+
+  public void custom_path_translator() throws IOException {
+    File dbFile = createTempFile();
+
+    final File rootDir = createTempDir();
+
+    final PathConverter pathConverter = new ParentDirConverter() {
+      @NotNull
+      @Override
+      public File getParentDir() {
+        return rootDir;
+      }
+    };
+    TorrentFilesDB db = new TorrentFilesDB(dbFile, 10, pathConverter);
+
+    new File(rootDir, "a/b/c").mkdirs();
+    new File(rootDir, "d/e/f").mkdirs();
+
+    Map<File, File> expectedMap = new HashMap<File, File>();
+    for (int i=0; i<5; i++) {
+      File src = new File(rootDir, "a/b/c/src" + i + ".txt").getAbsoluteFile();
+      File torrent = new File(rootDir, "d/e/f/torrent" + i + ".txt").getAbsoluteFile();
+
+      src.createNewFile();
+      torrent.createNewFile();
+
+      ThreadUtil.sleep(10); // need this for proper sorting of files because TorrentFilesDB sorts file by last modified time
+
+      db.addFileAndTorrent(src, torrent);
+      expectedMap.put(src, torrent);
+    }
+
+    assertEquals(expectedMap, db.getFileAndTorrentMap());
+
+    db.flush();
+
+    db = new TorrentFilesDB(dbFile, 10, pathConverter);
+    assertEquals(expectedMap, db.getFileAndTorrentMap());
+
+    final List<String> lines = FileUtil.readFile(dbFile);
+    assertEquals(5, lines.size());
+    for (int i=0; i<lines.size(); i++) {
+      String expected = ("a/b/c/src" + i + ".txt || d/e/f/torrent" + i + ".txt").replace('/', File.separatorChar);
+      assertEquals(expected, lines.get(i));
+    }
   }
 }

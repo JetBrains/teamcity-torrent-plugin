@@ -21,6 +21,7 @@ import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.RecentEntriesCache;
 import jetbrains.buildServer.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.util.*;
@@ -29,13 +30,15 @@ import java.util.concurrent.atomic.AtomicReference;
 public class TorrentFilesDB {
   private final static Logger LOG = Logger.getInstance(TorrentsDirectorySeeder.class.getName());
 
-  private final static String SEPARATOR = " :: ";
+  private final static String SEPARATOR = " || ";
   public static final String ENCODING = "UTF-8";
   private final AtomicReference<RecentEntriesCache<FileInfo, FileInfo>> myFile2TorrentMap = new AtomicReference<RecentEntriesCache<FileInfo, FileInfo>>();
   private final File myTorrentsDbFile;
+  private final PathConverter myPathConverter;
 
-  public TorrentFilesDB(@NotNull File torrentsDbPath, int maxTorrents) {
+  public TorrentFilesDB(@NotNull File torrentsDbPath, int maxTorrents, @Nullable PathConverter pathConverter) {
     myTorrentsDbFile = torrentsDbPath;
+    myPathConverter = pathConverter == null ? new SimplePathConverter() : pathConverter;
     myFile2TorrentMap.set(new RecentEntriesCache<FileInfo, FileInfo>(maxTorrents));
     try {
       loadDb();
@@ -57,17 +60,27 @@ public class TorrentFilesDB {
   }
 
   public void addFileAndTorrent(@NotNull File srcFile, @NotNull File torrentFile) {
-    myFile2TorrentMap.get().put(new FileInfo(srcFile), new FileInfo(torrentFile));
+    String srcPath = myPathConverter.convertToPath(srcFile);
+    String torrentPath = myPathConverter.convertToPath(torrentFile);
+    myFile2TorrentMap.get().put(new FileInfo(srcPath), new FileInfo(torrentPath));
   }
 
   @NotNull
   public List<File> cleanupBrokenFiles() {
     List<File> brokenTorrentFiles = new ArrayList<File>();
-    for (Map.Entry<File, File> entry: getFileAndTorrentMap().entrySet()) {
-      if (entry.getKey().isFile() && entry.getValue().isFile()) continue;
-      myFile2TorrentMap.get().remove(new FileInfo(entry.getKey()));
-      brokenTorrentFiles.add(entry.getValue());
+
+    for (FileInfo srcInfo : myFile2TorrentMap.get().keySet()) {
+      final FileInfo torrentInfo = myFile2TorrentMap.get().get(srcInfo);
+
+      File srcFile = srcInfo.getFile();
+      File torrentFile = torrentInfo != null ? torrentInfo.getFile() : null;
+
+      if (torrentFile == null || !srcFile.isFile() || !torrentFile.isFile()) {
+        myFile2TorrentMap.get().remove(srcInfo);
+        brokenTorrentFiles.add(torrentFile);
+      }
     }
+
     return brokenTorrentFiles;
   }
 
@@ -78,7 +91,11 @@ public class TorrentFilesDB {
     for (FileInfo srcFile : myFile2TorrentMap.get().keySet()) {
       final FileInfo torrentFile = myFile2TorrentMap.get().get(srcFile);
       if (torrentFile == null) continue;
-      res.put(srcFile.myFile, torrentFile.myFile);
+
+      File src = srcFile.getFile();
+      File torrent = torrentFile.getFile();
+
+      res.put(src, torrent);
     }
     return res;
   }
@@ -100,9 +117,13 @@ public class TorrentFilesDB {
       for (FileInfo srcFile : sorted) {
         final FileInfo torrentFile = myFile2TorrentMap.get().get(srcFile);
         if (torrentFile == null) continue;
-        writer.print(srcFile.myFile.getAbsolutePath());
+
+        String srcPath = srcFile.myPath;
+        String torrentPath = torrentFile.myPath;
+
+        writer.print(srcPath);
         writer.print(SEPARATOR);
-        writer.print(torrentFile.myFile.getAbsolutePath());
+        writer.print(torrentPath);
         writer.println();
       }
     } finally {
@@ -116,7 +137,7 @@ public class TorrentFilesDB {
     Collections.sort(sorted, new Comparator<FileInfo>() {
       public int compare(FileInfo o1, FileInfo o2) {
         // from lowest to highest
-        return new Long(o1.myLastModified).compareTo(o2.myLastModified);
+        return new Long(o1.lastModified()).compareTo(o2.lastModified());
       }
     });
     return sorted;
@@ -133,12 +154,11 @@ public class TorrentFilesDB {
       while ((line = reader.readLine()) != null) {
         List<String> paths = StringUtil.split(line, SEPARATOR);
         if (paths.size() != 2) continue;
-        File srcFile = new File(paths.get(0));
-        File torrentFile = new File(paths.get(1));
 
-        if (srcFile.isFile() && torrentFile.isFile()) {
-          addFileAndTorrent(srcFile, torrentFile);
-        }
+        File srcFile = myPathConverter.convertToFile(paths.get(0));
+        File torrentFile = myPathConverter.convertToFile(paths.get(1));
+
+        addFileAndTorrent(srcFile, torrentFile);
       }
     } catch (FileNotFoundException e) {
       // no database on disk
@@ -147,17 +167,25 @@ public class TorrentFilesDB {
     }
   }
 
-  public void removeSrcFile(File srcFile) {
-    myFile2TorrentMap.get().remove(new FileInfo(srcFile));
+  public void removeSrcFile(@NotNull File srcFile) {
+    String path = myPathConverter.convertToPath(srcFile);
+    myFile2TorrentMap.get().remove(new FileInfo(path));
   }
 
-  private static class FileInfo {
-    public final File myFile;
-    public final long myLastModified;
+  private class FileInfo {
+    public final String myPath;
 
-    private FileInfo(@NotNull File file) {
-      myFile = file;
-      myLastModified = file.lastModified();
+    private FileInfo(@NotNull String path) {
+      myPath = path;
+    }
+
+    @NotNull
+    public File getFile() {
+      return myPathConverter.convertToFile(myPath);
+    }
+
+    public long lastModified() {
+      return myPathConverter.convertToFile(myPath).lastModified();
     }
 
     @Override
@@ -167,13 +195,25 @@ public class TorrentFilesDB {
 
       FileInfo fileInfo = (FileInfo) o;
 
-      return myFile.equals(fileInfo.myFile);
-
+      return myPath.equals(fileInfo.myPath);
     }
 
     @Override
     public int hashCode() {
-      return myFile.hashCode();
+      return myPath.hashCode();
     }
   }
+
+  private static class SimplePathConverter implements PathConverter {
+    @NotNull
+    public File convertToFile(@NotNull String path) {
+      return new File(path);
+    }
+
+    @NotNull
+    public String convertToPath(@NotNull File file) {
+      return file.getAbsolutePath();
+    }
+  }
+
 }

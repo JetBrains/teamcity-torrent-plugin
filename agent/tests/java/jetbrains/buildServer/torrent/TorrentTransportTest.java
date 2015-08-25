@@ -122,7 +122,7 @@ public class TorrentTransportTest extends BaseTestCase {
       allowing(myBuild).getBuildLogger(); will (returnValue(myLogger));
     }});
 
-    myDirectorySeeder = new TorrentsDirectorySeeder(createTempDir(), 1000);
+    myDirectorySeeder = new TorrentsDirectorySeeder(createTempDir(), 1000, null);
 
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(myDirectorySeeder,
                     new HttpClient(), myBuild.getBuildLogger()){
