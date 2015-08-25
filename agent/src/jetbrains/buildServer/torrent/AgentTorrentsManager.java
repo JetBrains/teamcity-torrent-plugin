@@ -30,9 +30,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   private volatile URI myTrackerAnnounceUrl;
   private volatile Integer myAnnounceIntervalSec = TorrentDefaults.ANNOUNCE_INTERVAL_SEC;
   private boolean myTorrentEnabled = false;
-  private boolean myTorrentTransportEnabled = false;
   private TorrentsDirectorySeeder myTorrentsDirectorySeeder;
-  private boolean myTorrentClientStarted = false;
 
   public AgentTorrentsManager(@NotNull final BuildAgentConfiguration agentConfiguration,
                               @NotNull final EventDispatcher<AgentLifeCycleListener> eventDispatcher,
@@ -55,7 +53,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       myTrackerAnnounceUrl = new URI(announceUrl);
       myAnnounceIntervalSec = myTrackerManager.getAnnounceIntervalSec();
       myTorrentsDirectorySeeder.setAnnounceInterval(myAnnounceIntervalSec);
-      myTorrentTransportEnabled = myTrackerManager.isTransportEnabled();
       boolean enabledNow = myTrackerManager.isTorrentEnabled();
       if (myTorrentEnabled != enabledNow){
         myTorrentEnabled = enabledNow;
@@ -89,7 +86,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   public void startIfNecessary() throws IOException {
     if (myTorrentEnabled) {
       myTorrentsDirectorySeeder.start(NetworkUtil.getSelfAddresses(), myTrackerAnnounceUrl, myAnnounceIntervalSec);
-      myTorrentClientStarted = true;
     }
   }
 
@@ -102,10 +98,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   @Override
   public void agentShutdown() {
     stopIfNecessary();
-  }
-
-  public boolean isTransportEnabled() {
-    return myTorrentClientStarted && myTorrentTransportEnabled;
   }
 
   public TorrentsDirectorySeeder getTorrentsDirectorySeeder() {

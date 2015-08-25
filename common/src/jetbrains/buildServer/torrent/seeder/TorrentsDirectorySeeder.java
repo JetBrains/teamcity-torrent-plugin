@@ -100,6 +100,11 @@ public class TorrentsDirectorySeeder {
     for (File brokenTorrent: myTorrentFilesDB.cleanupBrokenFiles()) {
       myTorrentSeeder.stopSeeding(brokenTorrent);
     }
+    try {
+      myTorrentFilesDB.flush();
+    } catch (IOException e) {
+      LOG.warnAndDebugDetails("Failed to flush torrents database on disk", e);
+    }
   }
 
   private void seedTorrent(@NotNull File srcFile, @NotNull File torrentFile) {

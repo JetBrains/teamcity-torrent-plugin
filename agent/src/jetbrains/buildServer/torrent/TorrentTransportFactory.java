@@ -11,11 +11,11 @@ import jetbrains.buildServer.agent.CurrentBuildTracker;
 import jetbrains.buildServer.artifacts.DependencyResolverContext;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
+import jetbrains.buildServer.http.HttpUtil;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
-import jetbrains.buildServer.http.HttpUtil;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.StringUtil;
 import org.apache.commons.httpclient.*;
@@ -86,21 +86,16 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     final BuildProgressLogger buildLogger = myBuildTracker.getCurrentBuild().getBuildLogger();
     if (!shouldUseTorrentTransport()) {
-      TorrentUtil.log2Build("Shouldn't use torrent transport for build type " + myBuildTracker.getCurrentBuild().getBuildTypeId(), buildLogger);
+      TorrentUtil.log2Build("BitTorrent artifacts transport is disabled in server settings", buildLogger);
       return null;
     }
 
     if (NetworkUtil.isLocalHost(context.getServerUrl().getHost())) {
-      TorrentUtil.log2Build("Shouldn't use torrent transport for localhost", buildLogger);
-      return null;
-    }
-    if (!myAgentTorrentsManager.isTorrentEnabled()){
-      TorrentUtil.log2Build("Torrent plugin is disabled. Build artifacts won't be available as torrents.", buildLogger);
+      TorrentUtil.log2Build("BitTorrent artifacts transport is not used for localhost", buildLogger);
       return null;
     }
 
-    if (!myAgentTorrentsManager.isTransportEnabled()){
-      TorrentUtil.log2Build("Torrent transport is disabled", buildLogger);
+    if (!myAgentTorrentsManager.isTorrentEnabled()){
       return null;
     }
 
