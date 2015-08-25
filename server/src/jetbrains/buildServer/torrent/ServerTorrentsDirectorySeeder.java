@@ -34,7 +34,6 @@ import java.util.Collections;
 public class ServerTorrentsDirectorySeeder {
   private final TorrentsDirectorySeeder myTorrentsDirectorySeeder;
   private final TorrentConfigurator myConfigurator;
-  private volatile int myFileSizeThreshold;
   private URI myAnnounceURI;
   private int myMaxTorrentsToSeed;
   private boolean myIsServerStarted;
@@ -50,7 +49,6 @@ public class ServerTorrentsDirectorySeeder {
     torrentsStorage.mkdirs();
     myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, configurator.getMaxNumberOfSeededTorrents());
     setMaxNumberOfSeededTorrents(configurator.getMaxNumberOfSeededTorrents());
-    setFileSizeThreshold(configurator.getFileSizeThresholdMb());
     myConfigurator = configurator;
     eventDispatcher.addListener(new BuildServerAdapter() {
       public void serverShutdown() {
@@ -76,13 +74,11 @@ public class ServerTorrentsDirectorySeeder {
     configurator.addPropertyChangeListener(new PropertyChangeListener() {
       public void propertyChange(PropertyChangeEvent evt) {
         String propertyName = evt.getPropertyName();
-        if (TorrentConfiguration.FILE_SIZE_THRESHOLD.equals(propertyName)){
-          setFileSizeThreshold((Integer) evt.getNewValue());
-        } else if (TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS.equals(propertyName)){
+        if (TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS.equals(propertyName)){
           setMaxNumberOfSeededTorrents((Integer) evt.getNewValue());
           myTorrentsDirectorySeeder.setMaxTorrentsToSeed(myMaxTorrentsToSeed);
         } else if (TorrentConfiguration.ANNOUNCE_INTERVAL.equals(propertyName)){
-          myTorrentsDirectorySeeder.setAnnounceInterval((Integer)evt.getNewValue());
+          myTorrentsDirectorySeeder.setAnnounceInterval((Integer) evt.getNewValue());
         } else if (TorrentConfiguration.ANNOUNCE_URL.equals(propertyName)){
           setAnnounceURI(URI.create(String.valueOf(evt.getNewValue())));
         } else if (TorrentConfiguration.SEEDER_ENABLED.equals(propertyName)){
@@ -139,11 +135,6 @@ public class ServerTorrentsDirectorySeeder {
     } catch (Exception e) {
       Loggers.SERVER.warn("Failed to start torrent seeder", e);
     }
-  }
-
-
-  public void setFileSizeThreshold(int fileSizeThreshold) {
-    myFileSizeThreshold = fileSizeThreshold;
   }
 
   @NotNull

@@ -77,7 +77,6 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     });
     myConfigurator.setTorrentEnabled(true);
 
-
     ExecutorServices services = new ExecutorServices() {
       private final ExecutorService executorService = Executors.newSingleThreadExecutor();
       @NotNull
@@ -92,7 +91,6 @@ public class ServerTorrentsDirectorySeederTest extends BaseTestCase {
     };
 
     myDispatcher = new BuildServerListenerEventDispatcher(new SecurityContextImpl());
-
 
     myDirectorySeeder = new ServerTorrentsDirectorySeeder(serverPaths, myConfigurator, services, myDispatcher);
   }
