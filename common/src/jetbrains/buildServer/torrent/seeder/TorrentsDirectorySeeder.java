@@ -72,7 +72,7 @@ public class TorrentsDirectorySeeder {
   }
 
   public void stopSeedingSrcFile(@NotNull File srcFile, boolean removeSrcFile) {
-    getTorrentSeeder().stopSeedingByPath(srcFile);
+    myTorrentSeeder.stopSeedingByPath(srcFile);
     if (removeSrcFile) {
       myTorrentFilesDB.removeSrcFile(srcFile);
     }

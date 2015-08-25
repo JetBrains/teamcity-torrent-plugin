@@ -8,11 +8,10 @@ import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.impl.DirectoryCacheProviderImpl;
 import jetbrains.buildServer.artifacts.impl.SimpleDigestCalculator;
-import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.messages.BuildMessage1;
+import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
-import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
@@ -49,8 +48,6 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     myTorrentsDbDir = createTempDir();
     myTracker = new Tracker(6969);
     myTracker.start(false);
-
-    mySeeder = new TorrentsDirectorySeeder(myTorrentsDbDir, 10);
 
     Mockery m = new Mockery();
     final AgentRunningBuild build = m.mock(AgentRunningBuild.class);
@@ -104,6 +101,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
             EventDispatcher.create(AgentLifeCycleListener.class),
             cacheProvider, buildTracker, configuration);
 
+    mySeeder = manager.getTorrentsDirectorySeeder();
     myCacheListener = new TorrentArtifactCacheListener(mySeeder, buildTracker, configuration, manager);
 
     myCacheListener.onCacheInitialized(new DirectoryCacheProviderImpl(myCacheDir, new SimpleDigestCalculator()));

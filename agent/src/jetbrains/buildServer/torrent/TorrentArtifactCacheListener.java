@@ -73,7 +73,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     final String announceUrl = myConfiguration.getAnnounceUrl();
     if (!torrentFile.exists() && announceUrl != null) {
       try {
-        Torrent torrent = Torrent.create(file, URI.create(announceUrl), "teamcity torrent plugin");
+        Torrent torrent = Torrent.create(file, URI.create(announceUrl), "TeamCity Torrent Plugin");
         torrentFile.getParentFile().mkdirs();
         torrent.save(torrentFile);
       } catch (Exception e) {
