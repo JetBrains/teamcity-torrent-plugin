@@ -64,10 +64,17 @@ public class TorrentsDirectorySeeder {
     return myTorrentSeeder.isSeeding(torrentFile);
   }
 
-  public void addTorrentFile(@NotNull File torrentFile, @NotNull File srcFile, boolean startSeeding) {
+  public void registerSrcAndTorrentFile(@NotNull File srcFile, @NotNull File torrentFile, boolean startSeeding) {
     myTorrentFilesDB.addFileAndTorrent(srcFile, torrentFile);
     if (startSeeding) {
       seedTorrent(srcFile, torrentFile);
+    }
+  }
+
+  public void stopSeedingSrcFile(@NotNull File srcFile, boolean removeSrcFile) {
+    getTorrentSeeder().stopSeedingByPath(srcFile);
+    if (removeSrcFile) {
+      myTorrentFilesDB.removeSrcFile(srcFile);
     }
   }
 
@@ -91,14 +98,16 @@ public class TorrentsDirectorySeeder {
 
   void checkForBrokenFiles() {
     for (File brokenTorrent: myTorrentFilesDB.cleanupBrokenFiles()) {
-      getTorrentSeeder().stopSeeding(brokenTorrent);
+      myTorrentSeeder.stopSeeding(brokenTorrent);
     }
   }
 
   private void seedTorrent(@NotNull File srcFile, @NotNull File torrentFile) {
     try {
-      getTorrentSeeder().stopSeeding(torrentFile);
-      getTorrentSeeder().seedTorrent(torrentFile, srcFile);
+      if (isSeeding(torrentFile)) {
+        myTorrentSeeder.stopSeeding(torrentFile);
+      }
+      myTorrentSeeder.seedTorrent(torrentFile, srcFile);
     } catch (NoSuchAlgorithmException e) {
       LOG.warnAndDebugDetails("Failed to start seeding torrent: " + torrentFile.getAbsolutePath(), e);
     } catch (IOException e) {

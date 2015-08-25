@@ -23,14 +23,12 @@ import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.agent.impl.CurrentBuildTrackerImpl;
 import jetbrains.buildServer.artifacts.*;
-import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
 import org.jmock.Mock;
 import org.jmock.Mockery;
-import org.testng.SkipException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -125,7 +123,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
         torrentHashes.add(torrent.getHexInfoHash());
         torrent.save(torrentFile);
 
-        myTorrentsManager.getTorrentsDirectorySeeder().addTorrentFile(torrentFile, artifactFile, true);
+        myTorrentsManager.getTorrentsDirectorySeeder().registerSrcAndTorrentFile(artifactFile, torrentFile, true);
       }
 
       Mock buildAgentMock = mock(BuildAgent.class);

@@ -1,6 +1,7 @@
 package jetbrains.buildServer.torrent;
 
 import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
@@ -10,10 +11,12 @@ import jetbrains.buildServer.artifacts.impl.SimpleDigestCalculator;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.util.EventDispatcher;
+import jetbrains.buildServer.util.FileUtil;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -33,7 +36,8 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
   private TorrentArtifactCacheListener myCacheListener;
   private TorrentsDirectorySeeder mySeeder;
   private File myCacheDir;
-  private File myLinksDir;
+  private File myTorrentsDbDir;
+  private Tracker myTracker;
 
 
   @BeforeMethod
@@ -42,8 +46,11 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     super.setUp();
 
     myCacheDir = createTempDir();
-    myLinksDir = createTempDir();
-    mySeeder = new TorrentsDirectorySeeder(myLinksDir, 10);
+    myTorrentsDbDir = createTempDir();
+    myTracker = new Tracker(6969);
+    myTracker.start(false);
+
+    mySeeder = new TorrentsDirectorySeeder(myTorrentsDbDir, 10);
 
     Mockery m = new Mockery();
     final AgentRunningBuild build = m.mock(AgentRunningBuild.class);
@@ -65,7 +72,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
       allowing(buildTracker).getCurrentBuild(); will(returnValue(build));
       allowing(build).getBuildLogger(); will(returnValue(logger));
       allowing(build).getAgentConfiguration(); will(returnValue(buildAgentConf));
-      allowing(buildAgentConf).getCacheDirectory(AgentTorrentsManager.TORRENT_FOLDER_NAME); will(returnValue(myLinksDir));
+      allowing(buildAgentConf).getCacheDirectory(AgentTorrentsManager.TORRENT_FOLDER_NAME); will(returnValue(myTorrentsDbDir));
       allowing(cacheProvider).addListener(with(any(ArtifactsCacheListener.class)));
     }});
 
@@ -97,7 +104,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
             EventDispatcher.create(AgentLifeCycleListener.class),
             cacheProvider, buildTracker, configuration);
 
-    myCacheListener = new TorrentArtifactCacheListener(mySeeder,buildTracker, configuration, manager);
+    myCacheListener = new TorrentArtifactCacheListener(mySeeder, buildTracker, configuration, manager);
 
     myCacheListener.onCacheInitialized(new DirectoryCacheProviderImpl(myCacheDir, new SimpleDigestCalculator()));
     manager.checkReady();
@@ -108,7 +115,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     File file = createTempFile(1024*1025);
 
     File newLocation = new File(myCacheDir, CONTEXT_PATH + file.getName());
-    FileUtils.moveFile(file, newLocation);
+    FileUtil.rename(file, newLocation);
     myCacheListener.onAfterAddOrUpdate(newLocation);
     assertEquals(1, mySeeder.getNumberOfSeededTorrents());
     final SharedTorrent torrent = mySeeder.getSharedTorrents().iterator().next();
@@ -119,7 +126,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     File file = createTempFile(1024*1025);
 
     File newLocation = new File(myCacheDir, CONTEXT_PATH + file.getName());
-    FileUtils.moveFile(file, newLocation);
+    FileUtil.rename(file, newLocation);
     myCacheListener.onAfterAddOrUpdate(newLocation);
     assertEquals(1, mySeeder.getNumberOfSeededTorrents());
     final SharedTorrent torrent = mySeeder.getSharedTorrents().iterator().next();
@@ -134,7 +141,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
             Integer.MAX_VALUE+":runnerFinished:IntelliJ IDEA Project");
 
     File newLocation = new File(myCacheDir, CONTEXT_PATH + file.getName());
-    FileUtils.moveFile(file, newLocation);
+    FileUtil.rename(file, newLocation);
     final long totalBefore = Runtime.getRuntime().totalMemory();
     final int ONEGB = 1024 * 1024 * 1024;
     if (totalBefore >= ONEGB) {
@@ -144,5 +151,13 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     final long totalAfter = Runtime.getRuntime().totalMemory();
     assertTrue(totalAfter-totalBefore < ONEGB/10);
     assertEquals(0, mySeeder.getNumberOfSeededTorrents());
+  }
+
+  @AfterMethod
+  @Override
+  protected void tearDown() throws Exception {
+    super.tearDown();
+    myTracker.stop();
+    mySeeder.stop();
   }
 }

@@ -45,7 +45,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   public void onBeforeAddOrUpdate(@NotNull File file) {
     if (!myTorrentsManager.isTorrentEnabled())
       return;
-    myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(file);
+    myTorrentsDirectorySeeder.stopSeedingSrcFile(file, false);
   }
 
   public void onAfterAddOrUpdate(@NotNull File file) {
@@ -69,28 +69,27 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     final ParsedArtifactPath artifactPath = new ParsedArtifactPath(relativePath.replaceAll("\\\\", "/"));
     final String relativeTorrentPath = artifactPath.getTorrentUrl();
     final File torrentFile = new File(myArtifactCacheProvider.getCacheDir(), relativeTorrentPath);
-    try {
-      final Torrent torrent;
-      if (!torrentFile.exists()) {
-        torrent = Torrent.create(file, URI.create(myConfiguration.getAnnounceUrl()), "teamcity torrent plugin");
+
+    final String announceUrl = myConfiguration.getAnnounceUrl();
+    if (!torrentFile.exists() && announceUrl != null) {
+      try {
+        Torrent torrent = Torrent.create(file, URI.create(announceUrl), "teamcity torrent plugin");
         torrentFile.getParentFile().mkdirs();
         torrent.save(torrentFile);
-
-        myTorrentsManager.getTorrentsDirectorySeeder().addTorrentFile(torrentFile, file, true);
-      } else {
-        torrent = Torrent.load(torrentFile);
+      } catch (Exception e) {
+        LOG.warnAndDebugDetails("Failed to create torrent file: " + torrentFile.getAbsolutePath(), e);
+        return;
       }
-      log2Build("Started seeding " + file.getAbsolutePath());
-      myTorrentsDirectorySeeder.getTorrentSeeder().seedTorrent(torrent, file);
-    } catch (Exception e) {
-      e.printStackTrace();
     }
+    log2Build("Started seeding " + file.getAbsolutePath());
+
+    myTorrentsManager.getTorrentsDirectorySeeder().registerSrcAndTorrentFile(file, torrentFile, true);
   }
 
   public void onBeforeDelete(@NotNull File file) {
     if (!myTorrentsManager.isTorrentEnabled())
       return;
-    myTorrentsDirectorySeeder.getTorrentSeeder().stopSeedingByPath(file);
+    myTorrentsDirectorySeeder.stopSeedingSrcFile(file, true);
   }
 
   public void onAfterDelete(@NotNull File file) {

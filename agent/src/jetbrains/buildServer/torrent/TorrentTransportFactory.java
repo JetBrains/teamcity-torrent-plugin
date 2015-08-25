@@ -196,7 +196,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         torrentFile.getParentFile().mkdirs();
         torrent.save(torrentFile);
 
-        myDirectorySeeder.addTorrentFile(torrentFile, target, true);
+        myDirectorySeeder.registerSrcAndTorrentFile(target, torrentFile, true);
         return torrent.getHexInfoHash();
 
       } catch (IOException e) {

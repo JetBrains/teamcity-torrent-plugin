@@ -17,6 +17,7 @@
 package jetbrains.buildServer.torrent.seeder;
 
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.util.FileUtil;
 import org.testng.annotations.AfterMethod;
@@ -26,43 +27,60 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 
 @Test
 public class TorrentsDirectorySeederTest extends BaseTestCase {
   private TorrentsDirectorySeeder myDirectorySeeder;
-  private File myStorageDir;
-  private URI announceURI;
+  private Tracker myTracker;
 
   @BeforeMethod
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    myStorageDir = createTempDir();
-    announceURI = new URI("http://localhost:6969/announce");
-    myDirectorySeeder = new TorrentsDirectorySeeder(myStorageDir, 100);
-    myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, null, 3);
+    myTracker = new Tracker(6969);
+    myTracker.start(false);
+
+    myDirectorySeeder = new TorrentsDirectorySeeder(createTempDir(), 100);
+    myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, myTracker.getAnnounceURI(), 3);
   }
 
-  public void src_file_removed() throws IOException, NoSuchAlgorithmException, InterruptedException {
+  public void start_seeding_file() throws IOException, NoSuchAlgorithmException, InterruptedException {
     final File srcFile = createTempFile(65535);
     final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
-    myDirectorySeeder.addTorrentFile(torrentFile, srcFile, false);
+    myDirectorySeeder.registerSrcAndTorrentFile(srcFile, torrentFile, true);
 
-    assertTrue(torrentFile.isFile());
+    assertTrue(myDirectorySeeder.isSeeding(torrentFile));
+  }
+
+  public void stop_seeding() throws IOException, NoSuchAlgorithmException, InterruptedException {
+    final File srcFile = createTempFile(65535);
+    final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
+    myDirectorySeeder.registerSrcAndTorrentFile(srcFile, torrentFile, true);
+
+    assertTrue(myDirectorySeeder.isSeeding(torrentFile));
+
+    myDirectorySeeder.stopSeedingSrcFile(srcFile, false);
+
+    assertFalse(myDirectorySeeder.isSeeding(torrentFile));
+  }
+
+  public void stop_seeding_broken_file() throws IOException, NoSuchAlgorithmException, InterruptedException {
+    final File srcFile = createTempFile(65535);
+    final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
+    myDirectorySeeder.registerSrcAndTorrentFile(srcFile, torrentFile, true);
+
     assertTrue(myDirectorySeeder.isSeeding(torrentFile));
 
     FileUtil.delete(srcFile);
-    assertFalse(srcFile.exists());
-    myDirectorySeeder.checkForBrokenFiles();
 
+    myDirectorySeeder.checkForBrokenFiles();
     assertFalse(myDirectorySeeder.isSeeding(torrentFile));
   }
 
   private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, NoSuchAlgorithmException, IOException {
     File torrentFile = new File(torrentDir, srcFile.getName() + ".torrent");
-    final Torrent torrent = Torrent.create(srcFile, announceURI, "Test");
+    final Torrent torrent = Torrent.create(srcFile, myTracker.getAnnounceURI(), "Test");
     torrent.save(torrentFile);
     return torrentFile;
   }
@@ -72,5 +90,6 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
   protected void tearDown() throws Exception {
     super.tearDown();
     myDirectorySeeder.stop();
+    myTracker.stop();
   }
 }

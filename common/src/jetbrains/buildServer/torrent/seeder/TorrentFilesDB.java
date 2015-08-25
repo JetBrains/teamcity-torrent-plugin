@@ -147,6 +147,10 @@ public class TorrentFilesDB {
     }
   }
 
+  public void removeSrcFile(File srcFile) {
+    myFile2TorrentMap.get().remove(new FileInfo(srcFile));
+  }
+
   private static class FileInfo {
     public final File myFile;
     public final long myLastModified;

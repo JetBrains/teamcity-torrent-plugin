@@ -22,7 +22,6 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.util.Collection;
@@ -208,7 +207,7 @@ public class ServerTorrentsDirectorySeeder {
       File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
       File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
 
-      myTorrentsDirectorySeeder.addTorrentFile(torrentFile, artifactFile, myConfigurator.isSeederEnabled());
+      myTorrentsDirectorySeeder.registerSrcAndTorrentFile(artifactFile, torrentFile, myConfigurator.isSeederEnabled());
     }
   }
 
