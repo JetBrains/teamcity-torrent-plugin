@@ -32,14 +32,16 @@ public class TorrentFilesDB {
 
   private final static String SEPARATOR = " || ";
   public static final String ENCODING = "UTF-8";
-  private final AtomicReference<RecentEntriesCache<FileInfo, FileInfo>> myFile2TorrentMap = new AtomicReference<RecentEntriesCache<FileInfo, FileInfo>>();
+  private final AtomicReference<Map<FileInfo, FileInfo>> myFile2TorrentMap = new AtomicReference<Map<FileInfo, FileInfo>>();
   private final File myTorrentsDbFile;
   private final PathConverter myPathConverter;
+  private final CacheListener myCacheListener;
 
-  public TorrentFilesDB(@NotNull File torrentsDbPath, int maxTorrents, @Nullable PathConverter pathConverter) {
+  public TorrentFilesDB(@NotNull File torrentsDbPath, int maxTorrents, @Nullable PathConverter pathConverter, @Nullable CacheListener cacheListener) {
     myTorrentsDbFile = torrentsDbPath;
     myPathConverter = pathConverter == null ? new SimplePathConverter() : pathConverter;
-    myFile2TorrentMap.set(new RecentEntriesCache<FileInfo, FileInfo>(maxTorrents));
+    myCacheListener = cacheListener;
+    myFile2TorrentMap.set(createCache(maxTorrents));
     try {
       loadDb();
     } catch (IOException e) {
@@ -48,37 +50,52 @@ public class TorrentFilesDB {
   }
 
   public void setMaxTorrents(int maxTorrents) {
-    RecentEntriesCache<FileInfo, FileInfo> curCache = myFile2TorrentMap.get();
-    RecentEntriesCache<FileInfo, FileInfo> newCache = new RecentEntriesCache<FileInfo, FileInfo>(maxTorrents);
-    for (FileInfo srcFile: getSortedKeys()) {
-      final FileInfo torrentFile = curCache.get(srcFile);
-      if (torrentFile == null) continue;
-      newCache.put(srcFile, torrentFile);
-    }
+    synchronized (myFile2TorrentMap) {
+      Map<FileInfo, FileInfo> curCache = myFile2TorrentMap.get();
+      Map<FileInfo, FileInfo> newCache = createCache(maxTorrents);
+      for (FileInfo srcFile: getSortedKeys()) {
+        final FileInfo torrentFile = curCache.get(srcFile);
+        if (torrentFile == null) continue;
+        newCache.put(srcFile, torrentFile);
+      }
 
-    myFile2TorrentMap.compareAndSet(curCache, newCache);
+      myFile2TorrentMap.set(newCache);
+    }
   }
 
   public void addFileAndTorrent(@NotNull File srcFile, @NotNull File torrentFile) {
     String srcPath = myPathConverter.convertToPath(srcFile);
     String torrentPath = myPathConverter.convertToPath(torrentFile);
-    myFile2TorrentMap.get().put(new FileInfo(srcPath), new FileInfo(torrentPath));
+    synchronized (myFile2TorrentMap) {
+      myFile2TorrentMap.get().put(new FileInfo(srcPath), new FileInfo(torrentPath));
+    }
   }
 
   @NotNull
   public List<File> cleanupBrokenFiles() {
     List<File> brokenTorrentFiles = new ArrayList<File>();
 
-    for (FileInfo srcInfo : myFile2TorrentMap.get().keySet()) {
-      final FileInfo torrentInfo = myFile2TorrentMap.get().get(srcInfo);
+    List<Map.Entry<File, File>> removed = new ArrayList<Map.Entry<File, File>>();
 
-      File srcFile = srcInfo.getFile();
-      File torrentFile = torrentInfo != null ? torrentInfo.getFile() : null;
+    synchronized (myFile2TorrentMap) {
+      final Map<FileInfo, FileInfo> cache = myFile2TorrentMap.get();
+      Map<FileInfo, FileInfo> cacheCopy = new HashMap<FileInfo, FileInfo>(cache);
+      for (Map.Entry<FileInfo, FileInfo> entry : cacheCopy.entrySet()) {
+        final FileInfo torrentInfo = cache.get(entry.getKey());
 
-      if (torrentFile == null || !srcFile.isFile() || !torrentFile.isFile()) {
-        myFile2TorrentMap.get().remove(srcInfo);
-        brokenTorrentFiles.add(torrentFile);
+        File srcFile = entry.getKey().getFile();
+        File torrentFile = torrentInfo != null ? torrentInfo.getFile() : null;
+
+        if (torrentFile == null || !srcFile.isFile() || !torrentFile.isFile()) {
+          cache.remove(entry.getKey());
+          brokenTorrentFiles.add(torrentFile);
+          removed.add(new AbstractMap.SimpleEntry<File, File>(srcFile, torrentFile));
+        }
       }
+    }
+
+    for (Map.Entry<File, File> r: removed) {
+      notifyOnRemove(r);
     }
 
     return brokenTorrentFiles;
@@ -88,15 +105,15 @@ public class TorrentFilesDB {
   public Map<File, File> getFileAndTorrentMap() {
     Map<File, File> res = new HashMap<File, File>();
 
-    for (FileInfo srcFile : myFile2TorrentMap.get().keySet()) {
-      final FileInfo torrentFile = myFile2TorrentMap.get().get(srcFile);
-      if (torrentFile == null) continue;
+    synchronized (myFile2TorrentMap) {
+      for (Map.Entry<FileInfo, FileInfo> entry : myFile2TorrentMap.get().entrySet()) {
+        File src = entry.getKey().getFile();
+        File torrent = entry.getValue().getFile();
 
-      File src = srcFile.getFile();
-      File torrent = torrentFile.getFile();
-
-      res.put(src, torrent);
+        res.put(src, torrent);
+      }
     }
+
     return res;
   }
 
@@ -114,17 +131,19 @@ public class TorrentFilesDB {
 
       List<FileInfo> sorted = getSortedKeys();
 
-      for (FileInfo srcFile : sorted) {
-        final FileInfo torrentFile = myFile2TorrentMap.get().get(srcFile);
-        if (torrentFile == null) continue;
+      synchronized (myFile2TorrentMap) {
+        for (FileInfo srcFile : sorted) {
+          final FileInfo torrentFile = myFile2TorrentMap.get().get(srcFile);
+          if (torrentFile == null) continue;
 
-        String srcPath = srcFile.myPath;
-        String torrentPath = torrentFile.myPath;
+          String srcPath = srcFile.myPath;
+          String torrentPath = torrentFile.myPath;
 
-        writer.print(srcPath);
-        writer.print(SEPARATOR);
-        writer.print(torrentPath);
-        writer.println();
+          writer.print(srcPath);
+          writer.print(SEPARATOR);
+          writer.print(torrentPath);
+          writer.println();
+        }
       }
     } finally {
       FileUtil.close(writer);
@@ -133,7 +152,10 @@ public class TorrentFilesDB {
 
   @NotNull
   private List<FileInfo> getSortedKeys() {
-    List<FileInfo> sorted = new ArrayList<FileInfo>(myFile2TorrentMap.get().keySet());
+    List<FileInfo> sorted;
+    synchronized (myFile2TorrentMap) {
+      sorted = new ArrayList<FileInfo>(myFile2TorrentMap.get().keySet());
+    }
     Collections.sort(sorted, new Comparator<FileInfo>() {
       public int compare(FileInfo o1, FileInfo o2) {
         // from lowest to highest
@@ -169,7 +191,14 @@ public class TorrentFilesDB {
 
   public void removeSrcFile(@NotNull File srcFile) {
     String path = myPathConverter.convertToPath(srcFile);
-    myFile2TorrentMap.get().remove(new FileInfo(path));
+    FileInfo removedTorrent;
+    synchronized (myFile2TorrentMap) {
+      removedTorrent = myFile2TorrentMap.get().remove(new FileInfo(path));
+    }
+
+    if (removedTorrent != null) {
+      notifyOnRemove(new AbstractMap.SimpleEntry<File, File>(srcFile, removedTorrent.getFile()));
+    }
   }
 
   private class FileInfo {
@@ -216,4 +245,26 @@ public class TorrentFilesDB {
     }
   }
 
+  public interface CacheListener {
+    void onRemove(@NotNull Map.Entry<File, File> removedEntry);
+  }
+
+  @NotNull
+  private Map<FileInfo, FileInfo> createCache(final int maxTorrents) {
+    return new LinkedHashMap<FileInfo, FileInfo>(maxTorrents, 0.8f, true) {
+      @Override
+      protected boolean removeEldestEntry(final Map.Entry<FileInfo, FileInfo> eldest) {
+        boolean remove = size() > maxTorrents;
+        if (!remove) return false;
+        notifyOnRemove(new SimpleEntry<File, File>(eldest.getKey().getFile(), eldest.getValue().getFile()));
+        return true;
+      }
+    };
+  }
+
+  private void notifyOnRemove(@NotNull Map.Entry<File, File> removed) {
+    if (myCacheListener != null) {
+      myCacheListener.onRemove(removed);
+    }
+  }
 }

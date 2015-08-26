@@ -60,7 +60,7 @@ public class TorrentsSeederTest extends BaseTestCase {
 
     assertTrue(myDirectorySeeder.isSeeding(torrentFile));
 
-    myDirectorySeeder.stopSeedingSrcFile(srcFile, false);
+    myDirectorySeeder.unregisterSrcFile(srcFile);
 
     assertFalse(myDirectorySeeder.isSeeding(torrentFile));
   }

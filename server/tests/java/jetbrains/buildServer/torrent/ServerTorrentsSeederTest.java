@@ -71,7 +71,6 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
     final int fileSize = 1 * 1024 * 1024;
     final Queue<String> filesQueue = new ArrayDeque<String>();
     final List<File> allArtifacts = new ArrayList<File>();
-    final List<File> allLinks = new ArrayList<File>();
     final List<File> allTorrents = new ArrayList<File>();
     for (int i=0; i<5; i++) {
       File tempFile = createTempFile(fileSize);
@@ -152,20 +151,6 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
           return null;
         }
       });
-      assertThat(allLinks, new Constraint() {
-        public boolean eval(Object o) {
-          for (File link : (List<File>)o) {
-            if (link.exists() != filesQueue.contains(link.getName().replace(".link", ""))){
-              return false;
-            }
-          }
-          return true;
-        }
-
-        public StringBuffer describeTo(StringBuffer buffer) {
-          return null;
-        }
-      });
       assertThat(allTorrents, new Constraint() {
         public boolean eval(Object o) {
           for (File link : (List<File>)o) {
@@ -180,18 +165,8 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
           return null;
         }
       });
-
-      Thread.sleep(2*1000); // wait 2 seconds, because we need to have files timestamps different
     }
 
     assertEquals(3, myTorrentsSeeder.getNumberOfSeededTorrents());
   }
-
-  private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, NoSuchAlgorithmException, IOException {
-    File torrentFile = new File(torrentDir, srcFile.getName() + ".torrent");
-    final Torrent torrent = Torrent.create(srcFile, URI.create("http://localhost:6969"), "Test");
-    torrent.save(torrentFile);
-    return torrentFile;
-  }
-
 }

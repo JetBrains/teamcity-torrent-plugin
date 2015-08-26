@@ -17,6 +17,7 @@
 package jetbrains.buildServer.torrent.seeder;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.util.io.FileUtil;
 import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
@@ -47,13 +48,28 @@ public class TorrentsSeeder {
   private final TeamcityTorrentClient myClient = new TeamcityTorrentClient();
   private final TorrentFilesDB myTorrentFilesDB;
   private final ScheduledExecutorService myExecutor;
+  private volatile boolean myRemoveExpiredTorrentFiles;
   private volatile boolean myStopped = true;
   private volatile int myMaxTorrentsToSeed; // no limit by default
 
   public TorrentsSeeder(@NotNull File torrentStorage, int maxTorrentsToSeed, @Nullable PathConverter pathConverter) {
     myMaxTorrentsToSeed = maxTorrentsToSeed;
-    myTorrentFilesDB = new TorrentFilesDB(new File(torrentStorage, "torrents.db"), maxTorrentsToSeed, pathConverter);
+    myTorrentFilesDB = new TorrentFilesDB(new File(torrentStorage, "torrents.db"), maxTorrentsToSeed, pathConverter, new TorrentFilesDB.CacheListener() {
+      public void onRemove(@NotNull Map.Entry<File, File> removedEntry) {
+        myClient.stopSeeding(removedEntry.getValue());
+        if (myRemoveExpiredTorrentFiles) {
+          FileUtil.delete(removedEntry.getValue());
+        }
+      }
+    });
     myExecutor = ExecutorsFactory.newFixedScheduledDaemonExecutor(EXECUTOR_NAME, 1);
+  }
+
+  /**
+   * @param removeExpiredTorrentFiles if true, then torrent files removed from the cache will be removed from disk too
+   */
+  public void setRemoveExpiredTorrentFiles(boolean removeExpiredTorrentFiles) {
+    myRemoveExpiredTorrentFiles = removeExpiredTorrentFiles;
   }
 
   public boolean isSeedingByPath(@NotNull File srcFile){
@@ -72,11 +88,8 @@ public class TorrentsSeeder {
     }
   }
 
-  public void stopSeedingSrcFile(@NotNull File srcFile, boolean removeSrcFile) {
-    myClient.stopSeedingByPath(srcFile);
-    if (removeSrcFile) {
-      myTorrentFilesDB.removeSrcFile(srcFile);
-    }
+  public void unregisterSrcFile(@NotNull File srcFile) {
+    myTorrentFilesDB.removeSrcFile(srcFile);
   }
 
   public void start(@NotNull InetAddress[] address,
@@ -105,9 +118,7 @@ public class TorrentsSeeder {
   }
 
   void checkForBrokenFiles() {
-    for (File brokenTorrent: myTorrentFilesDB.cleanupBrokenFiles()) {
-      myClient.stopSeeding(brokenTorrent);
-    }
+    myTorrentFilesDB.cleanupBrokenFiles();
     flushTorrentsDB();
   }
 

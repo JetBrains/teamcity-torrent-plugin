@@ -54,7 +54,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
 
     if (!myTorrentsManager.isTorrentEnabled())
       return;
-    myTorrentsSeeder.stopSeedingSrcFile(file, false);
+    myTorrentsSeeder.unregisterSrcFile(file);
   }
 
   public void onAfterAddOrUpdate(@NotNull File file) {
@@ -94,7 +94,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
 
     if (!myTorrentsManager.isTorrentEnabled())
       return;
-    myTorrentsSeeder.stopSeedingSrcFile(file, true);
+    myTorrentsSeeder.unregisterSrcFile(file);
   }
 
   public void onAfterDelete(@NotNull File file) {

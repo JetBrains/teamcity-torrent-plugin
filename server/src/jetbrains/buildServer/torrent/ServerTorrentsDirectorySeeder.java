@@ -56,6 +56,11 @@ public class ServerTorrentsDirectorySeeder {
           }
         });
 
+        // if torrent file expires, it will be removed from disk as well
+        // this is needed to prevent agents from downloading this torrent file (because most likely no one is going to seed this torrent in the future)
+        // and to stop showing torrent icons for users
+        myTorrentsSeeder.setRemoveExpiredTorrentFiles(true);
+
         if (myConfigurator.isTorrentEnabled()) {
           startSeeder();
         }
