@@ -34,8 +34,8 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class TorrentsDirectorySeeder {
-  private final static Logger LOG = Logger.getInstance(TorrentsDirectorySeeder.class.getName());
+public class TorrentsSeeder {
+  private final static Logger LOG = Logger.getInstance(TorrentsSeeder.class.getName());
 
   public static final String TORRENTS_DIT_PATH = ".teamcity/torrents";
 
@@ -44,35 +44,36 @@ public class TorrentsDirectorySeeder {
   public static final String EXECUTOR_NAME = "Torrent files checker";
 
   @NotNull
-  private final TeamcityTorrentClient myTorrentSeeder = new TeamcityTorrentClient();
+  private final TeamcityTorrentClient myClient = new TeamcityTorrentClient();
   private final TorrentFilesDB myTorrentFilesDB;
   private final ScheduledExecutorService myExecutor;
   private volatile boolean myStopped = true;
   private volatile int myMaxTorrentsToSeed; // no limit by default
 
-  public TorrentsDirectorySeeder(@NotNull File torrentStorage, int maxTorrentsToSeed, @Nullable PathConverter pathConverter) {
+  public TorrentsSeeder(@NotNull File torrentStorage, int maxTorrentsToSeed, @Nullable PathConverter pathConverter) {
     myMaxTorrentsToSeed = maxTorrentsToSeed;
     myTorrentFilesDB = new TorrentFilesDB(new File(torrentStorage, "torrents.db"), maxTorrentsToSeed, pathConverter);
     myExecutor = ExecutorsFactory.newFixedScheduledDaemonExecutor(EXECUTOR_NAME, 1);
   }
 
   public boolean isSeedingByPath(@NotNull File srcFile){
-    return myTorrentSeeder.isSeedingByPath(srcFile);
+    return myClient.isSeedingByPath(srcFile);
   }
 
   public boolean isSeeding(@NotNull File torrentFile){
-    return myTorrentSeeder.isSeeding(torrentFile);
+    return myClient.isSeeding(torrentFile);
   }
 
   public void registerSrcAndTorrentFile(@NotNull File srcFile, @NotNull File torrentFile, boolean startSeeding) {
     myTorrentFilesDB.addFileAndTorrent(srcFile, torrentFile);
     if (startSeeding) {
       seedTorrent(srcFile, torrentFile);
+      flushTorrentsDB();
     }
   }
 
   public void stopSeedingSrcFile(@NotNull File srcFile, boolean removeSrcFile) {
-    myTorrentSeeder.stopSeedingByPath(srcFile);
+    myClient.stopSeedingByPath(srcFile);
     if (removeSrcFile) {
       myTorrentFilesDB.removeSrcFile(srcFile);
     }
@@ -83,7 +84,7 @@ public class TorrentsDirectorySeeder {
                     final int announceInterval) throws IOException {
     if (!myStopped) return; // already started
 
-    myTorrentSeeder.start(address, defaultTrackerURI, announceInterval);
+    myClient.start(address, defaultTrackerURI, announceInterval);
 
     myStopped = false;
 
@@ -105,8 +106,12 @@ public class TorrentsDirectorySeeder {
 
   void checkForBrokenFiles() {
     for (File brokenTorrent: myTorrentFilesDB.cleanupBrokenFiles()) {
-      myTorrentSeeder.stopSeeding(brokenTorrent);
+      myClient.stopSeeding(brokenTorrent);
     }
+    flushTorrentsDB();
+  }
+
+  private void flushTorrentsDB() {
     try {
       myTorrentFilesDB.flush();
     } catch (IOException e) {
@@ -117,9 +122,10 @@ public class TorrentsDirectorySeeder {
   private void seedTorrent(@NotNull File srcFile, @NotNull File torrentFile) {
     try {
       if (isSeeding(torrentFile)) {
-        myTorrentSeeder.stopSeeding(torrentFile);
+        myClient.stopSeeding(torrentFile);
       }
-      myTorrentSeeder.seedTorrent(torrentFile, srcFile);
+      LOG.debug("Start seeding file: " + srcFile.getAbsolutePath());
+      myClient.seedTorrent(torrentFile, srcFile);
     } catch (NoSuchAlgorithmException e) {
       LOG.warnAndDebugDetails("Failed to start seeding torrent: " + torrentFile.getAbsolutePath(), e);
     } catch (IOException e) {
@@ -130,7 +136,7 @@ public class TorrentsDirectorySeeder {
   public void stop() {
     if (myStopped) return;
     myStopped = true;
-    myTorrentSeeder.stop();
+    myClient.stop();
     try {
       myTorrentFilesDB.flush();
     } catch (IOException e) {
@@ -148,16 +154,16 @@ public class TorrentsDirectorySeeder {
   }
 
   public int getNumberOfSeededTorrents() {
-    return myTorrentSeeder.getNumberOfSeededTorrents();
+    return myClient.getNumberOfSeededTorrents();
   }
 
   public void setAnnounceInterval(final int announceInterval){
-    myTorrentSeeder.setAnnounceInterval(announceInterval);
+    myClient.setAnnounceInterval(announceInterval);
   }
 
   @NotNull
-  public TeamcityTorrentClient getTorrentSeeder() {
-    return myTorrentSeeder;
+  public TeamcityTorrentClient getClient() {
+    return myClient;
   }
 
   public void setMaxTorrentsToSeed(int maxTorrentsToSeed) {
@@ -169,8 +175,17 @@ public class TorrentsDirectorySeeder {
     return myMaxTorrentsToSeed;
   }
 
+  @NotNull
   public Collection<SharedTorrent> getSharedTorrents(){
-    return myTorrentSeeder.getSharedTorrents();
+    return myClient.getSharedTorrents();
+  }
+
+  /**
+   * @return set of all registered .torrent files
+   */
+  @NotNull
+  public Set<File> getRegisteredTorrentFiles() {
+    return new HashSet<File>(myTorrentFilesDB.getFileAndTorrentMap().values());
   }
 }
 

@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TorrentFilesDB {
-  private final static Logger LOG = Logger.getInstance(TorrentsDirectorySeeder.class.getName());
+  private final static Logger LOG = Logger.getInstance(TorrentsSeeder.class.getName());
 
   private final static String SEPARATOR = " || ";
   public static final String ENCODING = "UTF-8";

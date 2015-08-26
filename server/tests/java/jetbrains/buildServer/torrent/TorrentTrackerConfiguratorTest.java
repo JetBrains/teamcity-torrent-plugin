@@ -5,23 +5,11 @@ import com.turn.ttorrent.common.protocol.http.HTTPAnnounceResponseMessage;
 import com.turn.ttorrent.common.protocol.http.HTTPTrackerMessage;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.TrackerRequestProcessor;
-import jetbrains.buildServer.BaseTestCase;
-import jetbrains.buildServer.RootUrlHolder;
-import jetbrains.buildServer.XmlRpcHandlerManager;
-import jetbrains.buildServer.serverSide.impl.auth.SecurityContextImpl;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
-import jetbrains.buildServer.serverSide.BuildServerListener;
-import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
-import jetbrains.buildServer.serverSide.*;
-import jetbrains.buildServer.serverSide.impl.*;
-import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
 import jetbrains.buildServer.util.executors.ExecutorsFactory;
 import org.jetbrains.annotations.NotNull;
-import org.jmock.Expectations;
-import org.jmock.Mockery;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -57,10 +45,10 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
     new WaitFor(5 * 1000) {
       @Override
       protected boolean condition() {
-        return !myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped();
+        return !myTorrentsSeeder.getTorrentsSeeder().isStopped();
       }
     };
-    assertFalse(myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped());
+    assertFalse(myTorrentsSeeder.getTorrentsSeeder().isStopped());
   }
 
   public void test_enable_disable_tracker(){
@@ -92,10 +80,10 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
   public void test_enable_disable_seeder(){
     myConfigurator.setDownloadEnabled(false);
     myConfigurator.setTransportEnabled(false);
-    assertTrue(myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped());
+    assertTrue(myTorrentsSeeder.getTorrentsSeeder().isStopped());
 
     myConfigurator.setDownloadEnabled(true);
-    assertFalse(myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped());
+    assertFalse(myTorrentsSeeder.getTorrentsSeeder().isStopped());
   }
 
   public void test_file_size_threshold(){
@@ -206,6 +194,6 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertEquals(3, myConfigurator.getMaxNumberOfSeededTorrents());
 
-    assertEquals(3, myTorrentsSeeder.getTorrentsDirectorySeeder().getMaxTorrentsToSeed());
+    assertEquals(3, myTorrentsSeeder.getTorrentsSeeder().getMaxTorrentsToSeed());
   }
 }

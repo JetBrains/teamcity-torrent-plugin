@@ -24,7 +24,7 @@ import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BaseServerLoggerFacade;
 import jetbrains.buildServer.agent.BuildProgressLogger;
-import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
+import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.messages.BuildMessage1;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
@@ -72,7 +72,7 @@ public class TorrentTransportTest extends BaseTestCase {
   private List<String> myDownloadHackAttempts;
   private File myTempDir;
   private boolean myDownloadHonestly;
-  private TorrentsDirectorySeeder myDirectorySeeder;
+  private TorrentsSeeder myDirectorySeeder;
 
   @BeforeMethod
   public void setUp() throws Exception {
@@ -122,7 +122,7 @@ public class TorrentTransportTest extends BaseTestCase {
       allowing(myBuild).getBuildLogger(); will (returnValue(myLogger));
     }});
 
-    myDirectorySeeder = new TorrentsDirectorySeeder(createTempDir(), 1000, null);
+    myDirectorySeeder = new TorrentsSeeder(createTempDir(), 1000, null);
 
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(myDirectorySeeder,
                     new HttpClient(), myBuild.getBuildLogger()){
@@ -180,12 +180,9 @@ public class TorrentTransportTest extends BaseTestCase {
     myTorrentTransport.downloadUrlTo(path1, file1);
     myTorrentTransport.downloadUrlTo(path2, file2);
 
-
-
     // shouldn't try to download the second file:
     assertEquals(1, myDownloadHackAttempts.size());
     assertEquals(torrentPath1, myDownloadHackAttempts.get(0));
-
   }
 
   public void testDownloadAndSeed() throws IOException, NoSuchAlgorithmException, InterruptedException {
@@ -302,45 +299,6 @@ public class TorrentTransportTest extends BaseTestCase {
     }
   }
 
-  public void testCopyIfAlreadySeeding() throws IOException, InterruptedException, NoSuchAlgorithmException {
-    setTorrentTransportEnabled();
-    setDownloadHonestly(true);
-
-    final File storageDir = new File(myTempDir, "storageDir");
-    storageDir.mkdir();
-    final File downloadDir = new File(myTempDir, "downloadDir");
-    downloadDir.mkdir();
-    final File torrentsDir = new File(myTempDir, "torrentsDir");
-    torrentsDir.mkdir();
-    final String fileName = "MyBuild.31.zip";
-    final File artifactFile = new File(storageDir, fileName);
-    createTempFile(20250).renameTo(artifactFile);
-
-    final File teamcityIvyFile = new File("agent/tests/resources/" +  TorrentTransportFactory.TEAMCITY_IVY);
-    myDownloadMap.put("/" + TorrentTransportFactory.TEAMCITY_IVY, teamcityIvyFile);
-    final String ivyUrl = SERVER_PATH +  TorrentTransportFactory.TEAMCITY_IVY;
-    final File ivyFile = new File(myTempDir, TorrentTransportFactory.TEAMCITY_IVY);
-    myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
-    Tracker tracker = new Tracker(6969);
-    try {
-      tracker.start(true);
-
-      myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
-
-      final Torrent torrent = Torrent.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
-      final File torrentFile = new File(torrentsDir, fileName + ".torrent");
-      torrent.save(torrentFile);
-      myDirectorySeeder.getTorrentSeeder().seedTorrent(torrent, artifactFile);
-
-      myDownloadMap.put("/.teamcity/torrents/" + fileName + ".torrent", torrentFile);
-      final File targetFile = new File(downloadDir, fileName);
-      final String digest = myTorrentTransport.downloadUrlTo(SERVER_PATH + fileName, targetFile);
-      assertEquals(torrent.getHexInfoHash(), digest);
-      assertTrue(FileUtils.contentEquals(artifactFile, targetFile));
-    } finally {
-      tracker.stop();
-    }
-  }
   private void setTorrentTransportEnabled(){
     myAgentParametersMap.put(TorrentTransportFactory.TEAMCITY_ARTIFACTS_TRANSPORT,
             TorrentTransportFactory.TorrentTransport.class.getSimpleName());

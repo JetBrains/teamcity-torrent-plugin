@@ -20,8 +20,9 @@ import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
-import jetbrains.buildServer.agent.*;
-import jetbrains.buildServer.agent.impl.CurrentBuildTrackerImpl;
+import jetbrains.buildServer.agent.AgentLifeCycleListener;
+import jetbrains.buildServer.agent.BuildAgent;
+import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.artifacts.*;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
@@ -96,15 +97,17 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
       }
     };
 
-    myTorrentsManager = new AgentTorrentsManager((BuildAgentConfiguration)myConfigurationMock.proxy(),
+/*
+    myTorrentsManager = new AgentTorrentsManager(
             myDispatcher, cacheProvider, new CurrentBuildTrackerImpl(myDispatcher), trackerConfiguration);
+*/
 
 
   }
 
   @AfterMethod
   public void tearDown() throws Exception {
-    myTorrentsManager.getTorrentsDirectorySeeder().dispose();
+    myTorrentsManager.getTorrentsSeeder().dispose();
     super.tearDown();
   }
 
@@ -125,7 +128,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
         torrentHashes.add(torrent.getHexInfoHash());
         torrent.save(torrentFile);
 
-        myTorrentsManager.getTorrentsDirectorySeeder().registerSrcAndTorrentFile(artifactFile, torrentFile, false);
+        myTorrentsManager.getTorrentsSeeder().registerSrcAndTorrentFile(artifactFile, torrentFile, false);
       }
 
       Mock buildAgentMock = mock(BuildAgent.class);
@@ -134,12 +137,12 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
 
         @Override
         protected boolean condition() {
-          return myTorrentsManager.getTorrentsDirectorySeeder().getNumberOfSeededTorrents() == torrentsCount;
+          return myTorrentsManager.getTorrentsSeeder().getNumberOfSeededTorrents() == torrentsCount;
         }
       };
       List<String> seededHashes = new ArrayList<String>();
       List<File> seededFiles = new ArrayList<File>();
-      for (SharedTorrent st : myTorrentsManager.getTorrentsDirectorySeeder().getSharedTorrents()) {
+      for (SharedTorrent st : myTorrentsManager.getTorrentsSeeder().getSharedTorrents()) {
         seededHashes.add(st.getHexInfoHash());
         seededFiles.add(new File(st.getParentFile(), st.getName()));
       }

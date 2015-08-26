@@ -7,6 +7,8 @@
         >
   <bean class="jetbrains.buildServer.torrent.TorrentManagerProxy"/>
   <bean class="jetbrains.buildServer.torrent.AgentTorrentsManager"/>
+  <bean class="jetbrains.buildServer.torrent.AgentTorrentsSeeder"/>
+  <bean class="jetbrains.buildServer.torrent.TorrentFilesFactory"/>
   <bean id="torrentTransportFactory" class="jetbrains.buildServer.torrent.TorrentTransportFactory"/>
 
 </beans>

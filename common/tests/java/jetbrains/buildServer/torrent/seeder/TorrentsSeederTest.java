@@ -30,8 +30,8 @@ import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
 
 @Test
-public class TorrentsDirectorySeederTest extends BaseTestCase {
-  private TorrentsDirectorySeeder myDirectorySeeder;
+public class TorrentsSeederTest extends BaseTestCase {
+  private TorrentsSeeder myDirectorySeeder;
   private Tracker myTracker;
 
   @BeforeMethod
@@ -41,7 +41,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
     myTracker = new Tracker(6969);
     myTracker.start(false);
 
-    myDirectorySeeder = new TorrentsDirectorySeeder(createTempDir(), 100, null);
+    myDirectorySeeder = new TorrentsSeeder(createTempDir(), 100, null);
     myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, myTracker.getAnnounceURI(), 3);
   }
 

@@ -54,7 +54,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
  *         Time: 8:38 PM
  */
 @Test
-public class ServerTorrentsDirectorySeederTest extends ServerTorrentsSeederTestCase {
+public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
 
   public void new_file_seedeed_old_removed() throws IOException, InterruptedException {
     System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
