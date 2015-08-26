@@ -90,18 +90,11 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
   }
 
   public void test_enable_disable_seeder(){
-    System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "false");
-    myConfigurator.getConfigurationWatcher().checkForModifications();
+    myConfigurator.setDownloadEnabled(false);
+    myConfigurator.setTransportEnabled(false);
     assertTrue(myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped());
 
-    System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "true");
-    myConfigurator.getConfigurationWatcher().checkForModifications();
-    new WaitFor(5 * 1000) {
-      @Override
-      protected boolean condition() {
-        return !myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped();
-      }
-    };
+    myConfigurator.setDownloadEnabled(true);
     assertFalse(myTorrentsSeeder.getTorrentsDirectorySeeder().isStopped());
   }
 

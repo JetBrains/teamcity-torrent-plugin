@@ -23,20 +23,14 @@ import jetbrains.buildServer.serverSide.BuildServerListener;
 import jetbrains.buildServer.serverSide.BuildServerListenerEventDispatcher;
 import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.serverSide.ServerSettings;
-import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.serverSide.impl.auth.SecurityContextImpl;
 import jetbrains.buildServer.util.EventDispatcher;
-import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 import java.util.Collections;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 public class ServerTorrentsSeederTestCase extends BaseTestCase {
   protected EventDispatcher<BuildServerListener> myDispatcher;
@@ -64,24 +58,11 @@ public class ServerTorrentsSeederTestCase extends BaseTestCase {
       public void addHandler(String handlerName, Object handler) {}
       public void addSessionHandler(String handlerName, Object handler) {}
     });
-    myConfigurator.setTorrentEnabled(true);
-
-    ExecutorServices services = new ExecutorServices() {
-      private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-      @NotNull
-      public ScheduledExecutorService getNormalExecutorService() {
-        return new ScheduledThreadPoolExecutor(1);
-      }
-
-      @NotNull
-      public ExecutorService getLowPriorityExecutorService() {
-        return executorService;
-      }
-    };
+    myConfigurator.setDownloadEnabled(true);
 
     myDispatcher = new BuildServerListenerEventDispatcher(new SecurityContextImpl());
 
-    myTorrentsSeeder = new ServerTorrentsDirectorySeeder(serverPaths, serverSettings, myConfigurator, services, myDispatcher);
+    myTorrentsSeeder = new ServerTorrentsDirectorySeeder(serverPaths, serverSettings, myConfigurator, myDispatcher);
   }
 
   @AfterMethod

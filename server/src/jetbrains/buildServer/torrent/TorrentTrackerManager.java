@@ -65,23 +65,25 @@ public class TorrentTrackerManager {
     });
   }
 
-  public void booleanPropertyChanged(@NotNull final String propertyName, boolean newValue){
-    if (TorrentConfiguration.TRACKER_DEDICATED_PORT.equals(propertyName)){
-      condRestartTracker();
-    } else if (TorrentConfiguration.TRACKER_ENABLED.equals(propertyName)){
+  public void booleanPropertyChanged(@NotNull final String propertyName, boolean newValue) {
+    if (TorrentConfiguration.TRACKER_ENABLED.equals(propertyName)){
       if (newValue){
         startTracker();
       } else {
         stopTracker();
       }
-    } else if (TorrentConfiguration.TORRENT_ENABLED.equals(propertyName)){
-      if (newValue){
-        if (myConfigurator.isTrackerEnabled()) {
-          startTracker();
-        }
-      } else {
-        stopTracker();
-      }
+      return;
+    }
+
+    if (TorrentConfiguration.TRACKER_DEDICATED_PORT.equals(propertyName)) {
+      condRestartTracker();
+      return;
+    }
+
+    if (myConfigurator.isTorrentEnabled()) {
+      startTracker();
+    } else {
+      stopTracker();
     }
   }
 
@@ -104,6 +106,8 @@ public class TorrentTrackerManager {
   }
 
   public void startTracker(){
+    if (isTrackerRunning()) return;
+
     myTorrents.clear();
 
     // if we don't use individual port, we need nothing. Tracker's controller is already initialized.

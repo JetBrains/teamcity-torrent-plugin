@@ -61,8 +61,4 @@ public class ParsedArtifactPath {
   public String getTorrentPath(){
     return TorrentTransportFactory.TEAMCITY_TORRENTS + myArtifactPath + ".torrent";
   }
-
-  public String getRelativeLinkPath(){
-    return String.format("%s/%s/%s", myModule, myRevision, myArtifactPath);
-  }
 }

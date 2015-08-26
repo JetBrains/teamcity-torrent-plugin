@@ -33,50 +33,48 @@ import java.util.Collections;
  * @since 8.0
  */
 public class ServerTorrentsDirectorySeeder {
-  private final TorrentsDirectorySeeder myTorrentsDirectorySeeder;
+  private TorrentsDirectorySeeder myTorrentsDirectorySeeder;
   private final TorrentConfigurator myConfigurator;
   private URI myAnnounceURI;
   private int myMaxTorrentsToSeed;
-  private boolean myIsServerStarted;
-  private final ExecutorServices myExecutor;
 
   public ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
                                        @NotNull final ServerSettings serverSettings,
                                        @NotNull final TorrentConfigurator configurator,
-                                       @NotNull final ExecutorServices executorServices,
                                        @NotNull final EventDispatcher<BuildServerListener> eventDispatcher) {
-    myIsServerStarted = false;
-    myExecutor = executorServices;
-    File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
-    torrentsStorage.mkdirs();
-    myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, configurator.getMaxNumberOfSeededTorrents(), new ParentDirConverter() {
-      @NotNull
-      @Override
-      public File getParentDir() {
-        return serverSettings.getArtifactDirectories().get(0);
-      }
-    });
     setMaxNumberOfSeededTorrents(configurator.getMaxNumberOfSeededTorrents());
     myConfigurator = configurator;
     eventDispatcher.addListener(new BuildServerAdapter() {
-      public void serverShutdown() {
-        stopSeeder();
-      }
-
-
       @Override
       public void serverStartup() {
-        if (myConfigurator.isSeederEnabled()) {
-          startSeederAsync();
+        final File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
+        torrentsStorage.mkdirs();
+        myTorrentsDirectorySeeder = new TorrentsDirectorySeeder(torrentsStorage, configurator.getMaxNumberOfSeededTorrents(), new ParentDirConverter() {
+          @NotNull
+          @Override
+          public File getParentDir() {
+            return serverSettings.getArtifactDirectories().get(0);
+          }
+        });
+
+        if (myConfigurator.isTorrentEnabled()) {
+          startSeeder();
         }
       }
 
       @Override
-      public void buildFinished(SRunningBuild build) {
+      public void buildFinished(@NotNull SRunningBuild build) {
         if (myConfigurator.isTorrentEnabled()) {
           announceBuildArtifacts(build);
         }
       }
+
+      public void serverShutdown() {
+        if (myTorrentsDirectorySeeder != null) {
+          myTorrentsDirectorySeeder.dispose();
+        }
+      }
+
     });
 
     configurator.addPropertyChangeListener(new PropertyChangeListener() {
@@ -89,21 +87,10 @@ public class ServerTorrentsDirectorySeeder {
           myTorrentsDirectorySeeder.setAnnounceInterval((Integer) evt.getNewValue());
         } else if (TorrentConfiguration.ANNOUNCE_URL.equals(propertyName)){
           setAnnounceURI(URI.create(String.valueOf(evt.getNewValue())));
-        } else if (TorrentConfiguration.SEEDER_ENABLED.equals(propertyName)){
+        } else if (TorrentConfiguration.DOWNLOAD_ENABLED.equals(propertyName) || TorrentConfiguration.TRANSPORT_ENABLED.equals(propertyName)){
           boolean enabled = (Boolean) evt.getNewValue();
-          if (myIsServerStarted) {
-            if (enabled) {
-              startSeederAsync();
-            } else {
-              stopSeeder();
-            }
-          }
-        } else if (TorrentConfiguration.TORRENT_ENABLED.equals(propertyName)){
-          boolean enabled = (Boolean) evt.getNewValue();
-          if (enabled){
-            if (myIsServerStarted && myConfigurator.isSeederEnabled()){
-              startSeederAsync();
-            }
+          if (enabled) {
+            startSeeder();
           } else {
             stopSeeder();
           }
@@ -115,18 +102,7 @@ public class ServerTorrentsDirectorySeeder {
 
 
   public void stopSeeder() {
-    if (!myTorrentsDirectorySeeder.isStopped()) {
-      myTorrentsDirectorySeeder.stop();
-    }
-  }
-
-  private void startSeederAsync(){
-    myExecutor.getLowPriorityExecutorService().submit(new Runnable() {
-      public void run() {
-        startSeeder();
-      }
-    });
-    myIsServerStarted = true;
+    myTorrentsDirectorySeeder.stop();
   }
 
   private void startSeeder() {
@@ -206,7 +182,7 @@ public class ServerTorrentsDirectorySeeder {
       File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
       File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
 
-      myTorrentsDirectorySeeder.registerSrcAndTorrentFile(artifactFile, torrentFile, myConfigurator.isSeederEnabled());
+      myTorrentsDirectorySeeder.registerSrcAndTorrentFile(artifactFile, torrentFile, myConfigurator.isTorrentEnabled());
     }
   }
 

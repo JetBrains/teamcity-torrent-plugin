@@ -67,7 +67,6 @@ public class TorrentConfigurator implements TorrentConfiguration {
     myConfigurationWatcher.registerListener(new ChangeListener() {
       public void changeOccured(String requestor) {
         setTrackerEnabled(TeamCityProperties.getBooleanOrTrue(TRACKER_ENABLED));
-        setSeederEnabled(TeamCityProperties.getBooleanOrTrue(SEEDER_ENABLED));
         setTrackerUsesDedicatedPort(TeamCityProperties.getBoolean(TRACKER_DEDICATED_PORT));
         setMaxNumberOfSeededTorrents(TeamCityProperties.getInteger(MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS));
         setFileSizeThresholdMb(TeamCityProperties.getInteger(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD));
@@ -86,7 +85,6 @@ public class TorrentConfigurator implements TorrentConfiguration {
       Properties props = new Properties();
       props.setProperty(TRANSPORT_ENABLED, "false");
       props.setProperty(DOWNLOAD_ENABLED, "false");
-      props.setProperty(TORRENT_ENABLED, "false");
       configFile.getParentFile().mkdirs();
       PropertiesUtil.storeProperties(props, configFile, "");
     } catch (IOException e) {
@@ -99,14 +97,6 @@ public class TorrentConfigurator implements TorrentConfiguration {
     if (oldValue != enabled) {
       myConfiguration.setProperty(TRACKER_ENABLED, String.valueOf(enabled));
       propertyChanged(TRACKER_ENABLED, oldValue, enabled);
-    }
-  }
-
-  private void setSeederEnabled(boolean enabled) {
-    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, SEEDER_ENABLED, DEFAULT_SEEDER_ENABLED);
-    if  (oldValue != enabled){
-      myConfiguration.setProperty(SEEDER_ENABLED, String.valueOf(enabled));
-      propertyChanged(SEEDER_ENABLED, oldValue, enabled);
     }
   }
 
@@ -166,14 +156,6 @@ public class TorrentConfigurator implements TorrentConfiguration {
     }
   }
 
-  public void setTorrentEnabled(boolean enabled){
-    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, TORRENT_ENABLED, DEFAULT_TORRENT_ENABLED);
-    if  (oldValue != enabled){
-      myConfiguration.setProperty(TORRENT_ENABLED, String.valueOf(enabled));
-      propertyChanged(TORRENT_ENABLED, oldValue, enabled);
-    }
-  }
-
   public boolean isDownloadEnabled(){
     return TorrentUtil.getBooleanValue(myConfiguration, DOWNLOAD_ENABLED, DEFAULT_DOWNLOAD_ENABLED);
   }
@@ -206,16 +188,12 @@ public class TorrentConfigurator implements TorrentConfiguration {
     return TeamCityProperties.getBooleanOrTrue(TRACKER_ENABLED);
   }
 
-  public boolean isSeederEnabled() {
-    return TeamCityProperties.getBooleanOrTrue(SEEDER_ENABLED) && isTorrentEnabled();
-  }
-
   public boolean isTransportEnabled(){
     return TorrentUtil.getBooleanValue(myConfiguration, TRANSPORT_ENABLED, DEFAULT_TRANSPORT_ENABLED);
   }
 
   public boolean isTorrentEnabled() {
-    return TorrentUtil.getBooleanValue(myConfiguration, TORRENT_ENABLED, DEFAULT_TORRENT_ENABLED);
+    return isDownloadEnabled() || isTransportEnabled();
   }
 
   private File getConfigFile() {
@@ -235,7 +213,6 @@ public class TorrentConfigurator implements TorrentConfiguration {
         properties.put(DOWNLOAD_ENABLED, Boolean.FALSE.toString());
       }
       myConfiguration = properties;
-      myConfiguration.put(TORRENT_ENABLED, String.valueOf(isDownloadEnabled() || isTransportEnabled()));
     } catch (IOException e) {
       Loggers.SERVER.warn("Failed to load configuration file: " + configFile.getAbsolutePath() + ", error: " + e.toString());
     } finally {
@@ -327,7 +304,6 @@ public class TorrentConfigurator implements TorrentConfiguration {
     public void resetChanged() {
       myStoredProperties.put(TRACKER_ENABLED, TeamCityProperties.getProperty(TRACKER_ENABLED));
       myStoredProperties.put(OWN_ADDRESS, TeamCityProperties.getProperty(OWN_ADDRESS));
-      myStoredProperties.put(SEEDER_ENABLED, TeamCityProperties.getProperty(SEEDER_ENABLED));
       myStoredProperties.put(FILE_SIZE_THRESHOLD, TeamCityProperties.getProperty(FILE_SIZE_THRESHOLD));
       myStoredProperties.put(TRANSPORT_ENABLED, TeamCityProperties.getProperty(TRANSPORT_ENABLED));
       myStoredProperties.put(ANNOUNCE_INTERVAL, TeamCityProperties.getProperty(ANNOUNCE_INTERVAL));

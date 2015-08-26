@@ -61,7 +61,7 @@ public class ServerTorrentsDirectorySeederTest extends ServerTorrentsSeederTestC
     System.setProperty(TorrentConfiguration.ANNOUNCE_URL, "http://localhost:6969/announce");
     System.setProperty(TorrentConfiguration.FILE_SIZE_THRESHOLD, "1");
     System.setProperty(TorrentConfiguration.TRACKER_ENABLED, "true");
-    System.setProperty(TorrentConfiguration.SEEDER_ENABLED, "true");
+    System.setProperty(TorrentConfiguration.DOWNLOAD_ENABLED, "true");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     myDispatcher.getMulticaster().serverStartup();
 

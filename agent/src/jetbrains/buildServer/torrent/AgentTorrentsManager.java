@@ -60,14 +60,12 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       myTrackerAnnounceUrl = new URI(announceUrl);
       myAnnounceIntervalSec = myTrackerManager.getAnnounceIntervalSec();
       myTorrentsDirectorySeeder.setAnnounceInterval(myAnnounceIntervalSec);
-      boolean enabledNow = myTrackerManager.isTorrentEnabled();
-      if (myTorrentEnabled != enabledNow){
-        myTorrentEnabled = enabledNow;
-        if (myTorrentEnabled){
-          startIfNecessary();
-        } else {
-          stopIfNecessary();
-        }
+      boolean enabled = myTrackerManager.isTorrentEnabled();
+      myTorrentEnabled = enabled;
+      if (enabled){
+        startSeeder();
+      } else {
+        stopSeeder();
       }
     } catch (Exception e) {
       LOG.warn("Error updating torrent settings", e);
@@ -90,21 +88,17 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     checkReady();
   }
 
-  public void startIfNecessary() throws IOException {
-    if (myTorrentEnabled) {
-      myTorrentsDirectorySeeder.start(NetworkUtil.getSelfAddresses(), myTrackerAnnounceUrl, myAnnounceIntervalSec);
-    }
+  private void startSeeder() throws IOException {
+    myTorrentsDirectorySeeder.start(NetworkUtil.getSelfAddresses(), myTrackerAnnounceUrl, myAnnounceIntervalSec);
   }
 
-  public void stopIfNecessary(){
-    if (!myTorrentsDirectorySeeder.isStopped()) {
-      myTorrentsDirectorySeeder.stop();
-    }
+  private void stopSeeder(){
+    myTorrentsDirectorySeeder.stop();
   }
 
   @Override
   public void agentShutdown() {
-    stopIfNecessary();
+    myTorrentsDirectorySeeder.dispose();
   }
 
   public TorrentsDirectorySeeder getTorrentsDirectorySeeder() {

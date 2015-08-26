@@ -11,8 +11,6 @@ public interface TorrentConfiguration {
   String TRACKER_ENABLED = "torrent.tracker.enabled";
   boolean DEFAULT_TRACKER_ENABLED = true;
   String OWN_ADDRESS = "torrent.ownAddress";
-  String SEEDER_ENABLED = "torrent.seeder.enabled";
-  boolean DEFAULT_SEEDER_ENABLED = true;
   String FILE_SIZE_THRESHOLD = "torrent.file.size.threshold.mb";
   int DEFAULT_FILE_SIZE_THRESHOLD = 10;
   String TRANSPORT_ENABLED = "torrent.transport.enabled";
@@ -27,8 +25,7 @@ public interface TorrentConfiguration {
   int DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS = 2000;
   String TRACKER_DEDICATED_PORT ="torrent.tracker.dedicated.port";
   boolean DEFAULT_TRACKER_DEDICATED_PORT = false;
-  String TORRENT_ENABLED ="torrent.enabled";
-  boolean DEFAULT_TORRENT_ENABLED = DEFAULT_DOWNLOAD_ENABLED || DEFAULT_TRANSPORT_ENABLED;
+  boolean DEFAULT_TORRENT_ENABLED = false;
   // this is fake option to multicast announce url changes;
   String ANNOUNCE_URL = "announce.url";
 

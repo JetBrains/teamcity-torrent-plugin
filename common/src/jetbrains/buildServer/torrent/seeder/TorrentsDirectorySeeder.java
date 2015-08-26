@@ -81,13 +81,20 @@ public class TorrentsDirectorySeeder {
   public void start(@NotNull InetAddress[] address,
                     @Nullable final URI defaultTrackerURI,
                     final int announceInterval) throws IOException {
+    if (!myStopped) return; // already started
+
     myTorrentSeeder.start(address, defaultTrackerURI, announceInterval);
 
-    for (Map.Entry<File, File> entry: myTorrentFilesDB.getFileAndTorrentMap().entrySet()) {
-      seedTorrent(entry.getKey(), entry.getValue());
-    }
-
     myStopped = false;
+
+    myExecutor.submit(new Runnable() {
+      public void run() {
+        checkForBrokenFiles();
+        for (Map.Entry<File, File> entry: myTorrentFilesDB.getFileAndTorrentMap().entrySet()) {
+          seedTorrent(entry.getKey(), entry.getValue());
+        }
+      }
+    });
 
     myExecutor.scheduleWithFixedDelay(new Runnable() {
       public void run() {
@@ -121,14 +128,19 @@ public class TorrentsDirectorySeeder {
   }
 
   public void stop() {
+    if (myStopped) return;
     myStopped = true;
-    ThreadUtil.shutdownGracefully(myExecutor, EXECUTOR_NAME);
     myTorrentSeeder.stop();
     try {
       myTorrentFilesDB.flush();
     } catch (IOException e) {
       LOG.warnAndDebugDetails("Failed to save torrents database on disk", e);
     }
+  }
+
+  public void dispose() {
+    stop();
+    ThreadUtil.shutdownGracefully(myExecutor, EXECUTOR_NAME);
   }
 
   public boolean isStopped() {

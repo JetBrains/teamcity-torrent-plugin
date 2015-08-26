@@ -89,7 +89,7 @@ public class TorrentsDirectorySeederTest extends BaseTestCase {
   @Override
   protected void tearDown() throws Exception {
     super.tearDown();
-    myDirectorySeeder.stop();
+    myDirectorySeeder.dispose();
     myTracker.stop();
   }
 }

@@ -50,7 +50,6 @@ public class TorrentSettingsAdminPage extends AdminPage {
           boolean downloadEnabled = request.getParameter("downloadEnabled")!=null;
           myTorrentConfigurator.setTransportEnabled(transportEnabled);
           myTorrentConfigurator.setDownloadEnabled(downloadEnabled);
-          myTorrentConfigurator.setTorrentEnabled(downloadEnabled || transportEnabled);
           myTorrentConfigurator.persistConfiguration();
         }
         return new ModelAndView(new RedirectView(request.getContextPath() + "/admin/admin.html?item=" + TAB_ID));

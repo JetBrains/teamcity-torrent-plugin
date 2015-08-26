@@ -37,6 +37,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
   private File myCacheDir;
   private File myTorrentsDbDir;
   private Tracker myTracker;
+  private File mySystemDir;
 
 
   @BeforeMethod
@@ -44,8 +45,9 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
   protected void setUp() throws Exception {
     super.setUp();
 
-    myCacheDir = createTempDir();
-    myTorrentsDbDir = createTempDir();
+    mySystemDir = createTempDir();
+    myCacheDir = new File(mySystemDir, "caches");
+    myTorrentsDbDir = new File(mySystemDir, "torrents");
     myTracker = new Tracker(6969);
     myTracker.start(false);
 
@@ -70,6 +72,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
       allowing(build).getBuildLogger(); will(returnValue(logger));
       allowing(build).getAgentConfiguration(); will(returnValue(buildAgentConf));
       allowing(buildAgentConf).getCacheDirectory(AgentTorrentsManager.TORRENT_FOLDER_NAME); will(returnValue(myTorrentsDbDir));
+      allowing(buildAgentConf).getSystemDirectory(); will(returnValue(mySystemDir));
       allowing(cacheProvider).addListener(with(any(ArtifactsCacheListener.class)));
     }});
 
@@ -156,6 +159,6 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
   protected void tearDown() throws Exception {
     super.tearDown();
     myTracker.stop();
-    mySeeder.stop();
+    mySeeder.dispose();
   }
 }

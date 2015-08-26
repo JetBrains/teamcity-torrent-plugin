@@ -358,6 +358,6 @@ public class TorrentTransportTest extends BaseTestCase {
   @AfterMethod
   public void tearDown() throws Exception {
     myServer.stop();
-    myDirectorySeeder.stop();
+    myDirectorySeeder.dispose();
   }
 }

@@ -81,9 +81,11 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
         return;
       }
     }
-    log2Build("Started seeding " + file.getAbsolutePath());
 
-    myTorrentsManager.getTorrentsDirectorySeeder().registerSrcAndTorrentFile(file, torrentFile, true);
+    if (torrentFile.isFile()) {
+      log2Build("Started seeding " + file.getAbsolutePath());
+      myTorrentsManager.getTorrentsDirectorySeeder().registerSrcAndTorrentFile(file, torrentFile, true);
+    }
   }
 
   public void onBeforeDelete(@NotNull File file) {

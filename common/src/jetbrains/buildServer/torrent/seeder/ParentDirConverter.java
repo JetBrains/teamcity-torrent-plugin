@@ -26,6 +26,11 @@ public abstract class ParentDirConverter implements PathConverter {
 
   @NotNull
   public File convertToFile(@NotNull String path) {
+    final File file = new File(path);
+    if (file.isAbsolute()) {
+      return file;
+    }
+
     return new File(getParentDir(), path);
   }
 

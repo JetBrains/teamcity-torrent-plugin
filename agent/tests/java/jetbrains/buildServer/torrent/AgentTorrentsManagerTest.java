@@ -45,18 +45,19 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
   private AgentTorrentsManager myTorrentsManager;
   private Mock myConfigurationMock;
   private EventDispatcher<AgentLifeCycleListener> myDispatcher;
-  private File myLinkDir;
   private File myCacheDir;
+  private File mySystemDir;
 
   @BeforeMethod
   public void setUp() throws Exception {
     super.setUp();
-    myLinkDir = createTempDir();
-    myCacheDir = myLinkDir.getParentFile();
+    mySystemDir = createTempDir();
+    myCacheDir = new File(mySystemDir, "caches");
     myDispatcher = EventDispatcher.create(AgentLifeCycleListener.class);
 
     myConfigurationMock = mock(BuildAgentConfiguration.class);
-    myConfigurationMock.stubs().method("getCacheDirectory").will(returnValue(myLinkDir));
+    myConfigurationMock.stubs().method("getCacheDirectory").will(returnValue(myCacheDir));
+    myConfigurationMock.stubs().method("getSystemDirectory").will(returnValue(mySystemDir));
 
     Mockery m = new Mockery();
     final TorrentConfiguration trackerConfiguration = m.mock(TorrentConfiguration.class);
@@ -100,10 +101,9 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
   }
 
   @AfterMethod
-  public void tearDown(){
-    if (!myTorrentsManager.getTorrentsDirectorySeeder().isStopped()){
-      myTorrentsManager.getTorrentsDirectorySeeder().stop();
-    }
+  public void tearDown() throws Exception {
+    myTorrentsManager.getTorrentsDirectorySeeder().dispose();
+    super.tearDown();
   }
 
   public void testAnnounceAllOnAgentStarted() throws IOException, URISyntaxException, InterruptedException, NoSuchAlgorithmException {
@@ -123,7 +123,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
         torrentHashes.add(torrent.getHexInfoHash());
         torrent.save(torrentFile);
 
-        myTorrentsManager.getTorrentsDirectorySeeder().registerSrcAndTorrentFile(artifactFile, torrentFile, true);
+        myTorrentsManager.getTorrentsDirectorySeeder().registerSrcAndTorrentFile(artifactFile, torrentFile, false);
       }
 
       Mock buildAgentMock = mock(BuildAgent.class);
