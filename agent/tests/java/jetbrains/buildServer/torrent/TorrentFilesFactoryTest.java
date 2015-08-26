@@ -17,14 +17,11 @@
 package jetbrains.buildServer.torrent;
 
 import jetbrains.buildServer.BaseTestCase;
-import jetbrains.buildServer.agent.AgentIdleTasks;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.agent.InterruptState;
 import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jmock.Expectations;
-import org.jmock.Mockery;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -39,8 +36,9 @@ import java.util.List;
 public class TorrentFilesFactoryTest extends BaseTestCase {
   private TorrentFilesFactory myTorrentFilesFactory;
   private File myTorrentsDir;
-  private AgentIdleTasks.Task myCleanupTask;
   private AgentTorrentsSeeder mySeeder;
+  private FakeAgentIdleTasks myFakeAgentIdleTasks;
+  private BuildAgentConfigurationFixture myAgentConfigurationFixture = new BuildAgentConfigurationFixture();
 
   @BeforeMethod
   @Override
@@ -48,30 +46,13 @@ public class TorrentFilesFactoryTest extends BaseTestCase {
     super.setUp();
 
     myTorrentsDir = createTempDir();
-    final File systemDir = createTempDir();
-
-    Mockery m = new Mockery();
-    final BuildAgentConfiguration agentConfiguration = m.mock(BuildAgentConfiguration.class);
-    m.checking(new Expectations() {{
-      allowing(agentConfiguration).getSystemDirectory(); will(returnValue(systemDir));
-      allowing(agentConfiguration).getCacheDirectory(with(Constants.TORRENTS_DIRNAME)); will(returnValue(myTorrentsDir));
-    }});
+    final BuildAgentConfiguration agentConfiguration = myAgentConfigurationFixture.setUp();
 
     final TorrentConfiguration configuration = new FakeTorrentConfiguration();
-    final AgentIdleTasks agentIdleTasks = new AgentIdleTasks() {
-      public void addRecurringTask(@NotNull Task task) {
-        myCleanupTask = task;
-      }
 
-      @Nullable
-      public Task removeRecurringTask(@NotNull String taskName) {
-        myCleanupTask = null;
-        return null;
-      }
-    };
-
+    myFakeAgentIdleTasks = new FakeAgentIdleTasks();
     mySeeder = new AgentTorrentsSeeder(agentConfiguration);
-    myTorrentFilesFactory = new TorrentFilesFactory(agentConfiguration, configuration, agentIdleTasks, mySeeder);
+    myTorrentFilesFactory = new TorrentFilesFactory(agentConfiguration, configuration, myFakeAgentIdleTasks, mySeeder);
   }
 
   public void test_factory() throws IOException {
@@ -92,7 +73,7 @@ public class TorrentFilesFactoryTest extends BaseTestCase {
     File randomTorrentFile = torrents.get(torrents.size() / 2);
     mySeeder.registerSrcAndTorrentFile(createTempFile(), randomTorrentFile, true);
 
-    myCleanupTask.execute(new InterruptState() {
+    myFakeAgentIdleTasks.getTask().execute(new InterruptState() {
       public boolean isInterrupted() {
         return false;
       }
@@ -118,5 +99,12 @@ public class TorrentFilesFactoryTest extends BaseTestCase {
       torrents.add(torrent);
     }
     return torrents;
+  }
+
+  @AfterMethod
+  @Override
+  protected void tearDown() throws Exception {
+    myAgentConfigurationFixture.tearDown();
+    super.tearDown();
   }
 }

@@ -23,10 +23,10 @@ import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.BuildAgent;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
-import jetbrains.buildServer.artifacts.*;
+import jetbrains.buildServer.agent.impl.CurrentBuildTrackerImpl;
+import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
-import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
 import org.jmock.Mock;
 import org.jmock.Mockery;
@@ -44,70 +44,32 @@ import java.util.List;
 @Test
 public class AgentTorrentsManagerTest extends BaseTestCase {
   private AgentTorrentsManager myTorrentsManager;
-  private Mock myConfigurationMock;
-  private EventDispatcher<AgentLifeCycleListener> myDispatcher;
-  private File myCacheDir;
-  private File mySystemDir;
+  private BuildAgentConfigurationFixture myAgentConfigurationFixture = new BuildAgentConfigurationFixture();
 
   @BeforeMethod
   public void setUp() throws Exception {
     super.setUp();
-    mySystemDir = createTempDir();
-    File tempDir = createTempDir();
-    myCacheDir = new File(mySystemDir, "caches");
-    myDispatcher = EventDispatcher.create(AgentLifeCycleListener.class);
+    EventDispatcher<AgentLifeCycleListener> dispatcher = EventDispatcher.create(AgentLifeCycleListener.class);
 
-    myConfigurationMock = mock(BuildAgentConfiguration.class);
-    myConfigurationMock.stubs().method("getCacheDirectory").will(returnValue(myCacheDir));
-    myConfigurationMock.stubs().method("getSystemDirectory").will(returnValue(mySystemDir));
-    myConfigurationMock.stubs().method("getTempDirectory").will(returnValue(tempDir));
+    BuildAgentConfiguration agentConfiguration = myAgentConfigurationFixture.setUp();
+    final TorrentConfiguration trackerConfiguration = new FakeTorrentConfiguration();
 
     Mockery m = new Mockery();
-    final TorrentConfiguration trackerConfiguration = m.mock(TorrentConfiguration.class);
+    final ArtifactCacheProvider cacheProvider = m.mock(ArtifactCacheProvider.class);
     m.checking(new Expectations() {{
-      allowing(trackerConfiguration).getFileSizeThresholdMb();will(returnValue(0));
-      allowing(trackerConfiguration).getAnnounceUrl();will(returnValue("http://localhost:6969/announce"));
-      allowing(trackerConfiguration).getAnnounceIntervalSec();will(returnValue(60));
-      allowing(trackerConfiguration).isTransportEnabled();will(returnValue(false));
-      allowing(trackerConfiguration).isTorrentEnabled();will(returnValue(true));
+      allowing(cacheProvider).addListener(with(any(TorrentArtifactCacheListener.class)));
     }});
 
-    final ArtifactCacheProvider cacheProvider = new ArtifactCacheProvider() {
-      @NotNull
-      public FileCache getHttpCache(@NotNull URLContentRetriever urlContentRetriever) {
-        throw new UnsupportedOperationException();
-      }
+    AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(agentConfiguration);
+    TorrentFilesFactory tff = new TorrentFilesFactory(agentConfiguration, trackerConfiguration, new FakeAgentIdleTasks(), seeder);
 
-      @NotNull
-      public LocalCache getLocalCache() {
-        return null;
-      }
-
-      @NotNull
-      public File getCacheDir() {
-        return myCacheDir;
-      }
-
-      public void addListener(@NotNull ArtifactsCacheListener artifactsCacheListener) {
-
-      }
-
-      public void removeListener(@NotNull ArtifactsCacheListener artifactsCacheListener) {
-
-      }
-    };
-
-/*
-    myTorrentsManager = new AgentTorrentsManager(
-            myDispatcher, cacheProvider, new CurrentBuildTrackerImpl(myDispatcher), trackerConfiguration);
-*/
-
-
+    myTorrentsManager = new AgentTorrentsManager(dispatcher, cacheProvider, new CurrentBuildTrackerImpl(dispatcher), trackerConfiguration, seeder, tff);
   }
 
   @AfterMethod
   public void tearDown() throws Exception {
     myTorrentsManager.getTorrentsSeeder().dispose();
+    myAgentConfigurationFixture.tearDown();
     super.tearDown();
   }
 
