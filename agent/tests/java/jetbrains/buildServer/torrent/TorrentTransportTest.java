@@ -22,10 +22,9 @@ import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentRunningBuild;
-import jetbrains.buildServer.agent.BaseServerLoggerFacade;
+import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
-import jetbrains.buildServer.messages.BuildMessage1;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.server.Server;
@@ -72,7 +71,8 @@ public class TorrentTransportTest extends BaseTestCase {
   private List<String> myDownloadHackAttempts;
   private File myTempDir;
   private boolean myDownloadHonestly;
-  private TorrentsSeeder myDirectorySeeder;
+  private TorrentsSeeder mySeeder;
+  private final BuildAgentConfigurationFixture myAgentConfigurationFixture = new BuildAgentConfigurationFixture();
 
   @BeforeMethod
   public void setUp() throws Exception {
@@ -92,9 +92,13 @@ public class TorrentTransportTest extends BaseTestCase {
         myDownloadAttempts.add(req.getPathInfo());
         final ServletOutputStream os = resp.getOutputStream();
         final File file = myDownloadMap.get(req.getPathInfo());
-        final byte[] bytes = FileUtils.readFileToByteArray(file);
-        os.write(bytes);
-        os.close();
+        if (file == null) {
+          resp.getOutputStream().close();
+        } else {
+          final byte[] bytes = FileUtils.readFileToByteArray(file);
+          os.write(bytes);
+          os.close();
+        }
       }
     }),
             "/*");
@@ -105,16 +109,7 @@ public class TorrentTransportTest extends BaseTestCase {
 
     Mockery m = new Mockery();
     myBuild = m.mock(AgentRunningBuild.class);
-    final BuildProgressLogger myLogger = new BaseServerLoggerFacade() {
-      @Override
-      public void flush() {
-      }
-
-      @Override
-      protected void log(final BuildMessage1 message) {
-
-      }
-    };
+    final BuildProgressLogger myLogger = new FakeBuildProgressLogger();
 
     m.checking(new Expectations(){{
       allowing(myBuild).getSharedConfigParameters(); will (returnValue(myAgentParametersMap));
@@ -122,9 +117,10 @@ public class TorrentTransportTest extends BaseTestCase {
       allowing(myBuild).getBuildLogger(); will (returnValue(myLogger));
     }});
 
-    myDirectorySeeder = new TorrentsSeeder(createTempDir(), 1000, null);
+    BuildAgentConfiguration agentConfiguration = myAgentConfigurationFixture.setUp();
+    mySeeder = new AgentTorrentsSeeder(agentConfiguration);
 
-    myTorrentTransport = new TorrentTransportFactory.TorrentTransport(myDirectorySeeder,
+    myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder,
                     new HttpClient(), myBuild.getBuildLogger()){
       @Override
       protected byte[] download(@NotNull String urlString) throws IOException {
@@ -140,13 +136,11 @@ public class TorrentTransportTest extends BaseTestCase {
     myTempDir = createTempDir();
   }
 
-  public void testNoParam() throws IOException {
+  public void test_non_existing_file() throws IOException {
     setTorrentTransportDisabled();
     final String urlString = SERVER_PATH + "aaaa.txt";
-    final String digest = myTorrentTransport.getDigest(urlString);
+    final String digest = myTorrentTransport.downloadUrlTo(urlString, createTempFile());
     assertNull(digest);
-    final String digest2 = myTorrentTransport.downloadUrlTo(urlString, createTempFile());
-    assertNull(digest2);
   }
 
   public void testTeamcityIvy() throws IOException, NoSuchAlgorithmException {
@@ -158,8 +152,6 @@ public class TorrentTransportTest extends BaseTestCase {
     final File teamcityIvyFile = new File("agent/tests/resources/" +  TorrentTransportFactory.TEAMCITY_IVY);
     myDownloadMap.put("/" + TorrentTransportFactory.TEAMCITY_IVY, teamcityIvyFile);
 
-
-//    assertNull(myTorrentTransport.getDigest(urlString));
     assertNotNull(myTorrentTransport.downloadUrlTo(urlString, ivyFile));
     assertTrue(ivyFile.exists());
 
@@ -212,7 +204,7 @@ public class TorrentTransportTest extends BaseTestCase {
     try {
       tracker.start(true);
 
-      myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
+      mySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
 
       final Torrent torrent = Torrent.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
       final File torrentFile = new File(torrentsDir, fileName + ".torrent");
@@ -224,7 +216,7 @@ public class TorrentTransportTest extends BaseTestCase {
       }
       final File targetFile = new File(downloadDir, fileName);
       final String digest = myTorrentTransport.downloadUrlTo(SERVER_PATH + fileName, targetFile);
-      assertEquals(torrent.getHexInfoHash(), digest);
+      assertNotNull(digest);
       assertTrue(FileUtils.contentEquals(artifactFile, targetFile));
     } finally {
       for (Client client : clientList) {
@@ -261,7 +253,7 @@ public class TorrentTransportTest extends BaseTestCase {
     try {
       tracker.start(true);
 
-      myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
+      mySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
 
       final Torrent torrent = Torrent.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
       final File torrentFile = new File(torrentsDir, fileName + ".torrent");
@@ -316,6 +308,8 @@ public class TorrentTransportTest extends BaseTestCase {
   @AfterMethod
   public void tearDown() throws Exception {
     myServer.stop();
-    myDirectorySeeder.dispose();
+    mySeeder.dispose();
+    myAgentConfigurationFixture.tearDown();
+    super.tearDown();
   }
 }

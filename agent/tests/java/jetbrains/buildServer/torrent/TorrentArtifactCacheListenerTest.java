@@ -8,7 +8,6 @@ import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.impl.DirectoryCacheProviderImpl;
 import jetbrains.buildServer.artifacts.impl.SimpleDigestCalculator;
-import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
 import org.jetbrains.annotations.NotNull;
@@ -50,15 +49,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
 
     Mockery m = new Mockery();
     final AgentRunningBuild build = m.mock(AgentRunningBuild.class);
-    final BuildProgressLogger logger = new BaseServerLoggerFacade() {
-      @Override
-      public void flush() {
-      }
-
-      @Override
-      protected void log(final BuildMessage1 message) {
-      }
-    };
+    final BuildProgressLogger logger = new FakeBuildProgressLogger();
     final CurrentBuildTracker buildTracker = m.mock(CurrentBuildTracker.class);
     final ArtifactCacheProvider cacheProvider = m.mock(ArtifactCacheProvider.class);
 

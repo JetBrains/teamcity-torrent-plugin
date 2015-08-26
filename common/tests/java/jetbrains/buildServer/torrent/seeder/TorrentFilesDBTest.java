@@ -89,7 +89,7 @@ public class TorrentFilesDBTest extends BaseTestCase {
 
     TorrentFilesDB db = new TorrentFilesDB(dbFile, 10, null);
     for (int i=0; i<10; i++) {
-      ThreadUtil.sleep(10);
+      ThreadUtil.sleep(100);
       File srcFile = createTempFile();
       File torrentFile = createTempFile();
 
@@ -128,7 +128,7 @@ public class TorrentFilesDBTest extends BaseTestCase {
       src.createNewFile();
       torrent.createNewFile();
 
-      ThreadUtil.sleep(10); // need this for proper sorting of files because TorrentFilesDB sorts file by last modified time
+      ThreadUtil.sleep(100); // need this for proper sorting of files because TorrentFilesDB sorts file by last modified time
 
       db.addFileAndTorrent(src, torrent);
       expectedMap.put(src, torrent);
