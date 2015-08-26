@@ -52,12 +52,14 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
   public void setUp() throws Exception {
     super.setUp();
     mySystemDir = createTempDir();
+    File tempDir = createTempDir();
     myCacheDir = new File(mySystemDir, "caches");
     myDispatcher = EventDispatcher.create(AgentLifeCycleListener.class);
 
     myConfigurationMock = mock(BuildAgentConfiguration.class);
     myConfigurationMock.stubs().method("getCacheDirectory").will(returnValue(myCacheDir));
     myConfigurationMock.stubs().method("getSystemDirectory").will(returnValue(mySystemDir));
+    myConfigurationMock.stubs().method("getTempDirectory").will(returnValue(tempDir));
 
     Mockery m = new Mockery();
     final TorrentConfiguration trackerConfiguration = m.mock(TorrentConfiguration.class);

@@ -49,7 +49,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       }
     });
     if (artifactsCacheProvider != null){
-      artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(myTorrentsDirectorySeeder, currentBuildTracker, trackerManager, this));
+      artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(myTorrentsDirectorySeeder, currentBuildTracker, trackerManager, this, agentConfiguration.getTempDirectory()));
     }
   }
 
