@@ -167,7 +167,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
         final long took = System.currentTimeMillis() - startTime + 1; // to avoid division by zero
         final long fileSize = target.length();
-        log2Build(String.format("Download successfull. Avg speed %d kb/s.", fileSize / took));
+        log2Build(String.format("Download successful. Avg speed %d kb/s.", fileSize / took));
 
         // return standard digest
         return getDigest(urlString);
