@@ -75,27 +75,34 @@ public class TorrentFilesDB {
   public List<File> cleanupBrokenFiles() {
     List<File> brokenTorrentFiles = new ArrayList<File>();
 
-    List<Map.Entry<File, File>> removed = new ArrayList<Map.Entry<File, File>>();
+    Map<FileInfo, File> toRemove = new HashMap<FileInfo, File>();
 
+    Map<FileInfo, FileInfo> cacheCopy;
     synchronized (myFile2TorrentMap) {
       final Map<FileInfo, FileInfo> cache = myFile2TorrentMap.get();
-      Map<FileInfo, FileInfo> cacheCopy = new HashMap<FileInfo, FileInfo>(cache);
-      for (Map.Entry<FileInfo, FileInfo> entry : cacheCopy.entrySet()) {
-        final FileInfo torrentInfo = cache.get(entry.getKey());
+      cacheCopy = new HashMap<FileInfo, FileInfo>(cache);
+    }
 
-        File srcFile = entry.getKey().getFile();
-        File torrentFile = torrentInfo != null ? torrentInfo.getFile() : null;
+    for (Map.Entry<FileInfo, FileInfo> entry : cacheCopy.entrySet()) {
+      final FileInfo torrentInfo = cacheCopy.get(entry.getKey());
 
-        if (torrentFile == null || !srcFile.isFile() || !torrentFile.isFile()) {
-          cache.remove(entry.getKey());
-          brokenTorrentFiles.add(torrentFile);
-          removed.add(new AbstractMap.SimpleEntry<File, File>(srcFile, torrentFile));
-        }
+      File srcFile = entry.getKey().getFile();
+      File torrentFile = torrentInfo != null ? torrentInfo.getFile() : null;
+
+      if (torrentFile == null || !srcFile.isFile() || !torrentFile.isFile()) {
+        toRemove.put(entry.getKey(), torrentFile);
+        brokenTorrentFiles.add(torrentFile);
       }
     }
 
-    for (Map.Entry<File, File> r: removed) {
-      notifyOnRemove(r);
+    synchronized (myFile2TorrentMap) {
+      final Map<FileInfo, FileInfo> cache = myFile2TorrentMap.get();
+      cache.keySet().removeAll(toRemove.keySet());
+    }
+
+
+    for (Map.Entry<FileInfo, File> e: toRemove.entrySet()) {
+      notifyOnRemove(new AbstractMap.SimpleEntry<File, File>(e.getKey().getFile(), e.getValue()));
     }
 
     return brokenTorrentFiles;
