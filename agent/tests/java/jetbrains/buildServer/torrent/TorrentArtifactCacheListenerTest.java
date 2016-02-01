@@ -10,6 +10,7 @@ import jetbrains.buildServer.artifacts.impl.SimpleDigestCalculator;
 import jetbrains.buildServer.torrent.seeder.TorrentsDirectorySeeder;
 import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.util.EventDispatcher;
+import jetbrains.buildServer.util.FileUtil;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jmock.Expectations;
@@ -108,7 +109,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     File file = createTempFile(1024*1025);
 
     File newLocation = new File(myCacheDir, CONTEXT_PATH + file.getName());
-    FileUtils.moveFile(file, newLocation);
+    FileUtil.rename(file, newLocation);
     myCacheListener.onAfterAddOrUpdate(newLocation);
     assertEquals(1, mySeeder.getNumberOfSeededTorrents());
     final SharedTorrent torrent = mySeeder.getSharedTorrents().iterator().next();
@@ -119,7 +120,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     File file = createTempFile(1024*1025);
 
     File newLocation = new File(myCacheDir, CONTEXT_PATH + file.getName());
-    FileUtils.moveFile(file, newLocation);
+    FileUtil.rename(file, newLocation);
     myCacheListener.onAfterAddOrUpdate(newLocation);
     assertEquals(1, mySeeder.getNumberOfSeededTorrents());
     final SharedTorrent torrent = mySeeder.getSharedTorrents().iterator().next();
@@ -134,7 +135,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
             Integer.MAX_VALUE+":runnerFinished:IntelliJ IDEA Project");
 
     File newLocation = new File(myCacheDir, CONTEXT_PATH + file.getName());
-    FileUtils.moveFile(file, newLocation);
+    FileUtil.rename(file, newLocation);
     final long totalBefore = Runtime.getRuntime().totalMemory();
     final int ONEGB = 1024 * 1024 * 1024;
     if (totalBefore >= ONEGB) {
