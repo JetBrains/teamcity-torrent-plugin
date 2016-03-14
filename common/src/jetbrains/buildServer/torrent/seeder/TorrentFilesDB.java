@@ -166,7 +166,8 @@ public class TorrentFilesDB {
     Collections.sort(sorted, new Comparator<FileInfo>() {
       public int compare(FileInfo o1, FileInfo o2) {
         // from lowest to highest
-        return new Long(o1.lastModified()).compareTo(o2.lastModified());
+        final int compareTime = new Long(o1.lastModified()).compareTo(o2.lastModified());
+        return compareTime != 0 ? compareTime : o1.getFile().getAbsolutePath().compareTo(o2.getFile().getAbsolutePath());
       }
     });
     return sorted;
