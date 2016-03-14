@@ -46,7 +46,7 @@ public class TorrentUtil {
    * Creates the torrent file for the specified <code>srcFile</code> and announce URI.
    * If such torrent already exists, loads and returns it.
    */
-  @NotNull
+  @Nullable
   public static File getOrCreateTorrent(@NotNull final File srcFile,
                                         @NotNull final String relativePath,
                                         @NotNull final File torrentsStore,
@@ -65,8 +65,8 @@ public class TorrentUtil {
       }
     }
 
-    createTorrent(srcFile, torrentFile, announceURI);
-    return torrentFile;
+    final Torrent torrent = createTorrent(srcFile, torrentFile, announceURI);
+    return torrent != null ? torrentFile : null;
   }
 
   /**
@@ -81,7 +81,7 @@ public class TorrentUtil {
       t.save(torrentFile);
       return t;
     } catch (Exception e) {
-      ExceptionUtil.rethrowAsRuntimeException(e);
+      LOG.warnAndDebugDetails(String.format("Unable to create torrent file from %s: %s", srcFile.getPath(), e.toString()), e);
     }
 
     return null;

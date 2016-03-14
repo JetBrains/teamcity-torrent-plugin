@@ -75,7 +75,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   }
 
   private void startSeeder() throws IOException {
-    myTorrentsSeeder.start(NetworkUtil.getSelfAddresses(), myTrackerAnnounceUrl, myAnnounceIntervalSec);
+    myTorrentsSeeder.start(NetworkUtil.getSelfAddresses(null), myTrackerAnnounceUrl, myAnnounceIntervalSec);
   }
 
   private void stopSeeder(){

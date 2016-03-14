@@ -17,6 +17,7 @@ import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -116,7 +117,7 @@ public class ServerTorrentsDirectorySeeder {
       if (myConfigurator.getOwnAddress() != null){
         addresses = new InetAddress[]{InetAddress.getByName(myConfigurator.getOwnAddress())};
       } else {
-        addresses = NetworkUtil.getSelfAddresses();
+        addresses = NetworkUtil.getSelfAddresses(null);
       }
 
       myTorrentsSeeder.start(addresses, myAnnounceURI, myConfigurator.getAnnounceIntervalSec());
@@ -185,12 +186,13 @@ public class ServerTorrentsDirectorySeeder {
     if (shouldCreateTorrentFor(artifact)) {
       File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
       File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
-
-      myTorrentsSeeder.registerSrcAndTorrentFile(artifactFile, torrentFile, myConfigurator.isTorrentEnabled());
+      if (torrentFile != null) {
+        myTorrentsSeeder.registerSrcAndTorrentFile(artifactFile, torrentFile, myConfigurator.isTorrentEnabled());
+      }
     }
   }
 
-
+  @Nullable
   private File createTorrent(@NotNull final File artifactFile,
                              @NotNull final String artifactPath,
                              @NotNull final File torrentsDir){
