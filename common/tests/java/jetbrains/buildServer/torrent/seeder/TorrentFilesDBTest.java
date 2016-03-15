@@ -89,7 +89,7 @@ public class TorrentFilesDBTest extends BaseTestCase {
 
     TorrentFilesDB db = new TorrentFilesDB(dbFile, 10, null, null);
     for (int i=0; i<10; i++) {
-      ThreadUtil.sleep(100);
+      ThreadUtil.sleep(1000);
       File srcFile = createTempFile();
       File torrentFile = createTempFile();
 
