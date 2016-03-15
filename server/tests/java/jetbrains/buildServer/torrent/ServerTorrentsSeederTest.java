@@ -21,6 +21,7 @@ import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.RootUrlHolder;
+import jetbrains.buildServer.TempFiles;
 import jetbrains.buildServer.XmlRpcHandlerManager;
 import jetbrains.buildServer.agentServer.Server;
 import jetbrains.buildServer.serverSide.BuildServerListener;
@@ -38,8 +39,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -55,6 +55,15 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
  */
 @Test
 public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
+  private TempFiles myTempFiles;
+
+  @BeforeMethod
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    myTempFiles = new TempFiles();
+  }
+
 
   public void new_file_seedeed_old_removed() throws IOException, InterruptedException {
     System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
@@ -73,11 +82,8 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
     final List<File> allArtifacts = new ArrayList<File>();
     final List<File> allTorrents = new ArrayList<File>();
     for (int i=0; i<5; i++) {
-      File tempFile = createTempFile(fileSize);
       // move to artifacts dir;
-      final File srcFile = new File(artifactsDir, tempFile.getName());
-      tempFile.renameTo(srcFile);
-      tempFile = null;
+      final File srcFile = createTmpFileWithTS(artifactsDir, fileSize);
       allArtifacts.add(srcFile);
 
       myTorrentsSeeder.processArtifactInternal(new DummyBuildArtifactAdapter() {
@@ -126,7 +132,7 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
           }
           return false;
         }
-      };
+      }.assertCompleted("should have completed in 5 sec");
       assertTrue(myTorrentsSeeder.getSharedTorrents().size() <= 3);
       Collection<String> filesFromTorrents = new ArrayList<String>();
       for (SharedTorrent torrent : myTorrentsSeeder.getSharedTorrents()) {
@@ -168,5 +174,46 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
     }
 
     assertEquals(3, myTorrentsSeeder.getNumberOfSeededTorrents());
+  }
+
+  @NotNull
+  private File createTmpFileWithTS(File dir, int size) throws IOException {
+    File srcFile = new File(dir, String.format("%d-test.tmp", System.currentTimeMillis()));
+    srcFile.createNewFile();
+    myTempFiles.registerAsTempFile(srcFile);
+    int bufLen = Math.min(8 * 1024, size);
+    if (bufLen == 0) return srcFile;
+    final OutputStream fos = new BufferedOutputStream(new FileOutputStream(srcFile));
+    try {
+      byte[] buf = new byte[bufLen];
+      for (int i=0; i < buf.length; i++) {
+        buf[i] = (byte)Math.round(Math.random()*128);
+      }
+
+      int numWritten = 0;
+      for (int i=0; i<size / buf.length; i++) {
+        fos.write(buf);
+        numWritten += buf.length;
+      }
+
+      if (size > numWritten) {
+        fos.write(buf, 0, size - numWritten);
+      }
+    } finally {
+      fos.close();
+    }
+
+    return srcFile;
+  }
+
+
+
+
+
+  @AfterMethod
+  @Override
+  protected void tearDown() throws Exception {
+    myTempFiles.cleanup();
+    super.tearDown();
   }
 }

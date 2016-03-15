@@ -17,9 +17,12 @@
 package jetbrains.buildServer.torrent.seeder;
 
 import jetbrains.buildServer.BaseTestCase;
+import jetbrains.buildServer.TempFiles;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.ThreadUtil;
 import org.jetbrains.annotations.NotNull;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -30,6 +33,15 @@ import java.util.Map;
 
 @Test
 public class TorrentFilesDBTest extends BaseTestCase {
+
+  private TempFiles myTempFiles;
+
+  @BeforeMethod
+  @Override
+  protected void setUp() throws Exception {
+    myTempFiles = new TempFiles();
+  }
+
   public void new_db() throws IOException {
     File dbFile = createTempFile();
 
@@ -87,10 +99,12 @@ public class TorrentFilesDBTest extends BaseTestCase {
 
     Map<File, File> expectedMap = new HashMap<File, File>();
 
+    final File dir = createTempDir();
     TorrentFilesDB db = new TorrentFilesDB(dbFile, 10, null, null);
     for (int i=0; i<10; i++) {
-      ThreadUtil.sleep(1000);
-      File srcFile = createTempFile();
+      ThreadUtil.sleep(100);
+
+      File srcFile = createTmpFileWithTS(dir);
       File torrentFile = createTempFile();
 
       if (i >= 5) {
@@ -101,6 +115,14 @@ public class TorrentFilesDBTest extends BaseTestCase {
 
     db.setMaxTorrents(5);
     assertEquals(expectedMap, db.getFileAndTorrentMap());
+  }
+
+  @NotNull
+  private File createTmpFileWithTS(File dir) throws IOException {
+    File srcFile = new File(dir, String.format("%d-test.tmp", System.currentTimeMillis()));
+    srcFile.createNewFile();
+    myTempFiles.registerAsTempFile(srcFile);
+    return srcFile;
   }
 
   public void custom_path_translator() throws IOException {
@@ -173,5 +195,12 @@ public class TorrentFilesDBTest extends BaseTestCase {
 
     db.setMaxTorrents(1);
     assertEquals(3, counter[0]);
+  }
+
+  @AfterMethod
+  @Override
+  protected void tearDown() throws Exception {
+    myTempFiles.cleanup();
+    super.tearDown();
   }
 }
