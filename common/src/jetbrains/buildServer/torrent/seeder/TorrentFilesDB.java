@@ -163,10 +163,18 @@ public class TorrentFilesDB {
     synchronized (myFile2TorrentMap) {
       sorted = new ArrayList<FileInfo>(myFile2TorrentMap.get().keySet());
     }
+    // cache lastModifiedTime on first read to avoid IllegalArgumentException: Comparison method violates its general contract (TW-44581)
+    final Map<FileInfo, Long> lastModifiedCache = new HashMap<FileInfo, Long>();
     Collections.sort(sorted, new Comparator<FileInfo>() {
       public int compare(FileInfo o1, FileInfo o2) {
         // from lowest to highest
-        final int compareTime = new Long(o1.lastModified()).compareTo(o2.lastModified());
+        if (lastModifiedCache.get(o1) == null){
+          lastModifiedCache.put(o1, o1.lastModified());
+        }
+        if (lastModifiedCache.get(o2) == null){
+          lastModifiedCache.put(o2, o2.lastModified());
+        }
+        final int compareTime = lastModifiedCache.get(o1).compareTo(lastModifiedCache.get(o2));
         return compareTime != 0 ? compareTime : o1.getFile().getAbsolutePath().compareTo(o2.getFile().getAbsolutePath());
       }
     });
