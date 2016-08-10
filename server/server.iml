@@ -44,5 +44,14 @@
     <orderEntry type="library" scope="TEST" name="jmock" level="project" />
     <orderEntry type="library" name="Common-Impl" level="project" />
     <orderEntry type="library" name="ttorrent-1.2" level="project" />
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../lib/simple-4.1.21.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>

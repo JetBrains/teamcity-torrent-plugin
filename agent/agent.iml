@@ -27,6 +27,15 @@
     <orderEntry type="library" scope="TEST" name="Test-Api" level="project" />
     <orderEntry type="library" scope="TEST" name="testng" level="project" />
     <orderEntry type="library" scope="TEST" name="jmock" level="project" />
-    <orderEntry type="library" exported="" scope="TEST" name="jetty" level="project" />
+    <orderEntry type="library" scope="TEST" name="jetty" level="project" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../lib/simple-4.1.21.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
