@@ -53,6 +53,18 @@ public class TorrentsSeederTest extends BaseTestCase {
     assertTrue(myDirectorySeeder.isSeeding(torrentFile));
   }
 
+  public void seeding_does_not_change_last_modified_time() throws IOException, NoSuchAlgorithmException, InterruptedException {
+    final File srcFile = createTempFile(65535);
+    long time = srcFile.lastModified();
+
+    Thread.sleep(100);
+
+    final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
+    myDirectorySeeder.registerSrcAndTorrentFile(srcFile, torrentFile, true);
+
+    assertEquals(time, srcFile.lastModified());
+  }
+
   public void stop_seeding() throws IOException, NoSuchAlgorithmException, InterruptedException {
     final File srcFile = createTempFile(65535);
     final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
