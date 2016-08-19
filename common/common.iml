@@ -16,5 +16,6 @@
     <orderEntry type="library" scope="TEST" name="jmock" level="project" />
     <orderEntry type="library" scope="TEST" name="testng" level="project" />
     <orderEntry type="library" name="ttorrent-1.2" level="project" />
+    <orderEntry type="library" name="ttorrent-runtime" level="project" />
   </component>
 </module>
