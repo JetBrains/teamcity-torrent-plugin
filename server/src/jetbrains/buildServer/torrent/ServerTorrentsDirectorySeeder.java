@@ -4,6 +4,7 @@
  */
 package jetbrains.buildServer.torrent;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.torrent.seeder.ParentDirConverter;
@@ -33,6 +34,8 @@ import java.util.Collections;
  * @since 8.0
  */
 public class ServerTorrentsDirectorySeeder {
+  private final static Logger LOG = Logger.getInstance(ServerTorrentsDirectorySeeder.class.getName());
+
   private TorrentsSeeder myTorrentsSeeder;
   private final TorrentConfigurator myConfigurator;
   private URI myAnnounceURI;
@@ -185,6 +188,10 @@ public class ServerTorrentsDirectorySeeder {
 
     if (shouldCreateTorrentFor(artifact)) {
       File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
+      if (!artifactFile.exists()){
+        LOG.debug(String.format("File '%s' doesn't exist. Won't create a torrent for it", artifactFile.getAbsolutePath()));
+        return;
+      }
       File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
       if (torrentFile != null) {
         myTorrentsSeeder.registerSrcAndTorrentFile(artifactFile, torrentFile, myConfigurator.isTorrentEnabled());
