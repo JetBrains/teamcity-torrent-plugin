@@ -39,4 +39,9 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
   public boolean isTorrentEnabled() {
     return true;
   }
+
+  @Override
+  public String getServerURL() {
+    return "http://localhost:6969/bs";
+  }
 }

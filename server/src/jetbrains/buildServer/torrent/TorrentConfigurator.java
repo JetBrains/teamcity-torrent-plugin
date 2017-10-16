@@ -192,6 +192,11 @@ public class TorrentConfigurator implements TorrentConfiguration {
     return TorrentUtil.getBooleanValue(myConfiguration, TRANSPORT_ENABLED, DEFAULT_TRANSPORT_ENABLED);
   }
 
+  @Override
+  public String getServerURL() {
+    return "";// TODO: 10/16/17 inject ServerSettings and use getRootUrl
+  }
+
   public boolean isTorrentEnabled() {
     return isDownloadEnabled() || isTransportEnabled();
   }

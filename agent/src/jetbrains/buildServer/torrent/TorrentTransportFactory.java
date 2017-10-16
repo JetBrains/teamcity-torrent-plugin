@@ -7,11 +7,11 @@ import com.turn.ttorrent.tracker.TrackerHelper;
 import jetbrains.buildServer.ArtifactsConstants;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
-import jetbrains.buildServer.artifacts.DependencyResolverContext;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.artifacts.impl.HttpTransport;
 import jetbrains.buildServer.http.HttpUtil;
+import jetbrains.buildServer.http.SimpleCredentials;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
@@ -69,20 +69,23 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     myConfiguration = configuration;
   }
 
-  private HttpClient createHttpClient(@NotNull final DependencyResolverContext context) {
-    HttpClient client = HttpUtil.createHttpClient(context.getConnectionTimeout());
+  private HttpClient createHttpClient() {
+    String userName = myBuildTracker.getCurrentBuild().getAccessUser();
+    String password = myBuildTracker.getCurrentBuild().getAccessCode();
+    int connectionTimeout = 60;
+    HttpClient client = HttpUtil.createHttpClient(connectionTimeout);
     client.getParams().setAuthenticationPreemptive(true);
-    Credentials defaultcreds = new UsernamePasswordCredentials(context.getUsername(), context.getPassword());
+    Credentials defaultcreds = new UsernamePasswordCredentials(userName, password);
     client.getState().setCredentials(new AuthScope(AuthScope.ANY_HOST,
-            AuthScope.ANY_PORT,
-            AuthScope.ANY_REALM),
+                    AuthScope.ANY_PORT,
+                    AuthScope.ANY_REALM),
             defaultcreds);
+    // TODO: 10/16/17 configure proxy
     return client;
   }
 
-
   @Nullable
-  public URLContentRetriever getTransport(@NotNull DependencyResolverContext context) {
+  public URLContentRetriever getTransport(@NotNull Map<String, String> context) {
 
     final BuildProgressLogger buildLogger = myBuildTracker.getCurrentBuild().getBuildLogger();
     if (!shouldUseTorrentTransport()) {
@@ -95,8 +98,9 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     return new TorrentTransport(myAgentTorrentsManager.getTorrentsSeeder(),
-            createHttpClient(context),
-            buildLogger);
+            createHttpClient(),
+            buildLogger,
+            myConfiguration.getServerURL());
   }
 
   private boolean shouldUseTorrentTransport() {
@@ -120,8 +124,9 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     protected TorrentTransport(@NotNull final TorrentsSeeder seeder,
                                @NotNull final HttpClient httpClient,
-                               @NotNull final BuildProgressLogger buildLogger) {
-      super(httpClient);
+                               @NotNull final BuildProgressLogger buildLogger,
+                               @NotNull final String serverUrl) {
+      super(httpClient, serverUrl);
       mySeeder = seeder;
       myClient = mySeeder.getClient();
       myHttpClient = httpClient;

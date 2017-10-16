@@ -52,6 +52,11 @@ public class TorrentManagerProxy implements TorrentConfiguration {
     return call("isTorrentEnabled", TorrentConfiguration.DEFAULT_TORRENT_ENABLED);
   }
 
+  @Override
+  public String getServerURL() {
+    return "";// TODO: 10/16/17 inject BuildAgentConfiguration and use method from it
+  }
+
   @NotNull
   private <T> T call(@NotNull String methodName, @NotNull final T defaultValue) {
     if (myXmlRpcTarget == null) {
