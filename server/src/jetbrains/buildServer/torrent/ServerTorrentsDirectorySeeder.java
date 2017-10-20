@@ -7,14 +7,14 @@ package jetbrains.buildServer.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.NetworkUtil;
-import jetbrains.buildServer.torrent.seeder.ParentDirConverter;
-import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
-import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
+import jetbrains.buildServer.torrent.seeder.ParentDirConverter;
+import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
+import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
@@ -26,8 +26,10 @@ import java.io.File;
 import java.io.FileFilter;
 import java.net.InetAddress;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Maxim Podkolzine (maxim.podkolzine@jetbrains.com)
@@ -163,26 +165,44 @@ public class ServerTorrentsDirectorySeeder {
 
   private void announceBuildArtifacts(@NotNull final SBuild build) {
     final File torrentsDir = getTorrentFilesBaseDir(build);
-    BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT);
+    BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_INTERNAL_ONLY);
     final File artifactsDirectory = build.getArtifactsDirectory();
     torrentsDir.mkdirs();
+    List<String> artifactRelativePaths = new ArrayList<>();
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
       @NotNull
       public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
+        File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
+        if (artifactFile.isHidden()) {
+          return artifactFile.isDirectory() ? Continuation.SKIP_CHILDREN : Continuation.CONTINUE;
+        }
+        if (artifactFile.isFile()) {
+          artifactRelativePaths.add(artifact.getRelativePath());
+        }
         processArtifactInternal(artifact, artifactsDirectory, torrentsDir);
         return BuildArtifacts.BuildArtifactsProcessor.Continuation.CONTINUE;
       }
-
     });
+    removeTorrentFilesWithoutArtifacts(artifactRelativePaths, torrentsDir);
+  }
+
+  private void removeTorrentFilesWithoutArtifacts(@NotNull final List<String> artifactRelativePaths,
+                                                  @NotNull final File torrentsDir) {
+    Collection<File> torrentsForRemoving = FileUtil.findFiles(file-> {
+      for (String artifactPath : artifactRelativePaths) {
+        if (file.getAbsolutePath().endsWith(artifactPath + TorrentUtil.TORRENT_FILE_SUFFIX)) {
+          return false;
+        }
+      }
+      return true;
+    }, torrentsDir);
+    torrentsForRemoving.forEach(file->file.delete());
   }
 
   protected void processArtifactInternal(@NotNull final BuildArtifact artifact,
                                          @NotNull final File artifactsDirectory,
                                          @NotNull final File torrentsDir) {
     if (artifact.isDirectory()){
-      for (BuildArtifact childArtifacts : artifact.getChildren()) {
-        processArtifactInternal(childArtifacts, artifactsDirectory, torrentsDir);
-      }
       return;
     }
 
