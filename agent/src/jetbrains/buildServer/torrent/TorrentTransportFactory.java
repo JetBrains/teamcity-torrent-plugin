@@ -55,7 +55,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
   public static final String TEAMCITY_IVY = "teamcity-ivy.xml";
   public static final String TEAMCITY_TORRENTS = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/torrents/";
 
-  public static final int MIN_SEEDERS_COUNT_TO_TRY=2;
+  public static final int MIN_SEEDERS_COUNT_TO_TRY = 2;
 
   public static final String TEAMCITY_ARTIFACTS_TRANSPORT = "teamcity.artifacts.transport";
 
@@ -114,7 +114,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
       return null;
     }
 
-    if (!myAgentTorrentsManager.isTorrentEnabled()){
+    if (!myAgentTorrentsManager.isTorrentEnabled()) {
       return null;
     }
 
@@ -160,7 +160,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
     @Nullable
     public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
       ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(urlString);
-      if (urlString.endsWith(TEAMCITY_IVY)){
+      if (urlString.endsWith(TEAMCITY_IVY)) {
         // downloading teamcity-ivy.xml and parsing it:
         return parseArtifactsList(urlString, target);
       }
@@ -184,7 +184,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
         myCurrentDownload.set(th);
         th.join();
         myCurrentDownload.set(null);
-        if (exceptionHolder.get() != null){
+        if (exceptionHolder.get() != null) {
           throw exceptionHolder.get();
         }
 
@@ -202,12 +202,12 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
 
         // return standard digest
         return getDigest(urlString);
-      }  catch (InterruptedException e) {
+      } catch (InterruptedException e) {
         throw new IOException("Torrent download has been interrupted " + urlString, e);
       } catch (RuntimeException ex) {
         log2Build(String.format("Unable to download artifact %s: %s", urlString, ex.getMessage()));
         throw ex;
-      } catch (Exception ex){
+      } catch (Exception ex) {
         log2Build(String.format("Unable to download artifact %s: %s", urlString, ex.getMessage()));
         throw new IOException(ex);
       } finally {
@@ -217,7 +217,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
 
     public void interrupt() {
       final Thread thread = myCurrentDownload.get();
-      if (thread != null){
+      if (thread != null) {
         thread.interrupt();
       }
       myInterrupted.set(true);
@@ -245,7 +245,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
           if (s.startsWith(ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR))
             continue;
           String proposedTorrentName = String.format("%s%s.torrent", TEAMCITY_TORRENTS, s);
-          if (artifactsSet.contains(proposedTorrentName)){
+          if (artifactsSet.contains(proposedTorrentName)) {
             myTorrentsForArtifacts.put(s, proposedTorrentName);
           }
         }
@@ -253,7 +253,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
         final NodeList info = (NodeList) xpath.evaluate("ivy-module/info",
                 new InputSource(new ByteArrayInputStream(ivyData)), XPathConstants.NODESET);
 
-        if (info.getLength()==1){
+        if (info.getLength() == 1) {
           final Node infoNode = info.item(0);
           final String module = infoNode.getAttributes().getNamedItem("module").getTextContent();
           final String revision = infoNode.getAttributes().getNamedItem("revision").getTextContent();
