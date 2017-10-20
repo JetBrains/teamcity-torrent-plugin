@@ -5,13 +5,16 @@ import com.intellij.openapi.util.io.StreamUtil;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.TrackerHelper;
 import jetbrains.buildServer.ArtifactsConstants;
+import jetbrains.buildServer.agent.BuildAgentConfigurationEx;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
+import jetbrains.buildServer.artifacts.ArtifactAccessor;
+import jetbrains.buildServer.artifacts.ArtifactAccessorFactoryExtension;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.artifacts.impl.HttpTransport;
+import jetbrains.buildServer.artifacts.impl.TeamCityArtifactAccessor;
 import jetbrains.buildServer.http.HttpUtil;
-import jetbrains.buildServer.http.SimpleCredentials;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
@@ -45,7 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *         Date: 7/31/13
  *         Time: 2:52 PM
  */
-public class TorrentTransportFactory implements TransportFactoryExtension {
+public class TorrentTransportFactory implements TransportFactoryExtension, ArtifactAccessorFactoryExtension {
 
   private final static Logger LOG = Logger.getInstance(TorrentTransportFactory.class.getName());
 
@@ -60,13 +63,28 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   private final AgentTorrentsManager myAgentTorrentsManager;
   private final CurrentBuildTracker myBuildTracker;
   private final TorrentConfiguration myConfiguration;
+  private final BuildAgentConfigurationEx myAgentConfig;
 
   public TorrentTransportFactory(@NotNull final AgentTorrentsManager agentTorrentsManager,
                                  @NotNull final CurrentBuildTracker currentBuildTracker,
-                                 @NotNull final TorrentConfiguration configuration) {
+                                 @NotNull final TorrentConfiguration configuration,
+                                 @NotNull final BuildAgentConfigurationEx config) {
     myAgentTorrentsManager = agentTorrentsManager;
     myBuildTracker = currentBuildTracker;
     myConfiguration = configuration;
+    myAgentConfig = config;
+  }
+
+  @Nullable
+  @Override
+  public ArtifactAccessor createArtifactAccessor(@NotNull Map<String, String> map) {
+    return new TeamCityArtifactAccessor(getTransport(map), myConfiguration.getServerURL());
+  }
+
+  @NotNull
+  @Override
+  public String getType() {
+    return "torrent";
   }
 
   private HttpClient createHttpClient() {
@@ -80,7 +98,10 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
                     AuthScope.ANY_PORT,
                     AuthScope.ANY_REALM),
             defaultcreds);
-    // TODO: 10/16/17 configure proxy
+    String proxyHost = myAgentConfig.getServerProxyHost();
+    if (proxyHost != null) {
+      HttpUtil.configureProxy(client, proxyHost, myAgentConfig.getServerProxyPort(), myAgentConfig.getServerProxyCredentials());
+    }
     return client;
   }
 
