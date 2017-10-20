@@ -90,14 +90,14 @@ public class ServerTorrentsDirectorySeeder {
     configurator.addPropertyChangeListener(new PropertyChangeListener() {
       public void propertyChange(PropertyChangeEvent evt) {
         String propertyName = evt.getPropertyName();
-        if (TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS.equals(propertyName)){
+        if (TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS.equals(propertyName)) {
           setMaxNumberOfSeededTorrents((Integer) evt.getNewValue());
           myTorrentsSeeder.setMaxTorrentsToSeed(myMaxTorrentsToSeed);
-        } else if (TorrentConfiguration.ANNOUNCE_INTERVAL.equals(propertyName)){
+        } else if (TorrentConfiguration.ANNOUNCE_INTERVAL.equals(propertyName)) {
           myTorrentsSeeder.setAnnounceInterval((Integer) evt.getNewValue());
-        } else if (TorrentConfiguration.ANNOUNCE_URL.equals(propertyName)){
+        } else if (TorrentConfiguration.ANNOUNCE_URL.equals(propertyName)) {
           setAnnounceURI(URI.create(String.valueOf(evt.getNewValue())));
-        } else if (TorrentConfiguration.DOWNLOAD_ENABLED.equals(propertyName) || TorrentConfiguration.TRANSPORT_ENABLED.equals(propertyName)){
+        } else if (TorrentConfiguration.DOWNLOAD_ENABLED.equals(propertyName) || TorrentConfiguration.TRANSPORT_ENABLED.equals(propertyName)) {
           boolean enabled = (Boolean) evt.getNewValue();
           if (enabled) {
             startSeeder();
@@ -110,7 +110,6 @@ public class ServerTorrentsDirectorySeeder {
   }
 
 
-
   public void stopSeeder() {
     myTorrentsSeeder.stop();
   }
@@ -119,7 +118,7 @@ public class ServerTorrentsDirectorySeeder {
     try {
 
       final InetAddress[] addresses;
-      if (myConfigurator.getOwnAddress() != null){
+      if (myConfigurator.getOwnAddress() != null) {
         addresses = new InetAddress[]{InetAddress.getByName(myConfigurator.getOwnAddress())};
       } else {
         addresses = NetworkUtil.getSelfAddresses(null);
@@ -188,7 +187,7 @@ public class ServerTorrentsDirectorySeeder {
 
   private void removeTorrentFilesWithoutArtifacts(@NotNull final List<String> artifactRelativePaths,
                                                   @NotNull final File torrentsDir) {
-    Collection<File> torrentsForRemoving = FileUtil.findFiles(file-> {
+    Collection<File> torrentsForRemoving = FileUtil.findFiles(file -> {
       for (String artifactPath : artifactRelativePaths) {
         if (file.getAbsolutePath().endsWith(artifactPath + TorrentUtil.TORRENT_FILE_SUFFIX)) {
           return false;
@@ -196,19 +195,19 @@ public class ServerTorrentsDirectorySeeder {
       }
       return true;
     }, torrentsDir);
-    torrentsForRemoving.forEach(file->file.delete());
+    torrentsForRemoving.forEach(file -> file.delete());
   }
 
   protected void processArtifactInternal(@NotNull final BuildArtifact artifact,
                                          @NotNull final File artifactsDirectory,
                                          @NotNull final File torrentsDir) {
-    if (artifact.isDirectory()){
+    if (artifact.isDirectory()) {
       return;
     }
 
     if (shouldCreateTorrentFor(artifact)) {
       File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
-      if (!artifactFile.exists()){
+      if (!artifactFile.exists()) {
         LOG.debug(String.format("File '%s' doesn't exist. Won't create a torrent for it", artifactFile.getAbsolutePath()));
         return;
       }
@@ -222,7 +221,7 @@ public class ServerTorrentsDirectorySeeder {
   @Nullable
   private File createTorrent(@NotNull final File artifactFile,
                              @NotNull final String artifactPath,
-                             @NotNull final File torrentsDir){
+                             @NotNull final File torrentsDir) {
     File destPath = new File(torrentsDir, artifactPath);
     final File parentDir = destPath.getParentFile();
     parentDir.mkdirs();
@@ -238,11 +237,11 @@ public class ServerTorrentsDirectorySeeder {
     myMaxTorrentsToSeed = maxNumberOfSeededTorrents;
   }
 
-  public void setAnnounceURI(URI announceURI){
+  public void setAnnounceURI(URI announceURI) {
     myAnnounceURI = announceURI;
   }
 
-  public Collection<SharedTorrent> getSharedTorrents(){
+  public Collection<SharedTorrent> getSharedTorrents() {
     return myTorrentsSeeder.getSharedTorrents();
   }
 
