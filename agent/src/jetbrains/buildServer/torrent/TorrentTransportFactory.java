@@ -55,7 +55,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
   public static final String TEAMCITY_IVY = "teamcity-ivy.xml";
   public static final String TEAMCITY_TORRENTS = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/torrents/";
 
-  public static final int MIN_SEEDERS_COUNT_TO_TRY = 2;
+  public static final int MIN_SEEDERS_COUNT_TO_TRY = 1;
 
   public static final String TEAMCITY_ARTIFACTS_TRANSPORT = "teamcity.artifacts.transport";
 
