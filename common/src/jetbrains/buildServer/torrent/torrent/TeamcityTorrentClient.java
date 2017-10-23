@@ -169,7 +169,8 @@ public class TeamcityTorrentClient {
     destDir.mkdirs();
     if (myClient.getTorrentsMap().containsKey(torrent.getHexInfoHash())){
       LOG.info("Already seeding torrent with hash " + torrent.getHexInfoHash() + ". Will not try to download");
-      return;
+      // TODO: 10/23/17 in this case need to take file from artifacts cache. Now just
+      // return;
     }
     SharedTorrent downTorrent = new SharedTorrent(torrent, destDir, false);
     LOG.info(String.format("Will attempt to download uninterruptibly %s into %s. Timeout:%d",
