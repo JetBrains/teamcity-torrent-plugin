@@ -306,7 +306,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
     }
 
     private long getDownloadTimeoutSec() {
-      return TeamCityProperties.getLong("teamcity.torrent.download.timeout", 10L);
+      return TeamCityProperties.getLong("teamcity.torrent.download.timeout", 600L);
     }
 
   }
