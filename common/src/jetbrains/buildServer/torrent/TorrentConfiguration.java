@@ -57,4 +57,11 @@ public interface TorrentConfiguration {
    * creation of torrent files)
    */
   boolean isTorrentEnabled();
+
+  /**
+   * Returns server URL
+   * @return see above
+   */
+  String getServerURL();
+
 }

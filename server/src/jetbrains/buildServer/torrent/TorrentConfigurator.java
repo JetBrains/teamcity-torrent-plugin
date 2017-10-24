@@ -23,6 +23,7 @@ import jetbrains.buildServer.configuration.ChangeObserver;
 import jetbrains.buildServer.configuration.ChangeProvider;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.ServerPaths;
+import jetbrains.buildServer.serverSide.ServerSettings;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.FileUtil;
@@ -45,6 +46,8 @@ public class TorrentConfigurator implements TorrentConfiguration {
   private final ServerPaths myServerPaths;
   @NotNull
   private final RootUrlHolder myRootUrlHolder;
+  @NotNull
+  private final ServerSettings myServerSettings;
   private volatile Properties myConfiguration;
   private List<PropertyChangeListener> myChangeListeners = new ArrayList<PropertyChangeListener>();
   private String myAnnounceUrl;
@@ -52,9 +55,11 @@ public class TorrentConfigurator implements TorrentConfiguration {
 
   public TorrentConfigurator(@NotNull final ServerPaths serverPaths,
                              @NotNull final RootUrlHolder rootUrlHolder,
-                             @NotNull final XmlRpcHandlerManager xmlRpcHandlerManager) {
+                             @NotNull final XmlRpcHandlerManager xmlRpcHandlerManager,
+                             @NotNull final ServerSettings serverSettings) {
     myServerPaths = serverPaths;
     myRootUrlHolder = rootUrlHolder;
+    myServerSettings = serverSettings;
     File configFile = getConfigFile();
     if (!configFile.isFile()) {
       initConfigFile(configFile);
@@ -102,7 +107,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
 
   private void setFileSizeThresholdMb(int threshold) {
     int oldValue = TorrentUtil.getIntegerValue(myConfiguration, FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
-    if (oldValue != threshold){
+    if (oldValue != threshold) {
       myConfiguration.setProperty(FILE_SIZE_THRESHOLD, String.valueOf(threshold));
       propertyChanged(FILE_SIZE_THRESHOLD, oldValue, threshold);
     }
@@ -110,53 +115,53 @@ public class TorrentConfigurator implements TorrentConfiguration {
 
   private void setMaxNumberOfSeededTorrents(int number) {
     int oldValue = TorrentUtil.getIntegerValue(myConfiguration, MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS);
-    if (oldValue != number){
+    if (oldValue != number) {
       myConfiguration.setProperty(MAX_NUMBER_OF_SEEDED_TORRENTS, String.valueOf(number));
       propertyChanged(MAX_NUMBER_OF_SEEDED_TORRENTS, oldValue, number);
     }
   }
 
-  private void setAnnounceIntervalSec(int sec){
+  private void setAnnounceIntervalSec(int sec) {
     int oldValue = TorrentUtil.getIntegerValue(myConfiguration, ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL);
-    if (oldValue != sec){
+    if (oldValue != sec) {
       myConfiguration.setProperty(ANNOUNCE_INTERVAL, String.valueOf(sec));
       propertyChanged(ANNOUNCE_INTERVAL, oldValue, sec);
     }
   }
 
-  private void setTrackerTorrentExpireTimeoutSec(int sec){
+  private void setTrackerTorrentExpireTimeoutSec(int sec) {
     int oldValue = TorrentUtil.getIntegerValue(myConfiguration, TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT);
-    if (oldValue != sec){
+    if (oldValue != sec) {
       myConfiguration.setProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT, String.valueOf(sec));
       propertyChanged(TRACKER_TORRENT_EXPIRE_TIMEOUT, oldValue, sec);
     }
   }
 
-  private void setTrackerUsesDedicatedPort(boolean enabled){
+  private void setTrackerUsesDedicatedPort(boolean enabled) {
     boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, TRACKER_DEDICATED_PORT, DEFAULT_TRACKER_DEDICATED_PORT);
-    if  (oldValue != enabled){
+    if (oldValue != enabled) {
       myConfiguration.setProperty(TRACKER_DEDICATED_PORT, String.valueOf(enabled));
       propertyChanged(TRACKER_DEDICATED_PORT, oldValue, enabled);
     }
   }
 
-  public void setTransportEnabled(boolean enabled){
+  public void setTransportEnabled(boolean enabled) {
     boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, TRANSPORT_ENABLED, DEFAULT_TRANSPORT_ENABLED);
-    if  (oldValue != enabled){
+    if (oldValue != enabled) {
       myConfiguration.setProperty(TRANSPORT_ENABLED, String.valueOf(enabled));
       propertyChanged(TRANSPORT_ENABLED, oldValue, enabled);
     }
   }
 
-  public void setDownloadEnabled(boolean enabled){
+  public void setDownloadEnabled(boolean enabled) {
     boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, DOWNLOAD_ENABLED, DEFAULT_DOWNLOAD_ENABLED);
-    if  (oldValue != enabled){
+    if (oldValue != enabled) {
       myConfiguration.setProperty(DOWNLOAD_ENABLED, String.valueOf(enabled));
       propertyChanged(DOWNLOAD_ENABLED, oldValue, enabled);
     }
   }
 
-  public boolean isDownloadEnabled(){
+  public boolean isDownloadEnabled() {
     return TorrentUtil.getBooleanValue(myConfiguration, DOWNLOAD_ENABLED, DEFAULT_DOWNLOAD_ENABLED);
   }
 
@@ -176,7 +181,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
     return TeamCityProperties.getInteger(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT);
   }
 
-  public boolean isTrackerDedicatedPort(){
+  public boolean isTrackerDedicatedPort() {
     return TeamCityProperties.getBoolean(TRACKER_DEDICATED_PORT);
   }
 
@@ -188,8 +193,13 @@ public class TorrentConfigurator implements TorrentConfiguration {
     return TeamCityProperties.getBooleanOrTrue(TRACKER_ENABLED);
   }
 
-  public boolean isTransportEnabled(){
+  public boolean isTransportEnabled() {
     return TorrentUtil.getBooleanValue(myConfiguration, TRANSPORT_ENABLED, DEFAULT_TRANSPORT_ENABLED);
+  }
+
+  @Override
+  public String getServerURL() {
+    return myServerSettings.getRootUrl();
   }
 
   public boolean isTorrentEnabled() {
@@ -206,10 +216,10 @@ public class TorrentConfigurator implements TorrentConfiguration {
     try {
       fileReader = new FileReader(configFile);
       properties.load(fileReader);
-      if (properties.get(TRANSPORT_ENABLED) == null){
+      if (properties.get(TRANSPORT_ENABLED) == null) {
         properties.put(TRANSPORT_ENABLED, Boolean.FALSE.toString());
       }
-      if (properties.get(DOWNLOAD_ENABLED) == null){
+      if (properties.get(DOWNLOAD_ENABLED) == null) {
         properties.put(DOWNLOAD_ENABLED, Boolean.FALSE.toString());
       }
       myConfiguration = properties;
@@ -252,24 +262,25 @@ public class TorrentConfigurator implements TorrentConfiguration {
   }
 
   @NotNull
-  public String getServerAddress(){
+  public String getServerAddress() {
     return myRootUrlHolder.getRootUrl();
   }
 
-  public void addPropertyChangeListener(@NotNull final PropertyChangeListener listener){
+  public void addPropertyChangeListener(@NotNull final PropertyChangeListener listener) {
     myChangeListeners.add(listener);
   }
 
-  public void removePropertyChangeListener(@NotNull final PropertyChangeListener listener){
+  public void removePropertyChangeListener(@NotNull final PropertyChangeListener listener) {
     myChangeListeners.remove(listener);
   }
 
-  public void propertyChanged(String changedPropertyName, Object oldValue, Object newValue){
+  public void propertyChanged(String changedPropertyName, Object oldValue, Object newValue) {
     PropertyChangeEvent event = new PropertyChangeEvent(this, changedPropertyName, oldValue, newValue);
     for (PropertyChangeListener listener : myChangeListeners) {
       try {
-      listener.propertyChange(event);
-      } catch (Exception ex){}
+        listener.propertyChange(event);
+      } catch (Exception ex) {
+      }
     }
   }
 
@@ -280,8 +291,8 @@ public class TorrentConfigurator implements TorrentConfiguration {
 
   /**
    * @author Sergey.Pak
-   *         Date: 10/15/13
-   *         Time: 12:28 PM
+   * Date: 10/15/13
+   * Time: 12:28 PM
    */
   public class TorrentConfigurationWatcher extends ChangeObserver implements ChangeProvider {
 

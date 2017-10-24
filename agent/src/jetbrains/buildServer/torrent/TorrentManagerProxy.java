@@ -2,11 +2,10 @@ package jetbrains.buildServer.torrent;
 
 import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
-import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildAgent;
+import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.StringUtil;
-import jetbrains.buildServer.xmlrpc.RemoteCallException;
 import jetbrains.buildServer.xmlrpc.XmlRpcFactory;
 import jetbrains.buildServer.xmlrpc.XmlRpcTarget;
 import org.jetbrains.annotations.NotNull;
@@ -19,12 +18,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TorrentManagerProxy implements TorrentConfiguration {
   private XmlRpcTarget myXmlRpcTarget;
+  @NotNull
+  final private BuildAgentConfiguration myBuildAgentConfiguration;
 
-  public TorrentManagerProxy(@NotNull final EventDispatcher<AgentLifeCycleListener> dispatcher) {
-    dispatcher.addListener(new AgentLifeCycleAdapter(){
+  public TorrentManagerProxy(@NotNull final EventDispatcher<AgentLifeCycleListener> dispatcher,
+                             @NotNull final BuildAgentConfiguration buildAgentConfiguration) {
+    this.myBuildAgentConfiguration = buildAgentConfiguration;
+    dispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
       public void afterAgentConfigurationLoaded(@NotNull BuildAgent agent) {
-        if (StringUtil.isNotEmpty(agent.getConfiguration().getServerUrl())){
+        if (StringUtil.isNotEmpty(agent.getConfiguration().getServerUrl())) {
           myXmlRpcTarget = XmlRpcFactory.getInstance().create(agent.getConfiguration().getServerUrl(), "TeamCity Agent", 30000, false);
         }
       }
@@ -50,6 +53,11 @@ public class TorrentManagerProxy implements TorrentConfiguration {
 
   public boolean isTorrentEnabled() {
     return call("isTorrentEnabled", TorrentConfiguration.DEFAULT_TORRENT_ENABLED);
+  }
+
+  @Override
+  public String getServerURL() {
+    return myBuildAgentConfiguration.getServerUrl();
   }
 
   @NotNull

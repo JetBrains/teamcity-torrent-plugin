@@ -5,12 +5,15 @@ import com.intellij.openapi.util.io.StreamUtil;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.TrackerHelper;
 import jetbrains.buildServer.ArtifactsConstants;
+import jetbrains.buildServer.agent.BuildAgentConfigurationEx;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
-import jetbrains.buildServer.artifacts.DependencyResolverContext;
+import jetbrains.buildServer.artifacts.ArtifactAccessor;
+import jetbrains.buildServer.artifacts.ArtifactAccessorFactoryExtension;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.artifacts.impl.HttpTransport;
+import jetbrains.buildServer.artifacts.impl.TeamCityArtifactAccessor;
 import jetbrains.buildServer.http.HttpUtil;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
@@ -45,14 +48,14 @@ import java.util.concurrent.atomic.AtomicReference;
  *         Date: 7/31/13
  *         Time: 2:52 PM
  */
-public class TorrentTransportFactory implements TransportFactoryExtension {
+public class TorrentTransportFactory implements TransportFactoryExtension, ArtifactAccessorFactoryExtension {
 
   private final static Logger LOG = Logger.getInstance(TorrentTransportFactory.class.getName());
 
   public static final String TEAMCITY_IVY = "teamcity-ivy.xml";
   public static final String TEAMCITY_TORRENTS = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/torrents/";
 
-  public static final int MIN_SEEDERS_COUNT_TO_TRY=2;
+  public static final int MIN_SEEDERS_COUNT_TO_TRY = 1;
 
   public static final String TEAMCITY_ARTIFACTS_TRANSPORT = "teamcity.artifacts.transport";
 
@@ -60,29 +63,50 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   private final AgentTorrentsManager myAgentTorrentsManager;
   private final CurrentBuildTracker myBuildTracker;
   private final TorrentConfiguration myConfiguration;
+  private final BuildAgentConfigurationEx myAgentConfig;
 
   public TorrentTransportFactory(@NotNull final AgentTorrentsManager agentTorrentsManager,
                                  @NotNull final CurrentBuildTracker currentBuildTracker,
-                                 @NotNull final TorrentConfiguration configuration) {
+                                 @NotNull final TorrentConfiguration configuration,
+                                 @NotNull final BuildAgentConfigurationEx config) {
     myAgentTorrentsManager = agentTorrentsManager;
     myBuildTracker = currentBuildTracker;
     myConfiguration = configuration;
+    myAgentConfig = config;
   }
 
-  private HttpClient createHttpClient(@NotNull final DependencyResolverContext context) {
-    HttpClient client = HttpUtil.createHttpClient(context.getConnectionTimeout());
+  @Nullable
+  @Override
+  public ArtifactAccessor createArtifactAccessor(@NotNull Map<String, String> map) {
+    return new TeamCityArtifactAccessor(getTransport(map), myConfiguration.getServerURL());
+  }
+
+  @NotNull
+  @Override
+  public String getType() {
+    return "torrent";
+  }
+
+  private HttpClient createHttpClient() {
+    String userName = myBuildTracker.getCurrentBuild().getAccessUser();
+    String password = myBuildTracker.getCurrentBuild().getAccessCode();
+    int connectionTimeout = 60;
+    HttpClient client = HttpUtil.createHttpClient(connectionTimeout);
     client.getParams().setAuthenticationPreemptive(true);
-    Credentials defaultcreds = new UsernamePasswordCredentials(context.getUsername(), context.getPassword());
+    Credentials defaultcreds = new UsernamePasswordCredentials(userName, password);
     client.getState().setCredentials(new AuthScope(AuthScope.ANY_HOST,
-            AuthScope.ANY_PORT,
-            AuthScope.ANY_REALM),
+                    AuthScope.ANY_PORT,
+                    AuthScope.ANY_REALM),
             defaultcreds);
+    String proxyHost = myAgentConfig.getServerProxyHost();
+    if (proxyHost != null) {
+      HttpUtil.configureProxy(client, proxyHost, myAgentConfig.getServerProxyPort(), myAgentConfig.getServerProxyCredentials());
+    }
     return client;
   }
 
-
   @Nullable
-  public URLContentRetriever getTransport(@NotNull DependencyResolverContext context) {
+  public URLContentRetriever getTransport(@NotNull Map<String, String> context) {
 
     final BuildProgressLogger buildLogger = myBuildTracker.getCurrentBuild().getBuildLogger();
     if (!shouldUseTorrentTransport()) {
@@ -90,13 +114,14 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       return null;
     }
 
-    if (!myAgentTorrentsManager.isTorrentEnabled()){
+    if (!myAgentTorrentsManager.isTorrentEnabled()) {
       return null;
     }
 
     return new TorrentTransport(myAgentTorrentsManager.getTorrentsSeeder(),
-            createHttpClient(context),
-            buildLogger);
+            createHttpClient(),
+            buildLogger,
+            myConfiguration.getServerURL());
   }
 
   private boolean shouldUseTorrentTransport() {
@@ -120,8 +145,9 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     protected TorrentTransport(@NotNull final TorrentsSeeder seeder,
                                @NotNull final HttpClient httpClient,
-                               @NotNull final BuildProgressLogger buildLogger) {
-      super(httpClient);
+                               @NotNull final BuildProgressLogger buildLogger,
+                               @NotNull final String serverUrl) {
+      super(httpClient, serverUrl);
       mySeeder = seeder;
       myClient = mySeeder.getClient();
       myHttpClient = httpClient;
@@ -134,7 +160,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     @Nullable
     public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
       ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(urlString);
-      if (urlString.endsWith(TEAMCITY_IVY)){
+      if (urlString.endsWith(TEAMCITY_IVY)) {
         // downloading teamcity-ivy.xml and parsing it:
         return parseArtifactsList(urlString, target);
       }
@@ -158,12 +184,9 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         myCurrentDownload.set(th);
         th.join();
         myCurrentDownload.set(null);
-        if (exceptionHolder.get() != null){
+        if (exceptionHolder.get() != null) {
           throw exceptionHolder.get();
         }
-
-        // do not seed the file right now, we'll start seeding it once it appears in artifacts cache
-        myClient.stopSeeding(torrent);
 
         if (torrent.getSize() != target.length()) {
           log2Build(String.format("Failed to download file completely via BitTorrent protocol. Expected file size: %s, actual file size: %s", String.valueOf(torrent.getSize()), String.valueOf(target.length())));
@@ -176,12 +199,12 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
         // return standard digest
         return getDigest(urlString);
-      }  catch (InterruptedException e) {
+      } catch (InterruptedException e) {
         throw new IOException("Torrent download has been interrupted " + urlString, e);
       } catch (RuntimeException ex) {
         log2Build(String.format("Unable to download artifact %s: %s", urlString, ex.getMessage()));
         throw ex;
-      } catch (Exception ex){
+      } catch (Exception ex) {
         log2Build(String.format("Unable to download artifact %s: %s", urlString, ex.getMessage()));
         throw new IOException(ex);
       } finally {
@@ -191,7 +214,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     public void interrupt() {
       final Thread thread = myCurrentDownload.get();
-      if (thread != null){
+      if (thread != null) {
         thread.interrupt();
       }
       myInterrupted.set(true);
@@ -219,7 +242,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
           if (s.startsWith(ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR))
             continue;
           String proposedTorrentName = String.format("%s%s.torrent", TEAMCITY_TORRENTS, s);
-          if (artifactsSet.contains(proposedTorrentName)){
+          if (artifactsSet.contains(proposedTorrentName)) {
             myTorrentsForArtifacts.put(s, proposedTorrentName);
           }
         }
@@ -227,7 +250,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         final NodeList info = (NodeList) xpath.evaluate("ivy-module/info",
                 new InputSource(new ByteArrayInputStream(ivyData)), XPathConstants.NODESET);
 
-        if (info.getLength()==1){
+        if (info.getLength() == 1) {
           final Node infoNode = info.item(0);
           final String module = infoNode.getAttributes().getNamedItem("module").getTextContent();
           final String revision = infoNode.getAttributes().getNamedItem("revision").getTextContent();
@@ -280,7 +303,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     private long getDownloadTimeoutSec() {
-      return TeamCityProperties.getLong("teamcity.torrent.download.timeout", 10L);
+      return TeamCityProperties.getLong("teamcity.torrent.download.timeout", 600L);
     }
 
   }
