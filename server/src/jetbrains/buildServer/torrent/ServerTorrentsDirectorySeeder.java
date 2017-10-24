@@ -6,6 +6,7 @@ package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.SharedTorrent;
+import jetbrains.buildServer.ArtifactsConstants;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.*;
@@ -24,8 +25,14 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -171,11 +178,10 @@ public class ServerTorrentsDirectorySeeder {
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
       @NotNull
       public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
-        File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
-        if (artifactFile.isHidden()) {
-          return artifactFile.isDirectory() ? Continuation.SKIP_CHILDREN : Continuation.CONTINUE;
+        if (artifact.getName().equals(ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR)) {
+          return Continuation.SKIP_CHILDREN;
         }
-        if (artifactFile.isFile()) {
+        if (artifact.isFile()) {
           artifactRelativePaths.add(artifact.getRelativePath());
         }
         processArtifactInternal(artifact, artifactsDirectory, torrentsDir);
@@ -187,14 +193,22 @@ public class ServerTorrentsDirectorySeeder {
 
   private void removeTorrentFilesWithoutArtifacts(@NotNull final List<String> artifactRelativePaths,
                                                   @NotNull final File torrentsDir) {
-    Collection<File> torrentsForRemoving = FileUtil.findFiles(file -> {
-      for (String artifactPath : artifactRelativePaths) {
-        if (file.getAbsolutePath().endsWith(artifactPath + TorrentUtil.TORRENT_FILE_SUFFIX)) {
-          return false;
+    Collection<File> torrentsForRemoving = new ArrayList<>();
+    try {
+      Files.walkFileTree(torrentsDir.toPath(), new SimpleFileVisitor<Path>() {
+        public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+          for (String artifactPath : artifactRelativePaths) {
+            if (path.endsWith(artifactPath + TorrentUtil.TORRENT_FILE_SUFFIX)) {
+              return FileVisitResult.CONTINUE;
+            }
+          }
+          torrentsForRemoving.add(path.toFile());
+          return FileVisitResult.CONTINUE;
         }
-      }
-      return true;
-    }, torrentsDir);
+      });
+    } catch (IOException e) {
+      LOG.error("failed walk torrent files tree for removing useless torrents", e);
+    }
     torrentsForRemoving.forEach(file -> file.delete());
   }
 
