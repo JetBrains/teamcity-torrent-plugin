@@ -78,7 +78,11 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
   @Nullable
   @Override
   public ArtifactAccessor createArtifactAccessor(@NotNull Map<String, String> map) {
-    return new TeamCityArtifactAccessor(getTransport(map), myConfiguration.getServerURL());
+    URLContentRetriever transport = getTransport(map);
+    if (transport == null) {
+      return null;
+    }
+    return new TeamCityArtifactAccessor(transport, myConfiguration.getServerURL());
   }
 
   @NotNull
@@ -159,6 +163,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
 
     @Nullable
     public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
+      LOG.info("download " + urlString);
       ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(urlString);
       if (urlString.endsWith(TEAMCITY_IVY)) {
         // downloading teamcity-ivy.xml and parsing it:
@@ -172,6 +177,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
 
       try {
         myBuildLogger.progressStarted("Downloading " + target.getName() + " via BitTorrent protocol.");
+        LOG.debug("seeders count " + TrackerHelper.getSeedersCount(torrent));
         if (TrackerHelper.getSeedersCount(torrent) == 0) {
           log2Build("No seeders found for: " + urlString);
           return null;
@@ -179,6 +185,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
         final long startTime = System.currentTimeMillis();
 
         final AtomicReference<Exception> exceptionHolder = new AtomicReference<Exception>();
+        LOG.debug("start download file " + target.getName());
         Thread th = myClient.downloadAndShareOrFailAsync(
                 torrent, target, target.getParentFile(), getDownloadTimeoutSec(), MIN_SEEDERS_COUNT_TO_TRY, myInterrupted, exceptionHolder);
         myCurrentDownload.set(th);
@@ -192,6 +199,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
           log2Build(String.format("Failed to download file completely via BitTorrent protocol. Expected file size: %s, actual file size: %s", String.valueOf(torrent.getSize()), String.valueOf(target.length())));
           return null;
         }
+
+        myClient.stopSeedingByPath(target);
 
         final long took = System.currentTimeMillis() - startTime + 1; // to avoid division by zero
         final long fileSize = target.length();
