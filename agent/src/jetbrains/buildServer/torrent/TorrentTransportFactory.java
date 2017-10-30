@@ -8,12 +8,9 @@ import jetbrains.buildServer.ArtifactsConstants;
 import jetbrains.buildServer.agent.BuildAgentConfigurationEx;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
-import jetbrains.buildServer.artifacts.ArtifactAccessor;
-import jetbrains.buildServer.artifacts.ArtifactAccessorFactoryExtension;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.artifacts.impl.HttpTransport;
-import jetbrains.buildServer.artifacts.impl.TeamCityArtifactAccessor;
 import jetbrains.buildServer.http.HttpUtil;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
@@ -48,7 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *         Date: 7/31/13
  *         Time: 2:52 PM
  */
-public class TorrentTransportFactory implements TransportFactoryExtension, ArtifactAccessorFactoryExtension {
+public class TorrentTransportFactory implements TransportFactoryExtension {
 
   private final static Logger LOG = Logger.getInstance(TorrentTransportFactory.class.getName());
 
@@ -73,22 +70,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
     myBuildTracker = currentBuildTracker;
     myConfiguration = configuration;
     myAgentConfig = config;
-  }
-
-  @Nullable
-  @Override
-  public ArtifactAccessor createArtifactAccessor(@NotNull Map<String, String> map) {
-    URLContentRetriever transport = getTransport(map);
-    if (transport == null) {
-      return null;
-    }
-    return new TeamCityArtifactAccessor(transport, myConfiguration.getServerURL());
-  }
-
-  @NotNull
-  @Override
-  public String getType() {
-    return "torrent";
   }
 
   private HttpClient createHttpClient() {
