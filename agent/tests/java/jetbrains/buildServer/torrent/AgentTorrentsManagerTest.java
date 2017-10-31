@@ -23,6 +23,7 @@ import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.BuildAgent;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
+import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.agent.impl.CurrentBuildTrackerImpl;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -59,11 +60,12 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
     m.checking(new Expectations() {{
       allowing(cacheProvider).addListener(with(any(TorrentArtifactCacheListener.class)));
     }});
+    final ArtifactsWatcher artifactsWatcher = m.mock(ArtifactsWatcher.class);
 
     AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(agentConfiguration);
     TorrentFilesFactory tff = new TorrentFilesFactory(agentConfiguration, trackerConfiguration, new FakeAgentIdleTasks(), seeder);
 
-    myTorrentsManager = new AgentTorrentsManager(dispatcher, cacheProvider, new CurrentBuildTrackerImpl(dispatcher), trackerConfiguration, seeder, tff);
+    myTorrentsManager = new AgentTorrentsManager(dispatcher, cacheProvider, new CurrentBuildTrackerImpl(dispatcher), trackerConfiguration, seeder, tff, artifactsWatcher);
   }
 
   @AfterMethod

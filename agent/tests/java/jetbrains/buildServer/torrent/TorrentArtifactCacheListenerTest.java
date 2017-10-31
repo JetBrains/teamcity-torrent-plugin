@@ -4,6 +4,7 @@ import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.*;
+import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.impl.DirectoryCacheProviderImpl;
@@ -12,6 +13,7 @@ import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
+import org.jmock.Mock;
 import org.jmock.Mockery;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -61,14 +63,15 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     }});
 
     final TorrentConfiguration configuration = new FakeTorrentConfiguration();
+    final ArtifactsWatcher artifactsWatcher = m.mock(ArtifactsWatcher.class);
 
     mySeeder = new AgentTorrentsSeeder(myAgentConfiguration);
     TorrentFilesFactory torrentsFactory = new TorrentFilesFactory(myAgentConfiguration, configuration, new FakeAgentIdleTasks(), mySeeder);
 
     final EventDispatcher<AgentLifeCycleListener> eventDispatcher = EventDispatcher.create(AgentLifeCycleListener.class);
-    AgentTorrentsManager manager = new AgentTorrentsManager(eventDispatcher, cacheProvider, buildTracker, configuration, mySeeder, torrentsFactory);
+    AgentTorrentsManager manager = new AgentTorrentsManager(eventDispatcher, cacheProvider, buildTracker, configuration, mySeeder, torrentsFactory, artifactsWatcher);
 
-    myCacheListener = new TorrentArtifactCacheListener(mySeeder, buildTracker, configuration, manager, torrentsFactory);
+    myCacheListener = new TorrentArtifactCacheListener(mySeeder, buildTracker, configuration, manager, torrentsFactory, artifactsWatcher);
 
     myCacheListener.onCacheInitialized(new DirectoryCacheProviderImpl(getTorrentsDirectory(), new SimpleDigestCalculator()));
     manager.checkReady();

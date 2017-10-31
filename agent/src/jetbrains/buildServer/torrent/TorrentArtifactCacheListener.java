@@ -1,22 +1,21 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
-import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
 import jetbrains.buildServer.agent.NoRunningBuildException;
+import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
-import jetbrains.buildServer.artifacts.LocalCache;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URI;
+import java.util.Arrays;
 
 /**
  * @author Sergey.Pak
@@ -32,17 +31,20 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   private ArtifactCacheProvider myArtifactCacheProvider;
   private final TorrentConfiguration myConfiguration;
   private final AgentTorrentsManager myTorrentsManager;
+  private final ArtifactsWatcher myArtifactsWatcher;
 
   public TorrentArtifactCacheListener(@NotNull final TorrentsSeeder torrentsSeeder,
                                       @NotNull final CurrentBuildTracker currentBuildTracker,
                                       @NotNull final TorrentConfiguration configuration,
                                       @NotNull final AgentTorrentsManager torrentsManager,
-                                      @NotNull final TorrentFilesFactory torrentFilesFactory) {
+                                      @NotNull final TorrentFilesFactory torrentFilesFactory,
+                                      @NotNull final ArtifactsWatcher artifactsWatcher) {
     myTorrentsSeeder = torrentsSeeder;
     myBuildTracker = currentBuildTracker;
     myConfiguration = configuration;
     myTorrentsManager = torrentsManager;
     myTorrentFilesFactory = torrentFilesFactory;
+    myArtifactsWatcher = artifactsWatcher;
   }
 
   public void onCacheInitialized(@NotNull final ArtifactCacheProvider artifactCacheProvider) {

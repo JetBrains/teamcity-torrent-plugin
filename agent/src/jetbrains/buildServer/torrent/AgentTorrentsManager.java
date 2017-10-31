@@ -4,6 +4,7 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.TorrentDefaults;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
+import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -32,11 +33,12 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
                               @NotNull final CurrentBuildTracker currentBuildTracker,
                               @NotNull final TorrentConfiguration trackerManager,
                               @NotNull final AgentTorrentsSeeder torrentsSeeder,
-                              @NotNull final TorrentFilesFactory torrentFilesFactory) throws Exception {
+                              @NotNull final TorrentFilesFactory torrentFilesFactory,
+                              @NotNull final ArtifactsWatcher artifactsWatcher) throws Exception {
     eventDispatcher.addListener(this);
     myTrackerManager = trackerManager;
     myTorrentsSeeder = torrentsSeeder;
-    artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(torrentsSeeder, currentBuildTracker, trackerManager, this, torrentFilesFactory));
+    artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(torrentsSeeder, currentBuildTracker, trackerManager, this, torrentFilesFactory, artifactsWatcher));
   }
 
   private boolean updateSettings() {
