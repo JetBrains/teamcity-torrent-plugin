@@ -81,33 +81,35 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
       LOG.debug("Won't create torrent for " + absolutePath + ". Artifact is too small: " + file.length());
       return;
     }
+
+    File createdTorrentFile = publishTorrentFileAndStartSeeding(file);
+
+    if (createdTorrentFile == null) {
+      return;
+    }
+
     File cacheCurrentBuildDir;
     try {
       cacheCurrentBuildDir = getCurrentBuildFolderCache();
     } catch (NoRunningBuildException e) {
-      logErrorThatCacheCurrentBuildNotFound(absolutePath);
+      logWarningThatCacheCurrentBuildNotFound(absolutePath);
       return;
     }
     if (cacheCurrentBuildDir == null) {
-      logErrorThatCacheCurrentBuildNotFound(absolutePath);
+      logWarningThatCacheCurrentBuildNotFound(absolutePath);
       return;
     }
 
-    publishTorrentFileAndStartSeeding(file, cacheCurrentBuildDir);
+    createTorrentFileCopyAndAddAsArtifact(createdTorrentFile, file, cacheCurrentBuildDir);
   }
 
-  private void logErrorThatCacheCurrentBuildNotFound(String artifactPath) {
-    LOG.error(String.format("unable to find cache folder for current build. Torrent file for %s was not send to the server", artifactPath));
+  private void logWarningThatCacheCurrentBuildNotFound(String artifactPath) {
+    LOG.warn(String.format("unable to find cache folder for current build. Torrent file for %s was not send to the server", artifactPath));
   }
 
-  private void publishTorrentFileAndStartSeeding(@NotNull final File file, @NotNull final File cacheCurrentBuildDir) {
-    final String relativePath = FileUtil.getRelativePath(myArtifactCacheProvider.getCacheDir(), file);
-    if (relativePath == null)
-      return;
-
-    File torrentFile = myTorrentFilesFactory.createTorrentFile(file);
-    if (torrentFile == null) return;
-
+  private void createTorrentFileCopyAndAddAsArtifact(@NotNull File torrentFile,
+                                                     @NotNull final File file,
+                                                     @NotNull final File cacheCurrentBuildDir) {
     String artifactDirs = FileUtil.getRelativePath(cacheCurrentBuildDir, file.getParentFile());
     if (artifactDirs == null) {
       LOG.warn("artifact directories are null");
@@ -126,8 +128,20 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     String torrentArtifactPath = createArtifactPath(torrentFileCopy, Constants.TORRENTS_DIR_ON_SERVER + artifactDirs);
 
     myArtifactsWatcher.addNewArtifactsPath(torrentArtifactPath);
+  }
+
+  @Nullable
+  private File publishTorrentFileAndStartSeeding(@NotNull final File file) {
+    final String relativePath = FileUtil.getRelativePath(myArtifactCacheProvider.getCacheDir(), file);
+    if (relativePath == null)
+      return null;
+
+    File torrentFile = myTorrentFilesFactory.createTorrentFile(file);
+    if (torrentFile == null) return null;
+
     log2Build("Started seeding " + file.getAbsolutePath());
     myTorrentsManager.getTorrentsSeeder().registerSrcAndTorrentFile(file, torrentFile, true);
+    return torrentFile;
   }
 
 
