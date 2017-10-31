@@ -16,6 +16,10 @@
 
 package jetbrains.buildServer.torrent;
 
+import jetbrains.buildServer.ArtifactsConstants;
+
 public class Constants {
   public static final String TORRENTS_DIRNAME = "torrents";
+  public static final String TORRENTS_DIR_ON_SERVER = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR  + "/" + TORRENTS_DIRNAME + "/";
+  public static final String CACHE_STATIC_DIRS = "/httpAuth/repository/download";
 }

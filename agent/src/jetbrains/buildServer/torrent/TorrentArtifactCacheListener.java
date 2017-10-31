@@ -8,13 +8,17 @@ import jetbrains.buildServer.agent.NoRunningBuildException;
 import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
+import jetbrains.buildServer.artifacts.RevisionRules;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.FileUtil;
+import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -24,6 +28,8 @@ import java.util.Arrays;
  */
 public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   private final static Logger LOG = Logger.getInstance(TorrentArtifactCacheListener.class.getName());
+
+  private final static String TORRENT_FILE_COPIES_DIR = "tempTorrentFilesCopies";
 
   private final TorrentsSeeder myTorrentsSeeder;
   private final CurrentBuildTracker myBuildTracker;
@@ -63,7 +69,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     if (isTorrentFile(file)) return;
 
     final String absolutePath = file.getAbsolutePath();
-    if (!myTorrentsManager.isTorrentEnabled()){
+    if (!myTorrentsManager.isTorrentEnabled()) {
       LOG.debug("Torrent plugin disabled. Won't seed " + absolutePath);
       return;
     }
@@ -75,11 +81,26 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
       LOG.debug("Won't create torrent for " + absolutePath + ". Artifact is too small: " + file.length());
       return;
     }
+    File cacheCurrentBuildDir;
+    try {
+      cacheCurrentBuildDir = getCurrentBuildFolderCache();
+    } catch (NoRunningBuildException e) {
+      logErrorThatCacheCurrentBuildNotFound(absolutePath);
+      return;
+    }
+    if (cacheCurrentBuildDir == null) {
+      logErrorThatCacheCurrentBuildNotFound(absolutePath);
+      return;
+    }
 
-    publishTorrentFileAndStartSeeding(file);
+    publishTorrentFileAndStartSeeding(file, cacheCurrentBuildDir);
   }
 
-  private void publishTorrentFileAndStartSeeding(@NotNull final File file) {
+  private void logErrorThatCacheCurrentBuildNotFound(String artifactPath) {
+    LOG.error(String.format("unable to find cache folder for current build. Torrent file for %s was not send to the server", artifactPath));
+  }
+
+  private void publishTorrentFileAndStartSeeding(@NotNull final File file, @NotNull final File cacheCurrentBuildDir) {
     final String relativePath = FileUtil.getRelativePath(myArtifactCacheProvider.getCacheDir(), file);
     if (relativePath == null)
       return;
@@ -87,8 +108,74 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     File torrentFile = myTorrentFilesFactory.createTorrentFile(file);
     if (torrentFile == null) return;
 
+    String artifactDirs = FileUtil.getRelativePath(cacheCurrentBuildDir, file.getParentFile());
+    if (artifactDirs == null) {
+      LOG.warn("artifact directories are null");
+      return;
+    }
+    File torrentsTempDirectory = new File(myBuildTracker.getCurrentBuild().getBuildTempDirectory(), TORRENT_FILE_COPIES_DIR);
+    File dirForTorrentCopy = new File(torrentsTempDirectory, artifactDirs);
+    File torrentFileCopy = new File(dirForTorrentCopy, file.getName() + TorrentUtil.TORRENT_FILE_SUFFIX);
+    try {
+      FileUtils.copyFile(torrentFile, torrentFileCopy);
+    } catch (IOException e) {
+      LOG.error("error in copy torrent file", e);
+      return;
+    }
+
+    String torrentArtifactPath = createArtifactPath(torrentFileCopy, Constants.TORRENTS_DIR_ON_SERVER + artifactDirs);
+
+    myArtifactsWatcher.addNewArtifactsPath(torrentArtifactPath);
     log2Build("Started seeding " + file.getAbsolutePath());
     myTorrentsManager.getTorrentsSeeder().registerSrcAndTorrentFile(file, torrentFile, true);
+  }
+
+
+  @Nullable
+  private File getCurrentBuildFolderCache() {
+    File cacheDir = myArtifactCacheProvider.getCacheDir();
+    if (cacheDir == null) {
+      return null;
+    }
+
+    File projectsDir = getProjectsDir(cacheDir);
+
+    if (projectsDir == null) {
+      return null;
+    }
+
+    File projectDir = new File(projectsDir, myBuildTracker.getCurrentBuild().getBuildTypeExternalId());
+    return new File(projectDir, myBuildTracker.getCurrentBuild().getBuildId() + RevisionRules.BUILD_ID_SUFFIX);
+  }
+
+  @Nullable
+  private File getProjectsDir(final File cacheDir) {
+    File result = cacheDir;
+    int maxCount = 10;
+    int count = 0;
+    while (!result.getAbsolutePath().endsWith(Constants.CACHE_STATIC_DIRS)) {
+      count++;
+      if (count > maxCount) {
+        LOG.error("failed get projects dir. The maximum depth of search is exceeded");
+        return null;
+      }
+      File[] childFiles = result.listFiles(new FileFilter() {
+        @Override
+        public boolean accept(File pathname) {
+          return pathname.isDirectory();
+        }
+      });
+      if (childFiles == null || childFiles.length != 1) {
+        LOG.warn(String.format("could not find child directory in %s, child file names is %s", result.getAbsolutePath(), Arrays.toString(childFiles)));
+        return null;
+      }
+      result = new File(result, childFiles[0].getName());
+    }
+    return result;
+  }
+
+  private String createArtifactPath(File source, String destination) {
+    return source.getAbsolutePath() + "=>" + destination;
   }
 
   public void onBeforeDelete(@NotNull File file) {
@@ -102,7 +189,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   public void onAfterDelete(@NotNull File file) {
   }
 
-  private void log2Build(String msg){
+  private void log2Build(String msg) {
     try {
       AgentRunningBuild currentBuild = myBuildTracker.getCurrentBuild();
       final BuildProgressLogger buildLogger = currentBuild.getBuildLogger();
