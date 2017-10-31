@@ -220,27 +220,28 @@ public class ServerTorrentsDirectorySeeder {
     }
 
     if (shouldCreateTorrentFor(artifact)) {
-      File artifactFile = new File(artifactsDirectory, artifact.getRelativePath());
+      String artifactRelativePath = artifact.getRelativePath();
+      File artifactFile = new File(artifactsDirectory, artifactRelativePath);
       if (!artifactFile.exists()) {
         LOG.debug(String.format("File '%s' doesn't exist. Won't create a torrent for it", artifactFile.getAbsolutePath()));
         return;
       }
-      File torrentFile = createTorrent(artifactFile, artifact.getRelativePath(), torrentsDir);
-      if (torrentFile != null) {
-        myTorrentsSeeder.registerSrcAndTorrentFile(artifactFile, torrentFile, myConfigurator.isTorrentEnabled());
+      File torrentFile = findTorrent(artifactFile, artifactRelativePath, torrentsDir);
+      if (!torrentFile.exists()) {
+        LOG.warn(String.format("torrent file for artifact %s doesn't exist", artifactRelativePath));
+        return;
       }
+      myTorrentsSeeder.registerSrcAndTorrentFile(artifactFile, torrentFile, myConfigurator.isTorrentEnabled());
     }
   }
 
-  @Nullable
-  private File createTorrent(@NotNull final File artifactFile,
-                             @NotNull final String artifactPath,
-                             @NotNull final File torrentsDir) {
+  @NotNull
+  private File findTorrent(@NotNull final File artifactFile,
+                           @NotNull final String artifactPath,
+                           @NotNull final File torrentsDir) {
     File destPath = new File(torrentsDir, artifactPath);
     final File parentDir = destPath.getParentFile();
-    parentDir.mkdirs();
-
-    return TorrentUtil.getOrCreateTorrent(artifactFile, artifactPath, torrentsDir, myAnnounceURI);
+    return new File(parentDir, artifactFile.getName() + TorrentUtil.TORRENT_FILE_SUFFIX);
   }
 
   private boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {

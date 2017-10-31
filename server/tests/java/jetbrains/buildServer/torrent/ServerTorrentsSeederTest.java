@@ -19,21 +19,8 @@ package jetbrains.buildServer.torrent;
 import com.intellij.util.WaitFor;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
-import jetbrains.buildServer.BaseTestCase;
-import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.TempFiles;
-import jetbrains.buildServer.XmlRpcHandlerManager;
-import jetbrains.buildServer.agentServer.Server;
-import jetbrains.buildServer.serverSide.BuildServerListener;
-import jetbrains.buildServer.serverSide.BuildServerListenerEventDispatcher;
-import jetbrains.buildServer.serverSide.ServerPaths;
-import jetbrains.buildServer.serverSide.ServerSettings;
-import jetbrains.buildServer.serverSide.executors.ExecutorServices;
-import jetbrains.buildServer.serverSide.impl.auth.SecurityContextImpl;
-import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
-import org.jmock.Expectations;
-import org.jmock.Mockery;
 import org.jmock.core.Constraint;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -43,10 +30,6 @@ import java.io.*;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * @author Sergey.Pak
@@ -65,7 +48,7 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
   }
 
 
-  public void new_file_seedeed_old_removed() throws IOException, InterruptedException {
+  public void new_file_seedeed_old_removed() throws IOException, InterruptedException, NoSuchAlgorithmException {
     System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
     System.setProperty(TorrentConfiguration.ANNOUNCE_URL, "http://localhost:6969/announce");
     System.setProperty(TorrentConfiguration.FILE_SIZE_THRESHOLD, "1");
@@ -85,6 +68,11 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
       // move to artifacts dir;
       final File srcFile = createTmpFileWithTS(artifactsDir, fileSize);
       allArtifacts.add(srcFile);
+
+      File torrentFile = new File(torrentsDir, srcFile.getName() + ".torrent");
+      assertFalse(torrentFile.exists());
+      Torrent torrentMetaInfo = Torrent.create(srcFile, URI.create(""), "");
+      torrentMetaInfo.save(torrentFile);
 
       myTorrentsSeeder.processArtifactInternal(new DummyBuildArtifactAdapter() {
         @Override
@@ -110,8 +98,6 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
         }
       }, artifactsDir, torrentsDir);
 
-      File torrentFile = new File(torrentsDir, srcFile.getName() + ".torrent");
-      assertTrue(torrentFile.exists());
       allTorrents.add(torrentFile);
 
       filesQueue.add(srcFile.getName());
