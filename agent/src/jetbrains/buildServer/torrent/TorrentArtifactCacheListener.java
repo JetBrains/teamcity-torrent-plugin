@@ -67,6 +67,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
 
   public void onAfterAddOrUpdate(@NotNull File file) {
     if (isTorrentFile(file)) return;
+    if (isTeamcityIVYFile(file)) return;
 
     final String absolutePath = file.getAbsolutePath();
     if (!myTorrentsManager.isTorrentEnabled()) {
@@ -103,6 +104,10 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     createTorrentFileCopyAndAddAsArtifact(createdTorrentFile, file, cacheCurrentBuildDir);
   }
 
+  private boolean isTeamcityIVYFile(File file) {
+    return Constants.TEAMCITY_IVY.equalsIgnoreCase(file.getName());
+  }
+
   private void logWarningThatCacheCurrentBuildNotFound(String artifactPath) {
     LOG.warn(String.format("unable to find cache folder for current build. Torrent file for %s was not send to the server", artifactPath));
   }
@@ -115,13 +120,17 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
       LOG.warn("artifact directories are null");
       return;
     }
+    if (artifactDirs.contains("..")) {
+      //reference to parent in relative path means that it is artifact from other build. We can skip it
+      return;
+    }
     File torrentsTempDirectory = new File(myBuildTracker.getCurrentBuild().getBuildTempDirectory(), TORRENT_FILE_COPIES_DIR);
     File dirForTorrentCopy = new File(torrentsTempDirectory, artifactDirs);
     File torrentFileCopy = new File(dirForTorrentCopy, file.getName() + TorrentUtil.TORRENT_FILE_SUFFIX);
     try {
       FileUtils.copyFile(torrentFile, torrentFileCopy);
     } catch (IOException e) {
-      LOG.error("error in copy torrent file", e);
+      LOG.debug("error in copy torrent file", e);
       return;
     }
 
@@ -170,7 +179,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     while (!result.getAbsolutePath().endsWith(Constants.CACHE_STATIC_DIRS)) {
       count++;
       if (count > maxCount) {
-        LOG.error("failed get projects dir. The maximum depth of search is exceeded");
+        LOG.warn("failed get projects dir. The maximum depth of search is exceeded");
         return null;
       }
       File[] childFiles = result.listFiles(new FileFilter() {

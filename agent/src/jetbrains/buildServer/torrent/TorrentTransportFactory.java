@@ -40,6 +40,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static jetbrains.buildServer.torrent.Constants.TEAMCITY_IVY;
+
 /**
  * @author Sergey.Pak
  *         Date: 7/31/13
@@ -49,7 +51,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
   private final static Logger LOG = Logger.getInstance(TorrentTransportFactory.class.getName());
 
-  public static final String TEAMCITY_IVY = "teamcity-ivy.xml";
   public static final String TEAMCITY_TORRENTS = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/torrents/";
 
   public static final int MIN_SEEDERS_COUNT_TO_TRY = 1;
