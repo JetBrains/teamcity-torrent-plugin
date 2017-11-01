@@ -128,6 +128,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     File dirForTorrentCopy = new File(torrentsTempDirectory, artifactDirs);
     File torrentFileCopy = new File(dirForTorrentCopy, file.getName() + TorrentUtil.TORRENT_FILE_SUFFIX);
     try {
+      torrentFileCopy = torrentFileCopy.getCanonicalFile();
       FileUtils.copyFile(torrentFile, torrentFileCopy);
     } catch (IOException e) {
       LOG.debug("error in copy torrent file", e);
