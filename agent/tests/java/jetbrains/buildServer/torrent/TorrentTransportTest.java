@@ -145,12 +145,12 @@ public class TorrentTransportTest extends BaseTestCase {
 
   public void testTeamcityIvy() throws IOException, NoSuchAlgorithmException {
     setTorrentTransportEnabled();
-    final File ivyFile = new File(myTempDir, TorrentTransportFactory.TEAMCITY_IVY);
+    final File ivyFile = new File(myTempDir, Constants.TEAMCITY_IVY);
 
-    final String urlString = SERVER_PATH +  TorrentTransportFactory.TEAMCITY_IVY;
+    final String urlString = SERVER_PATH +  Constants.TEAMCITY_IVY;
 
-    final File teamcityIvyFile = new File("agent/tests/resources/" +  TorrentTransportFactory.TEAMCITY_IVY);
-    myDownloadMap.put("/" + TorrentTransportFactory.TEAMCITY_IVY, teamcityIvyFile);
+    final File teamcityIvyFile = new File("agent/tests/resources/" +  Constants.TEAMCITY_IVY);
+    myDownloadMap.put("/" + Constants.TEAMCITY_IVY, teamcityIvyFile);
 
     assertNotNull(myTorrentTransport.downloadUrlTo(urlString, ivyFile));
     assertTrue(ivyFile.exists());
@@ -191,10 +191,10 @@ public class TorrentTransportTest extends BaseTestCase {
     final File artifactFile = new File(storageDir, fileName);
     createTempFile(20250).renameTo(artifactFile);
 
-    final File teamcityIvyFile = new File("agent/tests/resources/" +  TorrentTransportFactory.TEAMCITY_IVY);
-    myDownloadMap.put("/" + TorrentTransportFactory.TEAMCITY_IVY, teamcityIvyFile);
-    final String ivyUrl = SERVER_PATH +  TorrentTransportFactory.TEAMCITY_IVY;
-    final File ivyFile = new File(myTempDir, TorrentTransportFactory.TEAMCITY_IVY);
+    final File teamcityIvyFile = new File("agent/tests/resources/" +  Constants.TEAMCITY_IVY);
+    myDownloadMap.put("/" + Constants.TEAMCITY_IVY, teamcityIvyFile);
+    final String ivyUrl = SERVER_PATH +  Constants.TEAMCITY_IVY;
+    final File ivyFile = new File(myTempDir, Constants.TEAMCITY_IVY);
     myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
     Tracker tracker = new Tracker(6969);
     List<Client> clientList = new ArrayList<Client>();
@@ -240,10 +240,10 @@ public class TorrentTransportTest extends BaseTestCase {
     final File artifactFile = new File(storageDir, fileName);
     createTempFile(25*1024*1025).renameTo(artifactFile);
 
-    final File teamcityIvyFile = new File("agent/tests/resources/" +  TorrentTransportFactory.TEAMCITY_IVY);
-    myDownloadMap.put("/" + TorrentTransportFactory.TEAMCITY_IVY, teamcityIvyFile);
-    final String ivyUrl = SERVER_PATH +  TorrentTransportFactory.TEAMCITY_IVY;
-    final File ivyFile = new File(myTempDir, TorrentTransportFactory.TEAMCITY_IVY);
+    final File teamcityIvyFile = new File("agent/tests/resources/" +  Constants.TEAMCITY_IVY);
+    myDownloadMap.put("/" + Constants.TEAMCITY_IVY, teamcityIvyFile);
+    final String ivyUrl = SERVER_PATH +  Constants.TEAMCITY_IVY;
+    final File ivyFile = new File(myTempDir, Constants.TEAMCITY_IVY);
     myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
     Tracker tracker = new Tracker(6969);
     List<Client> clientList = new ArrayList<Client>();
