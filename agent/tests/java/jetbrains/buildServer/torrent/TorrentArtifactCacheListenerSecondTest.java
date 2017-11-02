@@ -16,6 +16,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 @Test
 public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
@@ -88,7 +90,13 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
     }});
 
     final File cacheDir = new File(myAgentDirectory, "cache");
-    final File buildCacheDir = new File(cacheDir, "server_url" + Constants.CACHE_STATIC_DIRS + "/" + BUILD_EXTERNAL_ID + "/" + BUILD_ID_WITH_SUFFIX);
+    List<String> subDirs = new ArrayList<String>(Constants.CACHE_STATIC_DIRS);
+    subDirs.add(BUILD_EXTERNAL_ID);
+    subDirs.add(BUILD_ID_WITH_SUFFIX);
+    File buildCacheDir = cacheDir;
+    for (String subDir : subDirs) {
+      buildCacheDir = new File(buildCacheDir, subDir);
+    }
     assertTrue(buildCacheDir.mkdirs());
     final File artifact = new File(buildCacheDir, "test.txt");
     FileUtils.writeByteArrayToFile(artifact, new byte[15000000]);

@@ -19,7 +19,9 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Sergey.Pak
@@ -177,7 +179,8 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     File result = cacheDir;
     int maxCount = 10;
     int count = 0;
-    while (!result.getAbsolutePath().endsWith(Constants.CACHE_STATIC_DIRS)) {
+    List<String> fileDirs = new ArrayList<String>();
+    while (!isCacheStaticDir(fileDirs)) {
       count++;
       if (count > maxCount) {
         LOG.warn("failed get projects dir. The maximum depth of search is exceeded");
@@ -194,8 +197,17 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
         return null;
       }
       result = new File(result, childFiles[0].getName());
+      fileDirs.add(result.getName());
     }
     return result;
+  }
+
+  private boolean isCacheStaticDir(List<String> fileDirs) {
+    int fileDirsSize = fileDirs.size();
+    List<String> mustEndWithDirs = Constants.CACHE_STATIC_DIRS;
+    if (fileDirsSize < mustEndWithDirs.size()) return false;
+    List<String> endFileDirs = fileDirs.subList(fileDirsSize - mustEndWithDirs.size(), fileDirsSize);
+    return mustEndWithDirs.equals(endFileDirs);
   }
 
   private String createArtifactPath(File source, String destination) {

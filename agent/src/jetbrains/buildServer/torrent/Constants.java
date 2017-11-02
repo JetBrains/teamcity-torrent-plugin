@@ -18,9 +18,13 @@ package jetbrains.buildServer.torrent;
 
 import jetbrains.buildServer.ArtifactsConstants;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 public class Constants {
   public static final String TORRENTS_DIRNAME = "torrents";
-  public static final String TORRENTS_DIR_ON_SERVER = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR  + "/" + TORRENTS_DIRNAME + "/";
-  public static final String CACHE_STATIC_DIRS = "/httpAuth/repository/download";
+  public static final String TORRENTS_DIR_ON_SERVER = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/" + TORRENTS_DIRNAME + "/";
+  public static final List<String> CACHE_STATIC_DIRS = Collections.unmodifiableList(Arrays.asList("httpAuth", "repository", "download"));
   public static final String TEAMCITY_IVY = "teamcity-ivy.xml";
 }
