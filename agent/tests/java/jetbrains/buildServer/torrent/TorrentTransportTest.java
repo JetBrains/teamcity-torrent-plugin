@@ -66,6 +66,7 @@ public class TorrentTransportTest extends BaseTestCase {
   private Map<String, File> myDownloadMap;
   private Map<String, String> myAgentParametersMap;
   private Map<String, byte[]> myDownloadHacks;
+  private TorrentConfiguration myConfiguration;
   private TorrentTransportFactory.TorrentTransport myTorrentTransport;
   private List<String> myDownloadAttempts;
   private List<String> myDownloadHackAttempts;
@@ -84,6 +85,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myDownloadMap = new HashMap<String, File>();
     myDownloadAttempts = new ArrayList<String>();
     myDownloadHonestly = true;
+    myConfiguration = new FakeTorrentConfiguration();
     myDownloadHacks = new HashMap<String, byte[]>();
     myDownloadHackAttempts = new ArrayList<String>();
     handler.addServlet(new ServletHolder(new HttpServlet() {
@@ -121,7 +123,7 @@ public class TorrentTransportTest extends BaseTestCase {
     mySeeder = new AgentTorrentsSeeder(agentConfiguration);
 
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder,
-                    new HttpClient(), myBuild.getBuildLogger(), "http://localhost:12345"){
+                    new HttpClient(), myBuild.getBuildLogger(), "http://localhost:12345", myConfiguration){
       @Override
       protected byte[] download(@NotNull String urlString) throws IOException {
         if (myDownloadHonestly) {
@@ -198,7 +200,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
     Tracker tracker = new Tracker(6969);
     List<Client> clientList = new ArrayList<Client>();
-    for (int i=0; i< TorrentTransportFactory.MIN_SEEDERS_COUNT_TO_TRY; i++){
+    for (int i = 0; i < myConfiguration.getMinSeedersForDownload(); i++) {
       clientList.add(new Client());
     }
     try {
@@ -247,7 +249,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
     Tracker tracker = new Tracker(6969);
     List<Client> clientList = new ArrayList<Client>();
-    for (int i=0; i< TorrentTransportFactory.MIN_SEEDERS_COUNT_TO_TRY; i++){
+    for (int i = 0; i < myConfiguration.getMinSeedersForDownload(); i++) {
       clientList.add(new Client());
     }
     try {

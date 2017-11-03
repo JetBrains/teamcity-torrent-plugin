@@ -53,8 +53,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
   public static final String TEAMCITY_TORRENTS = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/torrents/";
 
-  public static final int MIN_SEEDERS_COUNT_TO_TRY = 1;
-
   public static final String TEAMCITY_ARTIFACTS_TRANSPORT = "teamcity.artifacts.transport";
 
 
@@ -107,7 +105,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     return new TorrentTransport(myAgentTorrentsManager.getTorrentsSeeder(),
             createHttpClient(),
             buildLogger,
-            myConfiguration.getServerURL());
+            myConfiguration.getServerURL(), myConfiguration);
   }
 
   private boolean shouldUseTorrentTransport() {
@@ -126,15 +124,17 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     private final BuildProgressLogger myBuildLogger;
     private final AtomicReference<Thread> myCurrentDownload;
     private final AtomicBoolean myInterrupted;
+    private final TorrentConfiguration myConfiguration;
 
     private final Map<String, String> myTorrentsForArtifacts;
 
     protected TorrentTransport(@NotNull final TorrentsSeeder seeder,
                                @NotNull final HttpClient httpClient,
                                @NotNull final BuildProgressLogger buildLogger,
-                               @NotNull final String serverUrl) {
+                               @NotNull final String serverUrl, TorrentConfiguration configuration) {
       super(httpClient, serverUrl);
       mySeeder = seeder;
+      myConfiguration = configuration;
       myClient = mySeeder.getClient();
       myHttpClient = httpClient;
       myBuildLogger = buildLogger;
@@ -169,7 +169,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         final AtomicReference<Exception> exceptionHolder = new AtomicReference<Exception>();
         LOG.debug("start download file " + target.getName());
         Thread th = myClient.downloadAndShareOrFailAsync(
-                torrent, target, target.getParentFile(), getDownloadTimeoutSec(), MIN_SEEDERS_COUNT_TO_TRY, myInterrupted, exceptionHolder);
+                torrent, target, target.getParentFile(), getDownloadTimeoutSec(), myConfiguration.getMinSeedersForDownload(), myInterrupted, exceptionHolder);
         myCurrentDownload.set(th);
         th.join();
         myCurrentDownload.set(null);
