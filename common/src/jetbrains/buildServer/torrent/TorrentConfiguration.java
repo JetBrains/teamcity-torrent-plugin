@@ -13,6 +13,8 @@ public interface TorrentConfiguration {
   String OWN_ADDRESS = "torrent.ownAddress";
   String FILE_SIZE_THRESHOLD = "torrent.file.size.threshold.mb";
   int DEFAULT_FILE_SIZE_THRESHOLD = 10;
+  String MIN_SEEDERS_FOR_DOWNLOAD = "torrent.download.seeders.count";
+  int DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD = 2;
   String TRANSPORT_ENABLED = "torrent.transport.enabled";
   boolean DEFAULT_TRANSPORT_ENABLED = false;
   String DOWNLOAD_ENABLED = "torrent.download.enabled";
@@ -57,6 +59,12 @@ public interface TorrentConfiguration {
    * creation of torrent files)
    */
   boolean isTorrentEnabled();
+
+  /**
+   * Returns min seeders count for download.
+   * @return see above
+   */
+  int getMinSeedersForDownload();
 
   /**
    * Returns server URL

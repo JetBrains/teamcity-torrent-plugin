@@ -41,6 +41,11 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
   }
 
   @Override
+  public int getMinSeedersForDownload() {
+    return 1;
+  }
+
+  @Override
   public String getServerURL() {
     return "http://localhost:6969/bs";
   }

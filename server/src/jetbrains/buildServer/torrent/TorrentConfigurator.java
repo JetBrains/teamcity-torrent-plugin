@@ -198,6 +198,11 @@ public class TorrentConfigurator implements TorrentConfiguration {
   }
 
   @Override
+  public int getMinSeedersForDownload() {
+    return TeamCityProperties.getInteger(MIN_SEEDERS_FOR_DOWNLOAD, DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
+  }
+
+  @Override
   public String getServerURL() {
     return myServerSettings.getRootUrl();
   }

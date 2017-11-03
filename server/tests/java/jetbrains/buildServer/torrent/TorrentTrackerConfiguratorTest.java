@@ -93,6 +93,12 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
     assertFalse(TorrentUtil.shouldCreateTorrentFor(200 * 1024 * 1024 - 1, myConfigurator));
   }
 
+  public void testMinSeedersCount() {
+    assertEquals(TorrentConfiguration.DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD, myConfigurator.getMinSeedersForDownload());
+    System.setProperty(TorrentConfiguration.MIN_SEEDERS_FOR_DOWNLOAD, "5");
+    assertEquals(5, myConfigurator.getMinSeedersForDownload());
+  }
+
   public void test_announce_interval() throws IOException, TrackerMessage.MessageValidationException {
     System.setProperty(TorrentConfiguration.ANNOUNCE_INTERVAL, "10");
     myConfigurator.getConfigurationWatcher().checkForModifications();
