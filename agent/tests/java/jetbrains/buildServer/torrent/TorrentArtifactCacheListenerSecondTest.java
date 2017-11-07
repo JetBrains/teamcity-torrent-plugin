@@ -87,7 +87,7 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
       one(myArtifactsWatcher).addNewArtifactsPath(with(Matchers.endsWith("test.txt.torrent=>.teamcity/torrents/.")));
     }});
     final File cacheDir = new File(myAgentDirectory, "cache");
-    File buildStaticDir = new File(cacheDir, Constants.CACHE_STATIC_DIRS);
+    File buildStaticDir = new File(cacheDir, "localhost_6969" + File.separator + "bs" + File.separator + Constants.CACHE_STATIC_DIRS);
     File buildProjectDir = new File(buildStaticDir, BUILD_EXTERNAL_ID);
     File buildDir = new File(buildProjectDir, BUILD_ID_WITH_SUFFIX);
     assertTrue(buildDir.mkdirs());

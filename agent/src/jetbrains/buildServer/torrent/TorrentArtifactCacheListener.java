@@ -11,17 +11,14 @@ import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.RevisionRules;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
+import jetbrains.buildServer.torrent.util.StringUtils;
 import jetbrains.buildServer.util.FileUtil;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * @author Sergey.Pak
@@ -169,38 +166,14 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
 
     File projectsDir = getProjectsDir(cacheDir);
 
-    if (projectsDir == null) {
-      return null;
-    }
-
     File projectDir = new File(projectsDir, myBuildTracker.getCurrentBuild().getBuildTypeExternalId());
     return new File(projectDir, myBuildTracker.getCurrentBuild().getBuildId() + RevisionRules.BUILD_ID_SUFFIX);
   }
 
-  @Nullable
+  @NotNull
   private File getProjectsDir(final File cacheDir) {
-    File result = cacheDir;
-    int maxCount = 10;
-    int count = 0;
-    while (!result.getAbsolutePath().endsWith(Constants.CACHE_STATIC_DIRS)) {
-      count++;
-      if (count > maxCount) {
-        LOG.warn("failed get projects dir. The maximum depth of search is exceeded");
-        return null;
-      }
-      File[] childFiles = result.listFiles(new FileFilter() {
-        @Override
-        public boolean accept(File pathname) {
-          return pathname.isDirectory();
-        }
-      });
-      if (childFiles == null || childFiles.length != 1) {
-        LOG.warn(String.format("could not find child directory in %s, child file names is %s", result.getAbsolutePath(), Arrays.toString(childFiles)));
-        return null;
-      }
-      result = new File(result, childFiles[0].getName());
-    }
-    return result;
+    String serverUrlAsDirectoriesPath = StringUtils.parseServerUrlToDirectoriesPath(myConfiguration.getServerURL());
+    return new File(cacheDir, serverUrlAsDirectoriesPath + File.separator + Constants.CACHE_STATIC_DIRS);
   }
 
   private String createArtifactPath(File source, String destination) {

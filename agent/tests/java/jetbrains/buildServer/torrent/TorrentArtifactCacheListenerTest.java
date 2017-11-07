@@ -60,6 +60,8 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
       allowing(build).getBuildLogger(); will(returnValue(logger));
       allowing(build).getAgentConfiguration(); will(returnValue(myAgentConfiguration));
       allowing(cacheProvider).addListener(with(any(ArtifactsCacheListener.class)));
+      allowing(build).getBuildTypeExternalId(); will(returnValue("1"));
+      allowing(build).getBuildId(); will(returnValue(1L));
     }});
 
     final TorrentConfiguration configuration = new FakeTorrentConfiguration();
