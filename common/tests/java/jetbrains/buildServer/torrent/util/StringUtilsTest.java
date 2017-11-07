@@ -29,5 +29,21 @@ public class StringUtilsTest {
     expected = "127.0.0.1_5555" + File.separator + "m";
     actual = StringUtils.parseServerUrlToDirectoriesPath(serverUrl);
     assertEquals(actual, expected);
+
+    serverUrl = "/";
+    expected = StringUtils.RESULT_FOR_EMPTY_URL;
+    actual = StringUtils.parseServerUrlToDirectoriesPath(serverUrl);
+    assertEquals(actual, expected);
+
+    serverUrl = "////";
+    expected = StringUtils.RESULT_FOR_EMPTY_URL;
+    actual = StringUtils.parseServerUrlToDirectoriesPath(serverUrl);
+    assertEquals(actual, expected);
+
+    serverUrl = "";
+    expected = StringUtils.RESULT_FOR_EMPTY_URL;
+    actual = StringUtils.parseServerUrlToDirectoriesPath(serverUrl);
+    assertEquals(actual, expected);
+
   }
 }
