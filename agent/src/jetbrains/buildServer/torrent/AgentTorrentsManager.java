@@ -75,13 +75,13 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   @Override
   public void buildStarted(@NotNull AgentRunningBuild runningBuild) {
     checkReady();
-    removeTempTorrentDirectoryIfExist(runningBuild.getBuildTempDirectory());
+    checkThatTempTorrentDirectoryNotExist(runningBuild.getBuildTempDirectory());
   }
 
-  private void removeTempTorrentDirectoryIfExist(File buildTempDirectory) {
+  private void checkThatTempTorrentDirectoryNotExist(File buildTempDirectory) {
     File torrentsTempDirectory = new File(buildTempDirectory, Constants.TORRENT_FILE_COPIES_DIR);
     if (torrentsTempDirectory.exists()) {
-      torrentsTempDirectory.delete();
+      LOG.info("on start build exist temp torrent directory for torrent files, but it should have been removed at finish previous build");
     }
   }
 
