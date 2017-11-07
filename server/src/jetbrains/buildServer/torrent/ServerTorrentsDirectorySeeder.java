@@ -223,7 +223,7 @@ public class ServerTorrentsDirectorySeeder {
       }
       File torrentFile = findTorrent(artifactFile, artifactRelativePath, torrentsDir);
       if (!torrentFile.exists()) {
-        LOG.warn(String.format("torrent file for artifact %s doesn't exist", artifactRelativePath));
+        LOG.info(String.format("torrent file for artifact %s doesn't exist", artifactRelativePath));
         return;
       }
       myTorrentsSeeder.registerSrcAndTorrentFile(artifactFile, torrentFile, myConfigurator.isTorrentEnabled());
