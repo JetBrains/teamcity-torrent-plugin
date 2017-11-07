@@ -16,8 +16,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 @Test
 public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
@@ -88,17 +86,12 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
     myM.checking(new Expectations() {{
       one(myArtifactsWatcher).addNewArtifactsPath(with(Matchers.endsWith("test.txt.torrent=>.teamcity/torrents/.")));
     }});
-
     final File cacheDir = new File(myAgentDirectory, "cache");
-    List<String> subDirs = new ArrayList<String>(Constants.CACHE_STATIC_DIRS);
-    subDirs.add(BUILD_EXTERNAL_ID);
-    subDirs.add(BUILD_ID_WITH_SUFFIX);
-    File buildCacheDir = cacheDir;
-    for (String subDir : subDirs) {
-      buildCacheDir = new File(buildCacheDir, subDir);
-    }
-    assertTrue(buildCacheDir.mkdirs());
-    final File artifact = new File(buildCacheDir, "test.txt");
+    File buildStaticDir = new File(cacheDir, Constants.CACHE_STATIC_DIRS);
+    File buildProjectDir = new File(buildStaticDir, BUILD_EXTERNAL_ID);
+    File buildDir = new File(buildProjectDir, BUILD_ID_WITH_SUFFIX);
+    assertTrue(buildDir.mkdirs());
+    final File artifact = new File(buildDir, "test.txt");
     FileUtils.writeByteArrayToFile(artifact, new byte[15000000]);
     myCacheListener.onAfterAddOrUpdate(artifact);
     File[] tempFiles = myBuildTracker.getCurrentBuild().getBuildTempDirectory().listFiles();
@@ -109,5 +102,4 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
     assertEquals("test.txt.torrent", torrentCopies[0].getName());
     myM.assertIsSatisfied();
   }
-
 }
