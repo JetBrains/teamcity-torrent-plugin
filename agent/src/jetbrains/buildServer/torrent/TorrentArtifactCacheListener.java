@@ -142,13 +142,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   }
 
   private boolean isChildFile(File dir, File file) {
-    File parent = file.getParentFile();
-    while (parent != null) {
-      if (parent.equals(dir))
-        return true;
-      parent = parent.getParentFile();
-    }
-    return false;
+    return file.getAbsolutePath().startsWith(dir.getAbsolutePath());
   }
 
   @Nullable
