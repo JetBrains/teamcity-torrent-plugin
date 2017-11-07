@@ -25,4 +25,5 @@ public class Constants {
   public static final String TORRENTS_DIR_ON_SERVER = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/" + TORRENTS_DIRNAME + "/";
   public static final String CACHE_STATIC_DIRS = String.format("httpAuth%1$srepository%1$sdownload", File.separator);
   public static final String TEAMCITY_IVY = "teamcity-ivy.xml";
+  public static final String TORRENT_FILE_COPIES_DIR = "tempTorrentFilesCopies";
 }

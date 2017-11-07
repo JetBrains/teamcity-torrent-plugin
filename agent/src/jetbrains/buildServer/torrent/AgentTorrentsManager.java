@@ -10,6 +10,7 @@ import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
@@ -74,6 +75,14 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   @Override
   public void buildStarted(@NotNull AgentRunningBuild runningBuild) {
     checkReady();
+    removeTempTorrentDirectoryIfExist(runningBuild.getBuildTempDirectory());
+  }
+
+  private void removeTempTorrentDirectoryIfExist(File buildTempDirectory) {
+    File torrentsTempDirectory = new File(buildTempDirectory, Constants.TORRENT_FILE_COPIES_DIR);
+    if (torrentsTempDirectory.exists()) {
+      torrentsTempDirectory.delete();
+    }
   }
 
   private void startSeeder() throws IOException {

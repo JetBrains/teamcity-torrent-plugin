@@ -31,8 +31,6 @@ import java.util.List;
 public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   private final static Logger LOG = Logger.getInstance(TorrentArtifactCacheListener.class.getName());
 
-  private final static String TORRENT_FILE_COPIES_DIR = "tempTorrentFilesCopies";
-
   private final TorrentsSeeder myTorrentsSeeder;
   private final CurrentBuildTracker myBuildTracker;
   private final TorrentFilesFactory myTorrentFilesFactory;
@@ -127,7 +125,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
       //reference to parent in relative path means that it is artifact from other build. We can skip it
       return;
     }
-    File torrentsTempDirectory = new File(myBuildTracker.getCurrentBuild().getBuildTempDirectory(), TORRENT_FILE_COPIES_DIR);
+    File torrentsTempDirectory = new File(myBuildTracker.getCurrentBuild().getBuildTempDirectory(), Constants.TORRENT_FILE_COPIES_DIR);
     File dirForTorrentCopy = new File(torrentsTempDirectory, artifactDirs);
     File torrentFileCopy = new File(dirForTorrentCopy, file.getName() + TorrentUtil.TORRENT_FILE_SUFFIX);
     try {
