@@ -131,7 +131,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     protected TorrentTransport(@NotNull final TorrentsSeeder seeder,
                                @NotNull final HttpClient httpClient,
                                @NotNull final BuildProgressLogger buildLogger,
-                               @NotNull final String serverUrl, TorrentConfiguration configuration) {
+                               @NotNull final String serverUrl,
+                               @NotNull final TorrentConfiguration configuration) {
       super(httpClient, serverUrl);
       mySeeder = seeder;
       myConfiguration = configuration;
