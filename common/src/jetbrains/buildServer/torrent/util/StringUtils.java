@@ -18,6 +18,6 @@ public class StringUtils {
         serverUrl = serverUrl.substring(1);
       }
     }
-    return serverUrl.replaceAll(":", "_").replaceAll("/", File.separator);
+    return serverUrl.replace(':', '_').replace('/', File.separatorChar);
   }
 }
