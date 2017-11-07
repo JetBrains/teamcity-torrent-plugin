@@ -187,14 +187,14 @@ public class ServerTorrentsDirectorySeeder {
     removeTorrentFilesWithoutArtifacts(expectedTorrentPathsForArtifacts, torrentsDir);
   }
 
-  private void removeTorrentFilesWithoutArtifacts(@NotNull final Collection<String> expectedTorrentPathsForArtifacts,
+  private void removeTorrentFilesWithoutArtifacts(@NotNull final Set<String> expectedTorrentPathsForArtifacts,
                                                   @NotNull final File torrentsDir) {
     Collection<File> torrentsForRemoving = new ArrayList<>();
     try {
       Files.walkFileTree(torrentsDir.toPath(), new SimpleFileVisitor<Path>() {
         public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-          String relativePath = FileUtil.getRelativePath(torrentsDir, path.toFile());
-          if (expectedTorrentPathsForArtifacts.contains(relativePath)) {
+          Path relativePath = torrentsDir.toPath().relativize(path);
+          if (expectedTorrentPathsForArtifacts.contains(relativePath.toString())) {
             return FileVisitResult.CONTINUE;
           }
           torrentsForRemoving.add(path.toFile());
