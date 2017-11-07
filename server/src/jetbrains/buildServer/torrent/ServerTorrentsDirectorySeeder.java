@@ -32,10 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Maxim Podkolzine (maxim.podkolzine@jetbrains.com)
@@ -173,7 +170,7 @@ public class ServerTorrentsDirectorySeeder {
     BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_INTERNAL_ONLY);
     final File artifactsDirectory = build.getArtifactsDirectory();
     torrentsDir.mkdirs();
-    List<String> artifactRelativePaths = new ArrayList<>();
+    Set<String> expectedTorrentPathsForArtifacts = new HashSet<>();
     artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
       @NotNull
       public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
@@ -181,25 +178,24 @@ public class ServerTorrentsDirectorySeeder {
           return Continuation.SKIP_CHILDREN;
         }
         if (artifact.isFile()) {
-          artifactRelativePaths.add(artifact.getRelativePath());
+          expectedTorrentPathsForArtifacts.add(artifact.getRelativePath() + TorrentUtil.TORRENT_FILE_SUFFIX);
         }
         processArtifactInternal(artifact, artifactsDirectory, torrentsDir);
         return BuildArtifacts.BuildArtifactsProcessor.Continuation.CONTINUE;
       }
     });
-    removeTorrentFilesWithoutArtifacts(artifactRelativePaths, torrentsDir);
+    removeTorrentFilesWithoutArtifacts(expectedTorrentPathsForArtifacts, torrentsDir);
   }
 
-  private void removeTorrentFilesWithoutArtifacts(@NotNull final List<String> artifactRelativePaths,
+  private void removeTorrentFilesWithoutArtifacts(@NotNull final Collection<String> expectedTorrentPathsForArtifacts,
                                                   @NotNull final File torrentsDir) {
     Collection<File> torrentsForRemoving = new ArrayList<>();
     try {
       Files.walkFileTree(torrentsDir.toPath(), new SimpleFileVisitor<Path>() {
         public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-          for (String artifactPath : artifactRelativePaths) {
-            if (path.endsWith(artifactPath + TorrentUtil.TORRENT_FILE_SUFFIX)) {
-              return FileVisitResult.CONTINUE;
-            }
+          String relativePath = FileUtil.getRelativePath(torrentsDir, path.toFile());
+          if (expectedTorrentPathsForArtifacts.contains(relativePath)) {
+            return FileVisitResult.CONTINUE;
           }
           torrentsForRemoving.add(path.toFile());
           return FileVisitResult.CONTINUE;
