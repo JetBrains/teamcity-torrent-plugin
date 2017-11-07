@@ -202,7 +202,7 @@ public class ServerTorrentsDirectorySeeder {
         }
       });
     } catch (IOException e) {
-      LOG.warn("failed walk torrent files tree for removing useless torrents", e);
+      LOG.warnAndDebugDetails("failed walk torrent files tree for removing useless torrents", e);
     }
     torrentsForRemoving.forEach(file -> file.delete());
   }
