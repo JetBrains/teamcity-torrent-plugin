@@ -119,10 +119,11 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
                                                      @NotNull final File cacheCurrentBuildDir) {
     String artifactDirs = FileUtil.getRelativePath(cacheCurrentBuildDir, file.getParentFile());
     if (artifactDirs == null) {
-      LOG.warn("artifact directories are null");
+      LOG.warn(String.format("Unable to find relative path to artifact %s. " +
+              "Torrent file was not created for this artifact. Nobody can download the aftifact via bittorrent", file.getAbsolutePath()));
       return;
     }
-    if (artifactDirs.contains("..")) {
+    if (!isChildFile(cacheCurrentBuildDir, file)) {
       //reference to parent in relative path means that it is artifact from other build. We can skip it
       return;
     }
@@ -140,6 +141,16 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     String torrentArtifactPath = createArtifactPath(torrentFileCopy, Constants.TORRENTS_DIR_ON_SERVER + artifactDirs);
 
     myArtifactsWatcher.addNewArtifactsPath(torrentArtifactPath);
+  }
+
+  private boolean isChildFile(File dir, File file) {
+    File parent = file.getParentFile();
+    while (parent != null) {
+      if (parent.equals(dir))
+        return true;
+      parent = parent.getParentFile();
+    }
+    return false;
   }
 
   @Nullable
