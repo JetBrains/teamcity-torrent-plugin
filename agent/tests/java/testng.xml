@@ -4,6 +4,7 @@
       <class name="jetbrains.buildServer.torrent.AgentTorrentsManagerTest"/>
       <class name="jetbrains.buildServer.torrent.TorrentTransportTest"/>
       <class name="jetbrains.buildServer.torrent.TorrentArtifactCacheListenerTest"/>
+      <class name="jetbrains.buildServer.torrent.TorrentArtifactCacheListenerSecondTest"/>
     </classes>
   </test>
 </suite>

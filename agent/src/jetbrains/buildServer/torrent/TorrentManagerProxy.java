@@ -43,6 +43,11 @@ public class TorrentManagerProxy implements TorrentConfiguration {
     return call("getFileSizeThresholdMb", TorrentConfiguration.DEFAULT_FILE_SIZE_THRESHOLD);
   }
 
+  @Override
+  public int getMinSeedersForDownload() {
+    return call("getMinSeedersForDownload", TorrentConfiguration.DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
+  }
+
   public int getAnnounceIntervalSec() {
     return call("getAnnounceIntervalSec", TorrentConfiguration.DEFAULT_ANNOUNCE_INTERVAL);
   }

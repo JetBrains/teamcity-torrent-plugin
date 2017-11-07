@@ -4,11 +4,13 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.TorrentDefaults;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
+import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
@@ -32,11 +34,12 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
                               @NotNull final CurrentBuildTracker currentBuildTracker,
                               @NotNull final TorrentConfiguration trackerManager,
                               @NotNull final AgentTorrentsSeeder torrentsSeeder,
-                              @NotNull final TorrentFilesFactory torrentFilesFactory) throws Exception {
+                              @NotNull final TorrentFilesFactory torrentFilesFactory,
+                              @NotNull final ArtifactsWatcher artifactsWatcher) throws Exception {
     eventDispatcher.addListener(this);
     myTrackerManager = trackerManager;
     myTorrentsSeeder = torrentsSeeder;
-    artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(torrentsSeeder, currentBuildTracker, trackerManager, this, torrentFilesFactory));
+    artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(torrentsSeeder, currentBuildTracker, trackerManager, this, torrentFilesFactory, artifactsWatcher));
   }
 
   private boolean updateSettings() {
@@ -72,6 +75,14 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   @Override
   public void buildStarted(@NotNull AgentRunningBuild runningBuild) {
     checkReady();
+    checkThatTempTorrentDirectoryNotExist(runningBuild.getBuildTempDirectory());
+  }
+
+  private void checkThatTempTorrentDirectoryNotExist(File buildTempDirectory) {
+    File torrentsTempDirectory = new File(buildTempDirectory, Constants.TORRENT_FILE_COPIES_DIR);
+    if (torrentsTempDirectory.exists()) {
+      LOG.info("on start build exist temp torrent directory for torrent files, but it should have been removed at finish previous build");
+    }
   }
 
   private void startSeeder() throws IOException {

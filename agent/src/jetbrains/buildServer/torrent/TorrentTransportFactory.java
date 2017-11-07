@@ -8,12 +8,9 @@ import jetbrains.buildServer.ArtifactsConstants;
 import jetbrains.buildServer.agent.BuildAgentConfigurationEx;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
-import jetbrains.buildServer.artifacts.ArtifactAccessor;
-import jetbrains.buildServer.artifacts.ArtifactAccessorFactoryExtension;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.artifacts.impl.HttpTransport;
-import jetbrains.buildServer.artifacts.impl.TeamCityArtifactAccessor;
 import jetbrains.buildServer.http.HttpUtil;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
@@ -43,19 +40,18 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static jetbrains.buildServer.torrent.Constants.TEAMCITY_IVY;
+
 /**
  * @author Sergey.Pak
  *         Date: 7/31/13
  *         Time: 2:52 PM
  */
-public class TorrentTransportFactory implements TransportFactoryExtension, ArtifactAccessorFactoryExtension {
+public class TorrentTransportFactory implements TransportFactoryExtension {
 
   private final static Logger LOG = Logger.getInstance(TorrentTransportFactory.class.getName());
 
-  public static final String TEAMCITY_IVY = "teamcity-ivy.xml";
   public static final String TEAMCITY_TORRENTS = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/torrents/";
-
-  public static final int MIN_SEEDERS_COUNT_TO_TRY = 1;
 
   public static final String TEAMCITY_ARTIFACTS_TRANSPORT = "teamcity.artifacts.transport";
 
@@ -73,18 +69,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
     myBuildTracker = currentBuildTracker;
     myConfiguration = configuration;
     myAgentConfig = config;
-  }
-
-  @Nullable
-  @Override
-  public ArtifactAccessor createArtifactAccessor(@NotNull Map<String, String> map) {
-    return new TeamCityArtifactAccessor(getTransport(map), myConfiguration.getServerURL());
-  }
-
-  @NotNull
-  @Override
-  public String getType() {
-    return "torrent";
   }
 
   private HttpClient createHttpClient() {
@@ -121,7 +105,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
     return new TorrentTransport(myAgentTorrentsManager.getTorrentsSeeder(),
             createHttpClient(),
             buildLogger,
-            myConfiguration.getServerURL());
+            myConfiguration.getServerURL(), myConfiguration);
   }
 
   private boolean shouldUseTorrentTransport() {
@@ -140,15 +124,18 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
     private final BuildProgressLogger myBuildLogger;
     private final AtomicReference<Thread> myCurrentDownload;
     private final AtomicBoolean myInterrupted;
+    private final TorrentConfiguration myConfiguration;
 
     private final Map<String, String> myTorrentsForArtifacts;
 
     protected TorrentTransport(@NotNull final TorrentsSeeder seeder,
                                @NotNull final HttpClient httpClient,
                                @NotNull final BuildProgressLogger buildLogger,
-                               @NotNull final String serverUrl) {
+                               @NotNull final String serverUrl,
+                               @NotNull final TorrentConfiguration configuration) {
       super(httpClient, serverUrl);
       mySeeder = seeder;
+      myConfiguration = configuration;
       myClient = mySeeder.getClient();
       myHttpClient = httpClient;
       myBuildLogger = buildLogger;
@@ -159,6 +146,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
 
     @Nullable
     public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
+      LOG.info(String.format("trying to download %s via bittorrent", urlString));
       ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(urlString);
       if (urlString.endsWith(TEAMCITY_IVY)) {
         // downloading teamcity-ivy.xml and parsing it:
@@ -172,6 +160,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
 
       try {
         myBuildLogger.progressStarted("Downloading " + target.getName() + " via BitTorrent protocol.");
+        LOG.debug("seeders count " + TrackerHelper.getSeedersCount(torrent));
         if (TrackerHelper.getSeedersCount(torrent) == 0) {
           log2Build("No seeders found for: " + urlString);
           return null;
@@ -179,8 +168,9 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
         final long startTime = System.currentTimeMillis();
 
         final AtomicReference<Exception> exceptionHolder = new AtomicReference<Exception>();
+        LOG.debug("start download file " + target.getName());
         Thread th = myClient.downloadAndShareOrFailAsync(
-                torrent, target, target.getParentFile(), getDownloadTimeoutSec(), MIN_SEEDERS_COUNT_TO_TRY, myInterrupted, exceptionHolder);
+                torrent, target, target.getParentFile(), getDownloadTimeoutSec(), myConfiguration.getMinSeedersForDownload(), myInterrupted, exceptionHolder);
         myCurrentDownload.set(th);
         th.join();
         myCurrentDownload.set(null);
@@ -192,6 +182,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
           log2Build(String.format("Failed to download file completely via BitTorrent protocol. Expected file size: %s, actual file size: %s", String.valueOf(torrent.getSize()), String.valueOf(target.length())));
           return null;
         }
+
+        myClient.stopSeedingByPath(target);
 
         final long took = System.currentTimeMillis() - startTime + 1; // to avoid division by zero
         final long fileSize = target.length();
@@ -303,7 +295,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension, Artif
     }
 
     private long getDownloadTimeoutSec() {
-      return TeamCityProperties.getLong("teamcity.torrent.download.timeout", 600L);
+      return TeamCityProperties.getLong("teamcity.torrent.download.timeout", 10L);
     }
 
   }
