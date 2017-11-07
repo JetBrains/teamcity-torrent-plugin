@@ -5,8 +5,8 @@ import com.turn.ttorrent.common.protocol.http.HTTPAnnounceResponseMessage;
 import com.turn.ttorrent.common.protocol.http.HTTPTrackerMessage;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.TrackerRequestProcessor;
-import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
+import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.WaitFor;
 import jetbrains.buildServer.util.executors.ExecutorsFactory;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +15,11 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.*;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -195,11 +199,19 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
     assertNotContains(torrents.keySet(), torrentHash);
   }
 
-  public void test_max_number_of_seeded_torrents(){
-    System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
-    myConfigurator.getConfigurationWatcher().checkForModifications();
-    assertEquals(3, myConfigurator.getMaxNumberOfSeededTorrents());
-
-    assertEquals(3, myTorrentsSeeder.getTorrentsSeeder().getMaxTorrentsToSeed());
+  public void test_max_number_of_seeded_torrents() {
+    String oldProperty = System.getProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS);
+    try {
+      System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
+      myConfigurator.getConfigurationWatcher().checkForModifications();
+      assertEquals(3, myConfigurator.getMaxNumberOfSeededTorrents());
+      assertEquals(3, myTorrentsSeeder.getTorrentsSeeder().getMaxTorrentsToSeed());
+    } finally {
+      if (Objects.isNull(oldProperty)) {
+        System.clearProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS);
+      } else {
+        System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, oldProperty);
+      }
+    }
   }
 }
