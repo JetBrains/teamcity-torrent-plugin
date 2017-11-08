@@ -46,7 +46,7 @@ public class UnusedTorrentFilesRemoverImpl implements UnusedTorrentFilesRemover 
 
   @Override
   public void removeUnusedTorrents(List<BuildArtifact> artifacts, Path torrentsDir) {
-    Collection<File> torrentsForRemoving = new ArrayList<>();
+    Collection<Path> torrentsForRemoving = new ArrayList<>();
     Set<String> expectedTorrentPathsForArtifacts = artifacts
             .stream()
             .map(it -> it.getRelativePath() + TorrentUtil.TORRENT_FILE_SUFFIX)
@@ -58,7 +58,7 @@ public class UnusedTorrentFilesRemoverImpl implements UnusedTorrentFilesRemover 
           if (expectedTorrentPathsForArtifacts.contains(relativePath.toString())) {
             return FileVisitResult.CONTINUE;
           }
-          torrentsForRemoving.add(path.toFile());
+          torrentsForRemoving.add(path);
           return FileVisitResult.CONTINUE;
         }
       });

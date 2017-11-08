@@ -21,7 +21,10 @@ import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.TempFiles;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
+import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import org.jetbrains.annotations.NotNull;
+import org.jmock.Expectations;
+import org.jmock.Mockery;
 import org.jmock.core.Constraint;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -29,6 +32,8 @@ import org.testng.annotations.Test;
 
 import java.io.*;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
@@ -194,6 +199,23 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
     }
 
     return srcFile;
+  }
+
+  public void announceBuildArtifactsTest() {
+    Path path = Paths.get("tmp");
+    Mockery m = new Mockery();
+    BuildArtifacts buildArtifacts = m.mock(BuildArtifacts.class);
+    ArtifactsCollector artifactsCollector = m.mock(ArtifactsCollector.class);
+    ArtifactProcessor artifactProcessor = m.mock(ArtifactProcessor.class);
+    UnusedTorrentFilesRemover unusedTorrentFilesRemover = m.mock(UnusedTorrentFilesRemover.class);
+    List<BuildArtifact> artifactsCollectorResult = Collections.emptyList();
+    m.checking(new Expectations() {{
+      one(artifactProcessor).processArtifacts(with(artifactsCollectorResult));
+      one(artifactsCollector).collectArtifacts(with(buildArtifacts)); will(returnValue(artifactsCollectorResult));
+      one(unusedTorrentFilesRemover).removeUnusedTorrents(with(artifactsCollectorResult), with(path));
+    }});
+    myTorrentsSeeder.announceBuildArtifacts(path, buildArtifacts, artifactsCollector, artifactProcessor, unusedTorrentFilesRemover);
+    m.assertIsSatisfied();
   }
 
   @AfterMethod
