@@ -56,7 +56,7 @@ public class TorrentLinksController extends BaseController {
       SBuild build = myServer.findBuildInstanceById(buildId);
       if (build != null && myConfigurator.isDownloadEnabled()) {
         Collection<File> torrentFiles = myTorrentsManager.getTorrentFiles(build);
-        File baseDir = myTorrentsManager.getTorrentFilesBaseDir(build);
+        File baseDir = myTorrentsManager.getTorrentFilesBaseDir(build.getArtifactsDirectory());
         List<String> paths = getArtifactsWithTorrents(baseDir, torrentFiles);
 
         response.setContentType("text/plain");

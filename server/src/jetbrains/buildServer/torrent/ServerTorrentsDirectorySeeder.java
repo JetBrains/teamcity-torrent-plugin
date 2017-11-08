@@ -6,7 +6,6 @@ package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.SharedTorrent;
-import jetbrains.buildServer.ArtifactsConstants;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.*;
@@ -24,15 +23,13 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Maxim Podkolzine (maxim.podkolzine@jetbrains.com)
@@ -78,7 +75,15 @@ public class ServerTorrentsDirectorySeeder {
       @Override
       public void buildFinished(@NotNull SRunningBuild build) {
         if (myConfigurator.isTorrentEnabled()) {
-          announceBuildArtifacts(build);
+          File artifactsDirectory = build.getArtifactsDirectory();
+          final File torrentsDir = getTorrentFilesBaseDir(artifactsDirectory);
+          torrentsDir.mkdirs();
+          Path torrentsPath = torrentsDir.toPath();
+          announceBuildArtifacts(torrentsPath,
+                  build.getArtifacts(BuildArtifactsViewMode.VIEW_INTERNAL_ONLY),
+                  new ArtifactsCollectorImpl(),
+                  new ArtifactProcessorImpl(torrentsPath, artifactsDirectory, myTorrentsSeeder, myConfigurator),
+                  new UnusedTorrentFilesRemoverImpl(File::delete, Files::walkFileTree));
         }
       }
 
@@ -134,14 +139,13 @@ public class ServerTorrentsDirectorySeeder {
   }
 
   @NotNull
-  public File getTorrentFilesBaseDir(@NotNull SBuild build) {
-    final File artifactsDirectory = build.getArtifactsDirectory();
+  public File getTorrentFilesBaseDir(@NotNull File artifactsDirectory) {
     return new File(artifactsDirectory, TorrentsSeeder.TORRENTS_DIT_PATH);
   }
 
   @NotNull
   public Collection<File> getTorrentFiles(@NotNull SBuild build) {
-    File baseDir = getTorrentFilesBaseDir(build);
+    File baseDir = getTorrentFilesBaseDir(build.getArtifactsDirectory());
     try {
       return FileUtil.findFiles(new FileFilter() {
         public boolean accept(File file) {
@@ -155,7 +159,7 @@ public class ServerTorrentsDirectorySeeder {
 
   @NotNull
   public File getTorrentFile(@NotNull SBuild build, @NotNull String torrentPath) {
-    return new File(getTorrentFilesBaseDir(build), torrentPath);
+    return new File(getTorrentFilesBaseDir(build.getArtifactsDirectory()), torrentPath);
   }
 
   public int getNumberOfSeededTorrents() {
@@ -165,82 +169,14 @@ public class ServerTorrentsDirectorySeeder {
     return myTorrentsSeeder.getNumberOfSeededTorrents();
   }
 
-  private void announceBuildArtifacts(@NotNull final SBuild build) {
-    final File torrentsDir = getTorrentFilesBaseDir(build);
-    BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_INTERNAL_ONLY);
-    final File artifactsDirectory = build.getArtifactsDirectory();
-    torrentsDir.mkdirs();
-    Set<String> expectedTorrentPathsForArtifacts = new HashSet<>();
-    artifacts.iterateArtifacts(new BuildArtifacts.BuildArtifactsProcessor() {
-      @NotNull
-      public Continuation processBuildArtifact(@NotNull BuildArtifact artifact) {
-        if (artifact.getName().equals(ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR)) {
-          return Continuation.SKIP_CHILDREN;
-        }
-        if (artifact.isFile()) {
-          expectedTorrentPathsForArtifacts.add(artifact.getRelativePath() + TorrentUtil.TORRENT_FILE_SUFFIX);
-        }
-        processArtifactInternal(artifact, artifactsDirectory, torrentsDir);
-        return BuildArtifacts.BuildArtifactsProcessor.Continuation.CONTINUE;
-      }
-    });
-    removeTorrentFilesWithoutArtifacts(expectedTorrentPathsForArtifacts, torrentsDir);
-  }
-
-  private void removeTorrentFilesWithoutArtifacts(@NotNull final Set<String> expectedTorrentPathsForArtifacts,
-                                                  @NotNull final File torrentsDir) {
-    Collection<File> torrentsForRemoving = new ArrayList<>();
-    try {
-      Files.walkFileTree(torrentsDir.toPath(), new SimpleFileVisitor<Path>() {
-        public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-          Path relativePath = torrentsDir.toPath().relativize(path);
-          if (expectedTorrentPathsForArtifacts.contains(relativePath.toString())) {
-            return FileVisitResult.CONTINUE;
-          }
-          torrentsForRemoving.add(path.toFile());
-          return FileVisitResult.CONTINUE;
-        }
-      });
-    } catch (IOException e) {
-      LOG.warnAndDebugDetails("failed walk torrent files tree for removing useless torrents", e);
-    }
-    torrentsForRemoving.forEach(file -> file.delete());
-  }
-
-  protected void processArtifactInternal(@NotNull final BuildArtifact artifact,
-                                         @NotNull final File artifactsDirectory,
-                                         @NotNull final File torrentsDir) {
-    if (artifact.isDirectory()) {
-      return;
-    }
-
-    if (shouldCreateTorrentFor(artifact)) {
-      String artifactRelativePath = artifact.getRelativePath();
-      File artifactFile = new File(artifactsDirectory, artifactRelativePath);
-      if (!artifactFile.exists()) {
-        LOG.debug(String.format("File '%s' doesn't exist. Won't create a torrent for it", artifactFile.getAbsolutePath()));
-        return;
-      }
-      File torrentFile = findTorrent(artifactFile, artifactRelativePath, torrentsDir);
-      if (!torrentFile.exists()) {
-        LOG.info(String.format("torrent file for artifact %s doesn't exist", artifactRelativePath));
-        return;
-      }
-      myTorrentsSeeder.registerSrcAndTorrentFile(artifactFile, torrentFile, myConfigurator.isTorrentEnabled());
-    }
-  }
-
-  @NotNull
-  private File findTorrent(@NotNull final File artifactFile,
-                           @NotNull final String artifactPath,
-                           @NotNull final File torrentsDir) {
-    File destPath = new File(torrentsDir, artifactPath);
-    final File parentDir = destPath.getParentFile();
-    return new File(parentDir, artifactFile.getName() + TorrentUtil.TORRENT_FILE_SUFFIX);
-  }
-
-  private boolean shouldCreateTorrentFor(@NotNull BuildArtifact artifact) {
-    return TorrentUtil.shouldCreateTorrentFor(artifact.getSize(), myConfigurator);
+  void announceBuildArtifacts(@NotNull final Path torrentsDir,
+                              @NotNull final BuildArtifacts buildArtifacts,
+                              @NotNull final ArtifactsCollector artifactsCollector,
+                              @NotNull final ArtifactProcessor artifactProcessor,
+                              @NotNull final UnusedTorrentFilesRemover torrentFilesRemover) {
+    List<BuildArtifact> artifactList = artifactsCollector.collectArtifacts(buildArtifacts);
+    artifactProcessor.processArtifacts(artifactList);
+    torrentFilesRemover.removeUnusedTorrents(artifactList, torrentsDir);
   }
 
   public void setMaxNumberOfSeededTorrents(int maxNumberOfSeededTorrents) {
