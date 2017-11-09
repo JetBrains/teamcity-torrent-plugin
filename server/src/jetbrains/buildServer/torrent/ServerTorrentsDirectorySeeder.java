@@ -82,7 +82,7 @@ public class ServerTorrentsDirectorySeeder {
           announceBuildArtifacts(torrentsPath,
                   build.getArtifacts(BuildArtifactsViewMode.VIEW_INTERNAL_ONLY),
                   new ArtifactsCollectorImpl(),
-                  new ArtifactProcessorImpl(torrentsPath, artifactsDirectory, myTorrentsSeeder, myConfigurator),
+                  new ArtifactProcessorImpl(torrentsPath, artifactsDirectory.toPath(), myTorrentsSeeder, myConfigurator),
                   new UnusedTorrentFilesRemoverImpl(Files::delete, Files::walkFileTree));
         }
       }

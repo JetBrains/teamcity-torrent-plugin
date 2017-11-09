@@ -104,7 +104,7 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
         }
       };
 
-      new ArtifactProcessorImpl(torrentsDir.toPath(), artifactsDir, myTorrentsSeeder.getTorrentsSeeder(), myConfigurator)
+      new ArtifactProcessorImpl(torrentsDir.toPath(), artifactsDir.toPath(), myTorrentsSeeder.getTorrentsSeeder(), myConfigurator)
               .processArtifacts(Collections.singletonList(buildArtifact));
 
       allTorrents.add(torrentFile);
