@@ -20,7 +20,11 @@ import com.intellij.util.WaitFor;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.TempFiles;
+import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
+import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import org.jetbrains.annotations.NotNull;
+import org.jmock.Expectations;
+import org.jmock.Mockery;
 import org.jmock.core.Constraint;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -28,6 +32,8 @@ import org.testng.annotations.Test;
 
 import java.io.*;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
@@ -64,7 +70,7 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
     final Queue<String> filesQueue = new ArrayDeque<String>();
     final List<File> allArtifacts = new ArrayList<File>();
     final List<File> allTorrents = new ArrayList<File>();
-    for (int i=0; i<5; i++) {
+    for (int i = 0; i < 5; i++) {
       // move to artifacts dir;
       final File srcFile = createTmpFileWithTS(artifactsDir, fileSize);
       allArtifacts.add(srcFile);
@@ -74,7 +80,7 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
       Torrent torrentMetaInfo = Torrent.create(srcFile, URI.create(""), "");
       torrentMetaInfo.save(torrentFile);
 
-      myTorrentsSeeder.processArtifactInternal(new DummyBuildArtifactAdapter() {
+      BuildArtifact buildArtifact = new DummyBuildArtifactAdapter() {
         @Override
         public boolean isFile() {
           return true;
@@ -96,20 +102,23 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
         public String getRelativePath() {
           return srcFile.getName();
         }
-      }, artifactsDir, torrentsDir);
+      };
+
+      new ArtifactProcessorImpl(torrentsDir.toPath(), artifactsDir.toPath(), myTorrentsSeeder.getTorrentsSeeder(), myConfigurator)
+              .processArtifacts(Collections.singletonList(buildArtifact));
 
       allTorrents.add(torrentFile);
 
       filesQueue.add(srcFile.getName());
-      if (filesQueue.size() > 3){
+      if (filesQueue.size() > 3) {
         filesQueue.poll();
       }
-      new WaitFor(5*1000){
+      new WaitFor(5 * 1000) {
 
         @Override
         protected boolean condition() {
           final Collection<SharedTorrent> sharedTorrents = myTorrentsSeeder.getSharedTorrents();
-          if (sharedTorrents.size() <= 3){
+          if (sharedTorrents.size() <= 3) {
             for (SharedTorrent torrent : sharedTorrents) {
               if (torrent.getName().equals(srcFile.getName())) {
                 return true;
@@ -131,8 +140,8 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
       // checking removed ones;
       assertThat(allArtifacts, new Constraint() {
         public boolean eval(Object o) {
-          for (File artifact : (List<File>)o) {
-            if (!artifact.exists()){
+          for (File artifact : (List<File>) o) {
+            if (!artifact.exists()) {
               return false;
             }
           }
@@ -145,8 +154,8 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
       });
       assertThat(allTorrents, new Constraint() {
         public boolean eval(Object o) {
-          for (File link : (List<File>)o) {
-            if (link.exists() != filesQueue.contains(link.getName().replace(".torrent", ""))){
+          for (File link : (List<File>) o) {
+            if (link.exists() != filesQueue.contains(link.getName().replace(".torrent", ""))) {
               return false;
             }
           }
@@ -172,12 +181,12 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
     final OutputStream fos = new BufferedOutputStream(new FileOutputStream(srcFile));
     try {
       byte[] buf = new byte[bufLen];
-      for (int i=0; i < buf.length; i++) {
-        buf[i] = (byte)Math.round(Math.random()*128);
+      for (int i = 0; i < buf.length; i++) {
+        buf[i] = (byte) Math.round(Math.random() * 128);
       }
 
       int numWritten = 0;
-      for (int i=0; i<size / buf.length; i++) {
+      for (int i = 0; i < size / buf.length; i++) {
         fos.write(buf);
         numWritten += buf.length;
       }
@@ -192,9 +201,22 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
     return srcFile;
   }
 
-
-
-
+  public void announceBuildArtifactsTest() {
+    Path path = Paths.get("tmp");
+    Mockery m = new Mockery();
+    BuildArtifacts buildArtifacts = m.mock(BuildArtifacts.class);
+    ArtifactsCollector artifactsCollector = m.mock(ArtifactsCollector.class);
+    ArtifactProcessor artifactProcessor = m.mock(ArtifactProcessor.class);
+    UnusedTorrentFilesRemover unusedTorrentFilesRemover = m.mock(UnusedTorrentFilesRemover.class);
+    List<BuildArtifact> artifactsCollectorResult = Collections.emptyList();
+    m.checking(new Expectations() {{
+      one(artifactProcessor).processArtifacts(with(artifactsCollectorResult));
+      one(artifactsCollector).collectArtifacts(with(buildArtifacts)); will(returnValue(artifactsCollectorResult));
+      one(unusedTorrentFilesRemover).removeUnusedTorrents(with(artifactsCollectorResult), with(path));
+    }});
+    myTorrentsSeeder.announceBuildArtifacts(path, buildArtifacts, artifactsCollector, artifactProcessor, unusedTorrentFilesRemover);
+    m.assertIsSatisfied();
+  }
 
   @AfterMethod
   @Override
