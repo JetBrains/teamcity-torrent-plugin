@@ -19,8 +19,8 @@ package jetbrains.buildServer.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
@@ -36,16 +36,17 @@ public class UnusedTorrentFilesRemoverImpl implements UnusedTorrentFilesRemover 
 
   private final static Logger LOG = Logger.getInstance(UnusedTorrentFilesRemoverImpl.class.getName());
 
-  private final FileRemover myFileRemover;
-  private final FileWalker myFileWalker;
+  @NotNull private final FileRemover myFileRemover;
+  @NotNull private final FileWalker myFileWalker;
 
-  public UnusedTorrentFilesRemoverImpl(FileRemover fileRemover, FileWalker fileWalker) {
+  public UnusedTorrentFilesRemoverImpl(@NotNull FileRemover fileRemover,
+                                       @NotNull FileWalker fileWalker) {
     myFileRemover = fileRemover;
     myFileWalker = fileWalker;
   }
 
   @Override
-  public void removeUnusedTorrents(List<BuildArtifact> artifacts, Path torrentsDir) {
+  public void removeUnusedTorrents(@NotNull List<BuildArtifact> artifacts, @NotNull Path torrentsDir) {
     Collection<Path> torrentsForRemoving = new ArrayList<>();
     Set<String> expectedTorrentPathsForArtifacts = artifacts
             .stream()

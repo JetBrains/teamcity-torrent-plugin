@@ -16,12 +16,14 @@
 
 package jetbrains.buildServer.torrent;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.nio.file.FileVisitor;
 import java.nio.file.Path;
 
 public interface FileWalker {
 
-  void walkFileTree(Path root, FileVisitor<? super Path> visitor) throws IOException;
+  void walkFileTree(@NotNull Path root, @NotNull FileVisitor<? super Path> visitor) throws IOException;
 
 }

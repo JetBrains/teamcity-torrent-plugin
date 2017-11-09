@@ -17,12 +17,13 @@
 package jetbrains.buildServer.torrent;
 
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.util.List;
 
 public interface UnusedTorrentFilesRemover {
 
-  void removeUnusedTorrents(List<BuildArtifact> artifacts, Path torrentsDir);
+  void removeUnusedTorrents(@NotNull List<BuildArtifact> artifacts, @NotNull Path torrentsDir);
 
 }

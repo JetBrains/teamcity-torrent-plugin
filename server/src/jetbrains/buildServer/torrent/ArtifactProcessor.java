@@ -17,11 +17,12 @@
 package jetbrains.buildServer.torrent;
 
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public interface ArtifactProcessor {
 
-  void processArtifacts(List<BuildArtifact> artifacts);
+  void processArtifacts(@NotNull List<BuildArtifact> artifacts);
 
 }

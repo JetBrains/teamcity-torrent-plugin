@@ -27,7 +27,8 @@ import java.util.List;
 public class ArtifactsCollectorImpl implements ArtifactsCollector {
 
   @Override
-  public List<BuildArtifact> collectArtifacts(BuildArtifacts buildArtifacts) {
+  @NotNull
+  public List<BuildArtifact> collectArtifacts(@NotNull BuildArtifacts buildArtifacts) {
     final List<BuildArtifact> result = new ArrayList<>();
     buildArtifacts.iterateArtifacts(artifact -> handleArtifact(result, artifact));
     return result;

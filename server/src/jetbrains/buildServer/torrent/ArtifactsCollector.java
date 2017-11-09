@@ -18,11 +18,12 @@ package jetbrains.buildServer.torrent;
 
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public interface ArtifactsCollector {
 
-  List<BuildArtifact> collectArtifacts(BuildArtifacts buildArtifacts);
+  @NotNull List<BuildArtifact> collectArtifacts(@NotNull BuildArtifacts buildArtifacts);
 
 }

@@ -16,10 +16,12 @@
 
 package jetbrains.buildServer.torrent;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.file.Path;
 
 public interface FileRemover {
 
-  void remove(Path path);
+  void remove(@NotNull Path path);
 
 }

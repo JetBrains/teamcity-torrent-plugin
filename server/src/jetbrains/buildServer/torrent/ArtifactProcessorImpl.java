@@ -30,15 +30,15 @@ public class ArtifactProcessorImpl implements ArtifactProcessor {
 
   private final static Logger LOG = Logger.getInstance(ArtifactProcessorImpl.class.getName());
 
-  private final Path myTorrentsDir;
-  private final File myArtifactsDirectory;
-  private final TorrentsSeeder myTorrentsSeeder;
-  private final TorrentConfigurator myConfigurator;
+  @NotNull private final Path myTorrentsDir;
+  @NotNull private final File myArtifactsDirectory;
+  @NotNull private final TorrentsSeeder myTorrentsSeeder;
+  @NotNull private final TorrentConfigurator myConfigurator;
 
-  public ArtifactProcessorImpl(Path torrentsDir,
-                               File artifactsDirectory,
-                               TorrentsSeeder torrentsSeeder,
-                               TorrentConfigurator configurator) {
+  public ArtifactProcessorImpl(@NotNull Path torrentsDir,
+                               @NotNull File artifactsDirectory,
+                               @NotNull TorrentsSeeder torrentsSeeder,
+                               @NotNull TorrentConfigurator configurator) {
     myTorrentsDir = torrentsDir;
     myTorrentsSeeder = torrentsSeeder;
     myConfigurator = configurator;
@@ -46,7 +46,7 @@ public class ArtifactProcessorImpl implements ArtifactProcessor {
   }
 
   @Override
-  public void processArtifacts(List<BuildArtifact> artifacts) {
+  public void processArtifacts(@NotNull List<BuildArtifact> artifacts) {
     artifacts.forEach(artifact -> {
       if (artifact.isDirectory()) {
         return;
