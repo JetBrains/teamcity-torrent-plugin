@@ -66,6 +66,12 @@ public class UnusedTorrentFilesRemoverImpl implements UnusedTorrentFilesRemover 
     } catch (IOException e) {
       LOG.warnAndDebugDetails("failed walk torrent files tree for removing useless torrents", e);
     }
-    torrentsForRemoving.forEach(myFileRemover::remove);
+    torrentsForRemoving.forEach(path -> {
+      try {
+        myFileRemover.remove(path);
+      } catch (IOException e) {
+        LOG.warnAndDebugDetails("unable to remove unused torrent file " + path, e);
+      }
+    });
   }
 }
