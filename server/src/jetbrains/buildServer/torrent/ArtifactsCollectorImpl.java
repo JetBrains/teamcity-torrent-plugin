@@ -24,6 +24,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Artifacts collector, that collect only artifact-files and skip .teamcity system directory
+ */
 public class ArtifactsCollectorImpl implements ArtifactsCollector {
 
   @Override

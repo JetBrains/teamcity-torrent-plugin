@@ -26,6 +26,9 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * Artifact processor, that for each artifact try find torrent file and start seeding, if torrent file exist
+ */
 public class ArtifactProcessorImpl implements ArtifactProcessor {
 
   private final static Logger LOG = Logger.getInstance(ArtifactProcessorImpl.class.getName());

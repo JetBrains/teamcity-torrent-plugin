@@ -32,6 +32,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * remove all torrent files without pair in artifacts list. Pair is search by relative path.
+ * Torrent files must have suffix {@link TorrentUtil#TORRENT_FILE_SUFFIX}
+ * e.g. if artifact placed in root build directory with name "art1.jar"
+ * then torrent file must have name ar1.jar.torrent and place in torrents root dir
+ */
 public class UnusedTorrentFilesRemoverImpl implements UnusedTorrentFilesRemover {
 
   private final static Logger LOG = Logger.getInstance(UnusedTorrentFilesRemoverImpl.class.getName());

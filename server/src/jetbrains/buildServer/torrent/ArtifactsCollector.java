@@ -24,6 +24,12 @@ import java.util.List;
 
 public interface ArtifactsCollector {
 
+  /**
+   * Method for create collection with any conditions from buildArtifacts object
+   *
+   * @param buildArtifacts artifacts for creating collection
+   * @return list of selected artifacts
+   */
   @NotNull List<BuildArtifact> collectArtifacts(@NotNull BuildArtifacts buildArtifacts);
 
 }
