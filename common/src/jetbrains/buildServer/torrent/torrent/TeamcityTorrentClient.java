@@ -32,7 +32,7 @@ public class TeamcityTorrentClient {
   }
 
   public void stop() {
-    myClient.stop(true);
+    myClient.stop();
   }
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) throws IOException, NoSuchAlgorithmException {
@@ -167,7 +167,7 @@ public class TeamcityTorrentClient {
     }
 
     destDir.mkdirs();
-    if (myClient.getTorrentsMap().containsKey(torrent.getHexInfoHash())){
+    if (myClient.containsTorrentWithHash(torrent.getHexInfoHash())){
       LOG.info("Already seeding torrent with hash " + torrent.getHexInfoHash() + ". Stop seeding and try download again");
       stopSeeding(torrent);
     }
