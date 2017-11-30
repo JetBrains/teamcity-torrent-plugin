@@ -45,6 +45,22 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
     return 1;
   }
 
+  @Override public int getSocketTimeout() {
+    return 60;
+  }
+
+  @Override public int getCleanupTimeout() {
+    return 60;
+  }
+
+  @Override public int getMaxIncomingConnectionsCount() {
+    return 10;
+  }
+
+  @Override public int getMaxOutgoingConnectionsCount() {
+    return 10;
+  }
+
   @Override
   public String getServerURL() {
     return "http://localhost:6969/bs";

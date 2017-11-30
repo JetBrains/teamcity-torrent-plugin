@@ -16,6 +16,7 @@
 
 package jetbrains.buildServer.torrent;
 
+import com.turn.ttorrent.TorrentDefaults;
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
 import jetbrains.buildServer.configuration.ChangeListener;
@@ -40,6 +41,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class TorrentConfigurator implements TorrentConfiguration {
 
@@ -171,6 +173,24 @@ public class TorrentConfigurator implements TorrentConfiguration {
 
   public int getFileSizeThresholdMb() {
     return TeamCityProperties.getInteger(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
+  }
+
+  @Override public int getSocketTimeout() {
+    int defaultTimeout = (int)TimeUnit.MILLISECONDS.toSeconds(TorrentDefaults.SOCKET_CONNECTION_TIMEOUT_MILLIS);
+    return TeamCityProperties.getInteger(SOCKET_CONNECTION_TIMEOUT, defaultTimeout);
+  }
+
+  @Override public int getCleanupTimeout() {
+    int defaultTimeout = (int)TimeUnit.MILLISECONDS.toSeconds(TorrentDefaults.CLEANUP_RUN_TIMEOUT);
+    return TeamCityProperties.getInteger(CLEANUP_TIMEOUT, defaultTimeout);
+  }
+
+  @Override public int getMaxIncomingConnectionsCount() {
+    return TeamCityProperties.getInteger(MAX_INCOMING_CONNECTIONS, DEFAULT_MAX_INCOMING_CONNECTIONS);
+  }
+
+  @Override public int getMaxOutgoingConnectionsCount() {
+    return TeamCityProperties.getInteger(MAX_OUTGOING_CONNECTIONS, DEFAULT_MAX_OUTGOING_CONNECTIONS);
   }
 
   public int getAnnounceIntervalSec() {

@@ -28,6 +28,12 @@ public interface TorrentConfiguration {
   String TRACKER_DEDICATED_PORT ="torrent.tracker.dedicated.port";
   boolean DEFAULT_TRACKER_DEDICATED_PORT = false;
   boolean DEFAULT_TORRENT_ENABLED = false;
+  String SOCKET_CONNECTION_TIMEOUT ="torrent.network.connection.timeout";
+  String MAX_INCOMING_CONNECTIONS ="torrent.network.connection.incoming";
+  String MAX_OUTGOING_CONNECTIONS ="torrent.network.connection.outgoing";
+  int DEFAULT_MAX_OUTGOING_CONNECTIONS = 20;
+  int DEFAULT_MAX_INCOMING_CONNECTIONS = 15;
+  String CLEANUP_TIMEOUT ="torrent.network.cleanup.timeout";
   // this is fake option to multicast announce url changes;
   String ANNOUNCE_URL = "announce.url";
 
@@ -71,5 +77,32 @@ public interface TorrentConfiguration {
    * @return see above
    */
   String getServerURL();
+
+  /**
+   * Returns socket connection timeout in seconds.
+   * If connection is inactive more, that this timeout, then connection will be closed on first cleanup
+   * @return see above
+   */
+  int getSocketTimeout();
+
+  /**
+   * Returns cleanup timeout in seconds
+   * @return see above
+   */
+  int getCleanupTimeout();
+
+  /**
+   * Return max incoming connections count. If client already have more open connections, that this value,
+   * then all incoming will be ignored
+   * @return see above
+   */
+  int getMaxIncomingConnectionsCount();
+
+  /**
+   * Return max outgoing connections count. If client already have more open connections, that this value,
+   * then all outgoing will be ignored
+   * @return see above
+   */
+  int getMaxOutgoingConnectionsCount();
 
 }
