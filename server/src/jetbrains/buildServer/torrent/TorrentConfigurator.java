@@ -16,7 +16,7 @@
 
 package jetbrains.buildServer.torrent;
 
-import com.turn.ttorrent.TorrentDefaults;
+import com.turn.ttorrent.Constants;
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
 import jetbrains.buildServer.configuration.ChangeListener;
@@ -176,12 +176,12 @@ public class TorrentConfigurator implements TorrentConfiguration {
   }
 
   @Override public int getSocketTimeout() {
-    int defaultTimeout = (int)TimeUnit.MILLISECONDS.toSeconds(TorrentDefaults.SOCKET_CONNECTION_TIMEOUT_MILLIS);
+    int defaultTimeout = (int)TimeUnit.MILLISECONDS.toSeconds(Constants.DEFAULT_SOCKET_CONNECTION_TIMEOUT_MILLIS);
     return TeamCityProperties.getInteger(SOCKET_CONNECTION_TIMEOUT, defaultTimeout);
   }
 
   @Override public int getCleanupTimeout() {
-    int defaultTimeout = (int)TimeUnit.MILLISECONDS.toSeconds(TorrentDefaults.CLEANUP_RUN_TIMEOUT);
+    int defaultTimeout = (int)TimeUnit.MILLISECONDS.toSeconds(Constants.DEFAULT_CLEANUP_RUN_TIMEOUT_MILLIS);
     return TeamCityProperties.getInteger(CLEANUP_TIMEOUT, defaultTimeout);
   }
 

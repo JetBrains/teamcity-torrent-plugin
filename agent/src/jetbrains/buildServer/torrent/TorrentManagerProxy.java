@@ -1,6 +1,6 @@
 package jetbrains.buildServer.torrent;
 
-import com.turn.ttorrent.TorrentDefaults;
+import com.turn.ttorrent.Constants;
 import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.BuildAgent;
@@ -60,12 +60,12 @@ public class TorrentManagerProxy implements TorrentConfiguration {
   }
 
   @Override public int getSocketTimeout() {
-    int defaultTimeout = (int) TimeUnit.MILLISECONDS.toSeconds(TorrentDefaults.SOCKET_CONNECTION_TIMEOUT_MILLIS);
+    int defaultTimeout = (int) TimeUnit.MILLISECONDS.toSeconds(Constants.DEFAULT_SOCKET_CONNECTION_TIMEOUT_MILLIS);
     return call("getSocketTimeout", defaultTimeout);
   }
 
   @Override public int getCleanupTimeout() {
-    int defaultTimeout = (int) TimeUnit.MILLISECONDS.toSeconds(TorrentDefaults.CLEANUP_RUN_TIMEOUT);
+    int defaultTimeout = (int) TimeUnit.MILLISECONDS.toSeconds(Constants.DEFAULT_CLEANUP_RUN_TIMEOUT_MILLIS);
     return call("getCleanupTimeout", defaultTimeout);
   }
 
