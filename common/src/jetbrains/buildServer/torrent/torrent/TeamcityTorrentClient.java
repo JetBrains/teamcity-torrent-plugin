@@ -15,8 +15,11 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static jetbrains.buildServer.torrent.torrent.TorrentUtil.isConnectionManagerInitialized;
 
 public class TeamcityTorrentClient {
   private final static Logger LOG = Logger.getInstance(TeamcityTorrentClient.class.getName());
@@ -32,7 +35,7 @@ public class TeamcityTorrentClient {
   }
 
   public void stop() {
-    myClient.stop(true);
+    myClient.stop();
   }
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) throws IOException, NoSuchAlgorithmException {
@@ -118,6 +121,26 @@ public class TeamcityTorrentClient {
     myClient.setAnnounceInterval(announceInterval);
   }
 
+  public void setSocketTimeout(final int socketTimeoutSec) {
+    if (!isConnectionManagerInitialized(myClient)) return;
+    myClient.setSocketConnectionTimeout(socketTimeoutSec, TimeUnit.SECONDS);
+  }
+
+  public void setCleanupTimeout(final int cleanupTimeoutSec) {
+    if (!isConnectionManagerInitialized(myClient)) return;
+    myClient.setCleanupTimeout(cleanupTimeoutSec, TimeUnit.SECONDS);
+  }
+
+  public void setMaxIncomingConnectionsCount(int maxIncomingConnectionsCount) {
+    if (!isConnectionManagerInitialized(myClient)) return;
+    myClient.setMaxInConnectionsCount(maxIncomingConnectionsCount);
+  }
+
+  public void setMaxOutgoingConnectionsCount(int maxOutgoingConnectionsCount) {
+    if (!isConnectionManagerInitialized(myClient)) return;
+    myClient.setMaxOutConnectionsCount(maxOutgoingConnectionsCount);
+  }
+
   public int getNumberOfSeededTorrents() {
     return myClient.getTorrents().size();
   }
@@ -167,7 +190,7 @@ public class TeamcityTorrentClient {
     }
 
     destDir.mkdirs();
-    if (myClient.getTorrentsMap().containsKey(torrent.getHexInfoHash())){
+    if (myClient.containsTorrentWithHash(torrent.getHexInfoHash())){
       LOG.info("Already seeding torrent with hash " + torrent.getHexInfoHash() + ". Stop seeding and try download again");
       stopSeeding(torrent);
     }

@@ -172,6 +172,22 @@ public class TorrentsSeeder {
     myClient.setAnnounceInterval(announceInterval);
   }
 
+  public void setSocketTimeout(final int socketTimeoutSec) {
+    myClient.setSocketTimeout(socketTimeoutSec);
+  }
+
+  public void setCleanupTimeout(final int cleanupTimeoutSec) {
+    myClient.setCleanupTimeout(cleanupTimeoutSec);
+  }
+
+  public void setMaxIncomingConnectionsCount(int maxIncomingConnectionsCount) {
+    myClient.setMaxIncomingConnectionsCount(maxIncomingConnectionsCount);
+  }
+
+  public void setMaxOutgoingConnectionsCount(int maxOutgoingConnectionsCount) {
+    myClient.setMaxOutgoingConnectionsCount(maxOutgoingConnectionsCount);
+  }
+
   @NotNull
   public TeamcityTorrentClient getClient() {
     return myClient;

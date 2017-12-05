@@ -1,6 +1,7 @@
 package jetbrains.buildServer.torrent.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.messages.BuildMessage1;
@@ -41,6 +42,16 @@ public class TorrentUtil {
   private static void setHashingThreadsCount() {
     Torrent.setHashingThreadsCount(2); // limit number of threads generating hashes for a file
   }
+
+  public static boolean isConnectionManagerInitialized(@NotNull Client client) {
+    try {
+      client.getConnectionManager();
+      return true;
+    } catch (IllegalStateException e) {
+      return false;
+    }
+  }
+
 
   /**
    * Creates the torrent file for the specified <code>srcFile</code> and announce URI.

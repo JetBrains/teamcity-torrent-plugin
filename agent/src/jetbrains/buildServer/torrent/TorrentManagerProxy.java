@@ -1,5 +1,6 @@
 package jetbrains.buildServer.torrent;
 
+import com.turn.ttorrent.Constants;
 import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.BuildAgent;
@@ -10,6 +11,8 @@ import jetbrains.buildServer.xmlrpc.XmlRpcFactory;
 import jetbrains.buildServer.xmlrpc.XmlRpcTarget;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * User: Victory.Bedrosova
@@ -54,6 +57,24 @@ public class TorrentManagerProxy implements TorrentConfiguration {
 
   public boolean isTransportEnabled() {
     return call("isTransportEnabled", TorrentConfiguration.DEFAULT_TRANSPORT_ENABLED);
+  }
+
+  @Override public int getSocketTimeout() {
+    int defaultTimeout = (int) TimeUnit.MILLISECONDS.toSeconds(Constants.DEFAULT_SOCKET_CONNECTION_TIMEOUT_MILLIS);
+    return call("getSocketTimeout", defaultTimeout);
+  }
+
+  @Override public int getCleanupTimeout() {
+    int defaultTimeout = (int) TimeUnit.MILLISECONDS.toSeconds(Constants.DEFAULT_CLEANUP_RUN_TIMEOUT_MILLIS);
+    return call("getCleanupTimeout", defaultTimeout);
+  }
+
+  @Override public int getMaxIncomingConnectionsCount() {
+    return call("getMaxIncomingConnectionsCount", TorrentConfiguration.DEFAULT_MAX_INCOMING_CONNECTIONS);
+  }
+
+  @Override public int getMaxOutgoingConnectionsCount() {
+    return call("getMaxOutgoingConnectionsCount", TorrentConfiguration.DEFAULT_MAX_OUTGOING_CONNECTIONS);
   }
 
   public boolean isTorrentEnabled() {

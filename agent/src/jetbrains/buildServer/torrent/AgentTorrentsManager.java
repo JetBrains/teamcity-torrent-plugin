@@ -1,7 +1,6 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
-import com.turn.ttorrent.TorrentDefaults;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
@@ -25,7 +24,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   @NotNull
   private final TorrentConfiguration myTrackerManager;
   private volatile URI myTrackerAnnounceUrl;
-  private volatile Integer myAnnounceIntervalSec = TorrentDefaults.ANNOUNCE_INTERVAL_SEC;
+  private volatile Integer myAnnounceIntervalSec = com.turn.ttorrent.Constants.DEFAULT_ANNOUNCE_INTERVAL_SEC;
   private boolean myTorrentEnabled = false;
   private TorrentsSeeder myTorrentsSeeder;
 
@@ -48,7 +47,11 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       if (announceUrl == null) return false;
       myTrackerAnnounceUrl = new URI(announceUrl);
       myAnnounceIntervalSec = myTrackerManager.getAnnounceIntervalSec();
+      myTorrentsSeeder.setSocketTimeout(myTrackerManager.getSocketTimeout());
+      myTorrentsSeeder.setCleanupTimeout(myTrackerManager.getCleanupTimeout());
       myTorrentsSeeder.setAnnounceInterval(myAnnounceIntervalSec);
+      myTorrentsSeeder.setMaxIncomingConnectionsCount(myTrackerManager.getMaxIncomingConnectionsCount());
+      myTorrentsSeeder.setMaxOutgoingConnectionsCount(myTrackerManager.getMaxOutgoingConnectionsCount());
       boolean enabled = myTrackerManager.isTorrentEnabled();
       myTorrentEnabled = enabled;
       if (enabled){
