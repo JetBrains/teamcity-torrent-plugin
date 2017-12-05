@@ -98,28 +98,38 @@ public class ServerTorrentsDirectorySeeder {
     configurator.addPropertyChangeListener(new PropertyChangeListener() {
       public void propertyChange(PropertyChangeEvent evt) {
         String propertyName = evt.getPropertyName();
-        if (TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS.equals(propertyName)) {
-          setMaxNumberOfSeededTorrents((Integer) evt.getNewValue());
-          myTorrentsSeeder.setMaxTorrentsToSeed(myMaxTorrentsToSeed);
-        } else if (TorrentConfiguration.ANNOUNCE_INTERVAL.equals(propertyName)) {
-          myTorrentsSeeder.setAnnounceInterval((Integer) evt.getNewValue());
-        } else if (TorrentConfiguration.MAX_OUTGOING_CONNECTIONS.equals(propertyName)) {
-          myTorrentsSeeder.setMaxOutgoingConnectionsCount((Integer) evt.getNewValue());
-        } else if (TorrentConfiguration.MAX_INCOMING_CONNECTIONS.equals(propertyName)) {
-          myTorrentsSeeder.setMaxIncomingConnectionsCount((Integer) evt.getNewValue());
-        } else if (TorrentConfiguration.SOCKET_CONNECTION_TIMEOUT.equals(propertyName)) {
-          myTorrentsSeeder.setSocketTimeout((Integer) evt.getNewValue());
-        } else if (TorrentConfiguration.CLEANUP_TIMEOUT.equals(propertyName)) {
-          myTorrentsSeeder.setCleanupTimeout((Integer) evt.getNewValue());
-        } else if (TorrentConfiguration.ANNOUNCE_URL.equals(propertyName)) {
-          setAnnounceURI(URI.create(String.valueOf(evt.getNewValue())));
-        } else if (TorrentConfiguration.DOWNLOAD_ENABLED.equals(propertyName) || TorrentConfiguration.TRANSPORT_ENABLED.equals(propertyName)) {
-          boolean enabled = (Boolean) evt.getNewValue();
-          if (enabled) {
-            startSeeder();
-          } else {
-            stopSeeder();
-          }
+        switch (propertyName) {
+          case TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS:
+            setMaxNumberOfSeededTorrents((Integer) evt.getNewValue());
+            myTorrentsSeeder.setMaxTorrentsToSeed(myMaxTorrentsToSeed);
+            break;
+          case TorrentConfiguration.ANNOUNCE_INTERVAL:
+            myTorrentsSeeder.setAnnounceInterval((Integer) evt.getNewValue());
+            break;
+          case TorrentConfiguration.MAX_OUTGOING_CONNECTIONS:
+            myTorrentsSeeder.setMaxOutgoingConnectionsCount((Integer) evt.getNewValue());
+            break;
+          case TorrentConfiguration.MAX_INCOMING_CONNECTIONS:
+            myTorrentsSeeder.setMaxIncomingConnectionsCount((Integer) evt.getNewValue());
+            break;
+          case TorrentConfiguration.SOCKET_CONNECTION_TIMEOUT:
+            myTorrentsSeeder.setSocketTimeout((Integer) evt.getNewValue());
+            break;
+          case TorrentConfiguration.CLEANUP_TIMEOUT:
+            myTorrentsSeeder.setCleanupTimeout((Integer) evt.getNewValue());
+            break;
+          case TorrentConfiguration.ANNOUNCE_URL:
+            setAnnounceURI(URI.create(String.valueOf(evt.getNewValue())));
+            break;
+          case TorrentConfiguration.DOWNLOAD_ENABLED:
+          case TorrentConfiguration.TRANSPORT_ENABLED:
+            boolean enabled = (Boolean) evt.getNewValue();
+            if (enabled) {
+              startSeeder();
+            } else {
+              stopSeeder();
+            }
+            break;
         }
       }
     });
