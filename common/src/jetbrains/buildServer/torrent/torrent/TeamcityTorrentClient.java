@@ -15,6 +15,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,8 +27,8 @@ public class TeamcityTorrentClient {
 
   private Client myClient;
 
-  public TeamcityTorrentClient() {
-    myClient = new Client();
+  public TeamcityTorrentClient(ExecutorService es) {
+    myClient = new Client(es);
   }
 
   public void start(@NotNull InetAddress[] inetAddresses, @Nullable final URI defaultTrackerURI, final int announceInterval) throws IOException {

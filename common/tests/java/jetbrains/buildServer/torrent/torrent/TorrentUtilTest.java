@@ -20,6 +20,8 @@ import com.turn.ttorrent.client.Client;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -28,12 +30,14 @@ import static org.testng.Assert.assertTrue;
 public class TorrentUtilTest {
 
   public void isConnectionManagerInitializedTest() throws Exception {
-    Client client = new Client();
+    ExecutorService es = Executors.newFixedThreadPool(2);
+    Client client = new Client(es);
     assertFalse(TorrentUtil.isConnectionManagerInitialized(client));
     client.start(InetAddress.getLocalHost());
     assertTrue(TorrentUtil.isConnectionManagerInitialized(client));
     client.stop();
     assertTrue(TorrentUtil.isConnectionManagerInitialized(client));
+    es.shutdown();
   }
 
 }

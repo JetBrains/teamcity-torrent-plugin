@@ -32,11 +32,14 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class TorrentsSeeder {
   private final static Logger LOG = Logger.getInstance(TorrentsSeeder.class.getName());
+  private final static int DEFAULT_WORKER_POOL_SIZE = 8;
 
   public static final String TORRENTS_DIT_PATH = ".teamcity/torrents";
 
@@ -45,7 +48,9 @@ public class TorrentsSeeder {
   public static final String EXECUTOR_NAME = "Torrent files checker";
 
   @NotNull
-  private final TeamcityTorrentClient myClient = new TeamcityTorrentClient();
+  private final TeamcityTorrentClient myClient;
+  @NotNull
+  private final ExecutorService myWorkerExecutor;
   private final TorrentFilesDB myTorrentFilesDB;
   private final ScheduledExecutorService myExecutor;
   private volatile boolean myRemoveExpiredTorrentFiles;
@@ -62,6 +67,8 @@ public class TorrentsSeeder {
         }
       }
     });
+    myWorkerExecutor = Executors.newFixedThreadPool(DEFAULT_WORKER_POOL_SIZE);
+    myClient = new TeamcityTorrentClient(myWorkerExecutor);
     myExecutor = ExecutorsFactory.newFixedScheduledDaemonExecutor(EXECUTOR_NAME, 1);
   }
 
@@ -158,6 +165,7 @@ public class TorrentsSeeder {
   public void dispose() {
     stop();
     ThreadUtil.shutdownGracefully(myExecutor, EXECUTOR_NAME);
+    ThreadUtil.shutdownGracefully(myWorkerExecutor, "bittorrent client worker executor");
   }
 
   public boolean isStopped() {
