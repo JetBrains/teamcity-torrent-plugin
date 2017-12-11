@@ -50,6 +50,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Sergey.Pak
@@ -201,7 +204,7 @@ public class TorrentTransportTest extends BaseTestCase {
     Tracker tracker = new Tracker(6969);
     List<Client> clientList = new ArrayList<Client>();
     for (int i = 0; i < myConfiguration.getMinSeedersForDownload(); i++) {
-      clientList.add(new Client());
+      clientList.add(createClientWithClosingExecutorServiceOnStop());
     }
     try {
       tracker.start(true);
@@ -228,6 +231,16 @@ public class TorrentTransportTest extends BaseTestCase {
     }
   }
 
+  private Client createClientWithClosingExecutorServiceOnStop() {
+    final ExecutorService es = Executors.newFixedThreadPool(2);
+    return new Client(es) {
+      @Override public void stop(int timeout, TimeUnit timeUnit) {
+        super.stop(timeout, timeUnit);
+        es.shutdown();
+      }
+    };
+  }
+
   public void testInterrupt() throws IOException, InterruptedException, NoSuchAlgorithmException {
     setTorrentTransportEnabled();
     setDownloadHonestly(true);
@@ -250,7 +263,8 @@ public class TorrentTransportTest extends BaseTestCase {
     Tracker tracker = new Tracker(6969);
     List<Client> clientList = new ArrayList<Client>();
     for (int i = 0; i < myConfiguration.getMinSeedersForDownload(); i++) {
-      clientList.add(new Client());
+      final ExecutorService es = Executors.newFixedThreadPool(2);
+      clientList.add(createClientWithClosingExecutorServiceOnStop());
     }
     try {
       tracker.start(true);
