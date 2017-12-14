@@ -16,6 +16,7 @@ import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
+import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.StringUtil;
 import org.apache.commons.httpclient.*;
@@ -105,7 +106,9 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     return new TorrentTransport(myAgentTorrentsManager.getTorrentsSeeder(),
             createHttpClient(),
             buildLogger,
-            myConfiguration.getServerURL(), myConfiguration);
+            myConfiguration.getServerURL(),
+            myConfiguration,
+            myAgentTorrentsManager.getTorrentsDownloadStatistic());
   }
 
   private boolean shouldUseTorrentTransport() {
@@ -125,6 +128,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     private final AtomicReference<Thread> myCurrentDownload;
     private final AtomicBoolean myInterrupted;
     private final TorrentConfiguration myConfiguration;
+    @NotNull
+    private final TorrentsDownloadStatistic myTorrentsDownloadStatistic;
 
     private final Map<String, String> myTorrentsForArtifacts;
 
@@ -132,11 +137,13 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
                                @NotNull final HttpClient httpClient,
                                @NotNull final BuildProgressLogger buildLogger,
                                @NotNull final String serverUrl,
-                               @NotNull final TorrentConfiguration configuration) {
+                               @NotNull final TorrentConfiguration configuration,
+                               @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic) {
       super(httpClient, serverUrl);
       mySeeder = seeder;
       myConfiguration = configuration;
       myClient = mySeeder.getClient();
+      myTorrentsDownloadStatistic = torrentsDownloadStatistic;
       myHttpClient = httpClient;
       myBuildLogger = buildLogger;
       myTorrentsForArtifacts = new HashMap<String, String>();
@@ -155,14 +162,24 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
       Torrent torrent = downloadTorrent(parsedArtifactUrl);
       if (torrent == null) {
+        myTorrentsDownloadStatistic.fileDownloadFailed();
+        log2Build("unable download torrent file for " + urlString);
         return null;
       }
 
       try {
         myBuildLogger.progressStarted("Downloading " + target.getName() + " via BitTorrent protocol.");
-        LOG.debug("seeders count " + TrackerHelper.getSeedersCount(torrent));
-        if (TrackerHelper.getSeedersCount(torrent) == 0) {
-          log2Build("No seeders found for: " + urlString);
+
+        final int seedersCount = TrackerHelper.getSeedersCount(torrent);
+        final int minSeedersForDownload = myConfiguration.getMinSeedersForDownload();
+
+        LOG.debug("seeders count " + seedersCount);
+
+        if (seedersCount < minSeedersForDownload) {
+          String logMsg = String.format("found only %s seeders, but min required is %s for torrent %s",
+                  seedersCount, minSeedersForDownload, urlString);
+          log2Build(logMsg);
+          myTorrentsDownloadStatistic.fileDownloadFailed();
           return null;
         }
         final long startTime = System.currentTimeMillis();
@@ -170,15 +187,17 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         final AtomicReference<Exception> exceptionHolder = new AtomicReference<Exception>();
         LOG.debug("start download file " + target.getName());
         Thread th = myClient.downloadAndShareOrFailAsync(
-                torrent, target, target.getParentFile(), getDownloadTimeoutSec(), myConfiguration.getMinSeedersForDownload(), myInterrupted, exceptionHolder);
+                torrent, target, target.getParentFile(), getDownloadTimeoutSec(), minSeedersForDownload, myInterrupted, exceptionHolder);
         myCurrentDownload.set(th);
         th.join();
         myCurrentDownload.set(null);
         if (exceptionHolder.get() != null) {
+          myTorrentsDownloadStatistic.fileDownloadFailed();
           throw exceptionHolder.get();
         }
 
         if (torrent.getSize() != target.length()) {
+          myTorrentsDownloadStatistic.fileDownloadFailed();
           log2Build(String.format("Failed to download file completely via BitTorrent protocol. Expected file size: %s, actual file size: %s", String.valueOf(torrent.getSize()), String.valueOf(target.length())));
           return null;
         }
@@ -188,6 +207,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         final long took = System.currentTimeMillis() - startTime + 1; // to avoid division by zero
         final long fileSize = target.length();
         log2Build(String.format("Download successful. Avg speed %d kb/s.", fileSize / took));
+
+        myTorrentsDownloadStatistic.fileDownloaded(took, fileSize);
 
         // return standard digest
         return getDigest(urlString);

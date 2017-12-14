@@ -5,7 +5,9 @@ import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
+import jetbrains.buildServer.messages.serviceMessages.BuildStatisticValue;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
+import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,6 +25,8 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
 
   @NotNull
   private final TorrentConfiguration myTrackerManager;
+  @NotNull
+  private final TorrentsDownloadStatistic myTorrentsDownloadStatistic;
   private volatile URI myTrackerAnnounceUrl;
   private volatile Integer myAnnounceIntervalSec = com.turn.ttorrent.Constants.DEFAULT_ANNOUNCE_INTERVAL_SEC;
   private boolean myTorrentEnabled = false;
@@ -34,10 +38,12 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
                               @NotNull final TorrentConfiguration trackerManager,
                               @NotNull final AgentTorrentsSeeder torrentsSeeder,
                               @NotNull final TorrentFilesFactory torrentFilesFactory,
-                              @NotNull final ArtifactsWatcher artifactsWatcher) throws Exception {
+                              @NotNull final ArtifactsWatcher artifactsWatcher,
+                              @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic) throws Exception {
     eventDispatcher.addListener(this);
     myTrackerManager = trackerManager;
     myTorrentsSeeder = torrentsSeeder;
+    myTorrentsDownloadStatistic = torrentsDownloadStatistic;
     artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(torrentsSeeder, currentBuildTracker, trackerManager, this, torrentFilesFactory, artifactsWatcher));
   }
 
@@ -54,7 +60,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       myTorrentsSeeder.setMaxOutgoingConnectionsCount(myTrackerManager.getMaxOutgoingConnectionsCount());
       boolean enabled = myTrackerManager.isTorrentEnabled();
       myTorrentEnabled = enabled;
-      if (enabled){
+      if (enabled) {
         startSeeder();
       } else {
         stopSeeder();
@@ -71,13 +77,14 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     checkReady();
   }
 
-  public void checkReady(){
+  public void checkReady() {
     updateSettings();
   }
 
   @Override
   public void buildStarted(@NotNull AgentRunningBuild runningBuild) {
     checkReady();
+    myTorrentsDownloadStatistic.reset();
     checkThatTempTorrentDirectoryNotExist(runningBuild.getBuildTempDirectory());
   }
 
@@ -92,7 +99,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     myTorrentsSeeder.start(NetworkUtil.getSelfAddresses(null), myTrackerAnnounceUrl, myAnnounceIntervalSec);
   }
 
-  private void stopSeeder(){
+  private void stopSeeder() {
     myTorrentsSeeder.stop();
   }
 
@@ -104,6 +111,22 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   @NotNull
   public TorrentsSeeder getTorrentsSeeder() {
     return myTorrentsSeeder;
+  }
+
+  @Override public void buildFinished(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
+    final BuildProgressLogger logger = build.getBuildLogger();
+
+    logger.message(new BuildStatisticValue(TorrentsDownloadStatistic.FAIL_DOWNLOAD_KEY,
+            myTorrentsDownloadStatistic.getFailedDownloadCount()).asString());
+    logger.message(new BuildStatisticValue(TorrentsDownloadStatistic.SUCCESS_DOWNLOAD_KEY,
+            myTorrentsDownloadStatistic.getSuccessfulDownloadCount()).asString());
+    logger.message(new BuildStatisticValue(TorrentsDownloadStatistic.AVERAGE_SPEED_KEY,
+            myTorrentsDownloadStatistic.getAverageSpeedKbS()).asString());
+  }
+
+  @NotNull
+  public TorrentsDownloadStatistic getTorrentsDownloadStatistic() {
+    return myTorrentsDownloadStatistic;
   }
 
   public boolean isTorrentEnabled() {
