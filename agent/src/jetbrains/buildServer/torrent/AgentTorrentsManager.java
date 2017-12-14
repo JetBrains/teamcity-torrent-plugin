@@ -113,7 +113,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     return myTorrentsSeeder;
   }
 
-  @Override public void buildFinished(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
+  @Override public void beforeBuildFinish(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
     final BuildProgressLogger logger = build.getBuildLogger();
 
     logger.message(new BuildStatisticValue(TorrentsDownloadStatistic.FAIL_DOWNLOAD_KEY,
