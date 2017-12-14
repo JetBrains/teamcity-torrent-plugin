@@ -21,11 +21,13 @@ import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
+import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildAgent;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.agent.impl.CurrentBuildTrackerImpl;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
+import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
 import org.jmock.Expectations;
@@ -46,6 +48,7 @@ import java.util.List;
 public class AgentTorrentsManagerTest extends BaseTestCase {
   private AgentTorrentsManager myTorrentsManager;
   private BuildAgentConfigurationFixture myAgentConfigurationFixture = new BuildAgentConfigurationFixture();
+  private TorrentsDownloadStatistic myTorrentsDownloadStatistic;
 
   @BeforeMethod
   public void setUp() throws Exception {
@@ -65,7 +68,15 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
     AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(agentConfiguration);
     TorrentFilesFactory tff = new TorrentFilesFactory(agentConfiguration, trackerConfiguration, new FakeAgentIdleTasks(), seeder);
 
-    myTorrentsManager = new AgentTorrentsManager(dispatcher, cacheProvider, new CurrentBuildTrackerImpl(dispatcher), trackerConfiguration, seeder, tff, artifactsWatcher);
+    myTorrentsDownloadStatistic = new TorrentsDownloadStatistic();
+    myTorrentsManager = new AgentTorrentsManager(dispatcher,
+            cacheProvider,
+            new CurrentBuildTrackerImpl(dispatcher),
+            trackerConfiguration,
+            seeder,
+            tff,
+            artifactsWatcher,
+            myTorrentsDownloadStatistic);
   }
 
   @AfterMethod
@@ -97,7 +108,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
 
       Mock buildAgentMock = mock(BuildAgent.class);
       myTorrentsManager.agentStarted((BuildAgent) buildAgentMock.proxy());
-      new WaitFor(3*1000){
+      new WaitFor(3 * 1000) {
 
         @Override
         protected boolean condition() {

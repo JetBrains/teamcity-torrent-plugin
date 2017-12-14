@@ -7,6 +7,7 @@ import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.impl.DirectoryCacheProviderImpl;
 import jetbrains.buildServer.artifacts.impl.SimpleDigestCalculator;
+import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
@@ -73,7 +74,14 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
     TorrentFilesFactory torrentsFactory = new TorrentFilesFactory(myAgentConfiguration, configuration, new FakeAgentIdleTasks(), seeder);
 
     final EventDispatcher<AgentLifeCycleListener> eventDispatcher = EventDispatcher.create(AgentLifeCycleListener.class);
-    AgentTorrentsManager manager = new AgentTorrentsManager(eventDispatcher, myCacheProvider, myBuildTracker, configuration, seeder, torrentsFactory, myArtifactsWatcher);
+    AgentTorrentsManager manager = new AgentTorrentsManager(eventDispatcher,
+            myCacheProvider,
+            myBuildTracker,
+            configuration,
+            seeder,
+            torrentsFactory,
+            myArtifactsWatcher,
+            new TorrentsDownloadStatistic());
 
     myCacheListener = new TorrentArtifactCacheListener(seeder, myBuildTracker, configuration, manager, torrentsFactory, myArtifactsWatcher);
 

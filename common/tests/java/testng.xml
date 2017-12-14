@@ -5,6 +5,7 @@
       <class name="jetbrains.buildServer.torrent.seeder.TorrentsSeederTest"/>
       <class name="jetbrains.buildServer.torrent.util.StringUtilsTest"/>
       <class name="jetbrains.buildServer.torrent.torrent.TorrentUtilTest"/>
+      <class name="jetbrains.buildServer.torrent.util.TorrentsDownloadStatisticTest"/>
     </classes>
   </test>
 </suite>

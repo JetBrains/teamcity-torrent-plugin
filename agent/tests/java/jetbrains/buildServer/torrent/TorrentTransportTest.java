@@ -25,6 +25,7 @@ import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
+import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.server.Server;
@@ -126,7 +127,8 @@ public class TorrentTransportTest extends BaseTestCase {
     mySeeder = new AgentTorrentsSeeder(agentConfiguration);
 
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder,
-                    new HttpClient(), myBuild.getBuildLogger(), "http://localhost:12345", myConfiguration){
+                    new HttpClient(), myBuild.getBuildLogger(),
+            "http://localhost:12345", myConfiguration, new TorrentsDownloadStatistic()){
       @Override
       protected byte[] download(@NotNull String urlString) throws IOException {
         if (myDownloadHonestly) {
