@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -126,7 +127,7 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
         return new ConcurrentHashMap<String, TrackedTorrent>();
       }
     });
-    final HTTPAnnounceResponseMessage parse = (HTTPAnnounceResponseMessage) HTTPTrackerMessage.parse(ByteBuffer.wrap(response.get().getBytes()));
+    final HTTPAnnounceResponseMessage parse = (HTTPAnnounceResponseMessage) HTTPTrackerMessage.parse(new ByteArrayInputStream(response.get().getBytes()));
     assertEquals(10, parse.getInterval());
   }
 
@@ -174,7 +175,7 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
       protected boolean condition() {
         try {
           myTrackerManager.getTrackerService().process(uriCompleted2, "http://localhost:8111/", requestHandler);
-          final HTTPAnnounceResponseMessage parse = (HTTPAnnounceResponseMessage) HTTPTrackerMessage.parse(ByteBuffer.wrap(response.get()));
+          final HTTPAnnounceResponseMessage parse = (HTTPAnnounceResponseMessage) HTTPTrackerMessage.parse(new ByteArrayInputStream(response.get()));
           complete.set(parse.getComplete());
           peersSize.set(parse.getPeers().size());
 
