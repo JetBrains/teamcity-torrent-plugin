@@ -41,6 +41,11 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
   }
 
   @Override
+  public int getMaxPieceDownloadTime() {
+    return 15;
+  }
+
+  @Override
   public int getMinSeedersForDownload() {
     return 1;
   }

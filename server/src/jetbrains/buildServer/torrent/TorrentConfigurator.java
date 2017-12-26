@@ -309,6 +309,11 @@ public class TorrentConfigurator implements TorrentConfiguration {
     }
   }
 
+  @Override
+  public int getMaxPieceDownloadTime() {
+    return TeamCityProperties.getInteger(MAX_PIECE_DOWNLOAD_TIME, DEFAULT_MAX_PIECE_DOWNLOAD_TIME);
+  }
+
   //4tests
   protected TorrentConfigurationWatcher getConfigurationWatcher() {
     return myConfigurationWatcher;

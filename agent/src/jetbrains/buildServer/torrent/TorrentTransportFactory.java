@@ -12,7 +12,6 @@ import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.artifacts.impl.HttpTransport;
 import jetbrains.buildServer.http.HttpUtil;
-import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
@@ -108,7 +107,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
             buildLogger,
             myConfiguration.getServerURL(),
             myConfiguration,
-            myAgentTorrentsManager.getTorrentsDownloadStatistic());
+            myAgentTorrentsManager.getTorrentsDownloadStatistic(),
+            myConfiguration.getMaxPieceDownloadTime());
   }
 
   private boolean shouldUseTorrentTransport() {
@@ -128,6 +128,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     private final AtomicReference<Thread> myCurrentDownload;
     private final AtomicBoolean myInterrupted;
     private final TorrentConfiguration myConfiguration;
+    private final int myMaxPieceDownloadTimeSec;
     @NotNull
     private final TorrentsDownloadStatistic myTorrentsDownloadStatistic;
 
@@ -138,10 +139,12 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
                                @NotNull final BuildProgressLogger buildLogger,
                                @NotNull final String serverUrl,
                                @NotNull final TorrentConfiguration configuration,
-                               @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic) {
+                               @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic,
+                               final int maxPieceDownloadTimeSec) {
       super(httpClient, serverUrl);
       mySeeder = seeder;
       myConfiguration = configuration;
+      myMaxPieceDownloadTimeSec = maxPieceDownloadTimeSec;
       myClient = mySeeder.getClient();
       myTorrentsDownloadStatistic = torrentsDownloadStatistic;
       myHttpClient = httpClient;
@@ -187,7 +190,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         final AtomicReference<Exception> exceptionHolder = new AtomicReference<Exception>();
         LOG.debug("start download file " + target.getName());
         Thread th = myClient.downloadAndShareOrFailAsync(
-                torrent, target, target.getParentFile(), getDownloadTimeoutSec(), minSeedersForDownload, myInterrupted, exceptionHolder);
+                torrent, target, target.getParentFile(), myMaxPieceDownloadTimeSec, minSeedersForDownload, myInterrupted, exceptionHolder);
         myCurrentDownload.set(th);
         th.join();
         myCurrentDownload.set(null);
@@ -314,11 +317,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         getMethod.releaseConnection();
       }
     }
-
-    private long getDownloadTimeoutSec() {
-      return TeamCityProperties.getLong("teamcity.torrent.download.timeout", 15L);
-    }
-
   }
 
 }

@@ -34,6 +34,8 @@ public interface TorrentConfiguration {
   int DEFAULT_MAX_OUTGOING_CONNECTIONS = 20;
   int DEFAULT_MAX_INCOMING_CONNECTIONS = 15;
   String CLEANUP_TIMEOUT ="torrent.network.cleanup.timeout";
+  String MAX_PIECE_DOWNLOAD_TIME ="teamcity.torrent.peer.download.pieceTotalTimeout.seconds";
+  int DEFAULT_MAX_PIECE_DOWNLOAD_TIME = 15;
   // this is fake option to multicast announce url changes;
   String ANNOUNCE_URL = "announce.url";
 
@@ -48,6 +50,12 @@ public interface TorrentConfiguration {
    * @return see above
    */
   int getFileSizeThresholdMb();
+
+  /**
+   * Returns maximum time for download one piece
+   * @return see above
+   */
+  int getMaxPieceDownloadTime();
 
   /**
   * Returns the announce interval to avoid too frequent or too rare tracker updates

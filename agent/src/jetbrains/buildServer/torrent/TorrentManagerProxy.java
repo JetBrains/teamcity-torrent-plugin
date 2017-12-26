@@ -51,6 +51,11 @@ public class TorrentManagerProxy implements TorrentConfiguration {
     return call("getMinSeedersForDownload", TorrentConfiguration.DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
   }
 
+  @Override
+  public int getMaxPieceDownloadTime() {
+    return call("getMaxPieceDownloadTime", TorrentConfiguration.DEFAULT_MAX_PIECE_DOWNLOAD_TIME);
+  }
+
   public int getAnnounceIntervalSec() {
     return call("getAnnounceIntervalSec", TorrentConfiguration.DEFAULT_ANNOUNCE_INTERVAL);
   }
