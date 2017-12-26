@@ -24,8 +24,8 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
     return "http://localhost:6969/announce";
   }
 
-  public int getFileSizeThresholdMb() {
-    return 1;
+  public long getFileSizeThresholdBytes() {
+    return 1024*1024;
   }
 
   public int getAnnounceIntervalSec() {

@@ -42,8 +42,9 @@ public class TorrentManagerProxy implements TorrentConfiguration {
     return call("getAnnounceUrl", "http://localhost:8111/trackerAnnounce.html");
   }
 
-  public int getFileSizeThresholdMb() {
-    return call("getFileSizeThresholdMb", TorrentConfiguration.DEFAULT_FILE_SIZE_THRESHOLD);
+  public long getFileSizeThresholdBytes() {
+    final String fileSizeThresholdBytes = call("getFileSizeThresholdBytes", TorrentConfiguration.DEFAULT_FILE_SIZE_THRESHOLD);
+    return StringUtil.parseFileSize(fileSizeThresholdBytes);
   }
 
   @Override

@@ -99,7 +99,7 @@ public class TorrentUtil {
   }
 
   public static boolean shouldCreateTorrentFor(final long fileSize, @NotNull final TorrentConfiguration configuration){
-    return (fileSize >= configuration.getFileSizeThresholdMb()*1024*1024) && configuration.getAnnounceUrl() != null;
+    return (fileSize >= configuration.getFileSizeThresholdBytes()) && configuration.getAnnounceUrl() != null;
   }
 
   public static void log2Build(final String msg, final BuildProgressLogger buildLogger) {

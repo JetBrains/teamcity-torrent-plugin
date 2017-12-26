@@ -92,7 +92,7 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
   }
 
   public void test_file_size_threshold(){
-    System.setProperty(TorrentConfiguration.FILE_SIZE_THRESHOLD, "200");
+    System.setProperty(TorrentConfiguration.FILE_SIZE_THRESHOLD, "200mb");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertTrue(TorrentUtil.shouldCreateTorrentFor(200 * 1024 * 1024, myConfigurator));
     assertFalse(TorrentUtil.shouldCreateTorrentFor(200 * 1024 * 1024 - 1, myConfigurator));

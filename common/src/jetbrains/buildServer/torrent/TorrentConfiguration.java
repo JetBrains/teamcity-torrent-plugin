@@ -11,8 +11,8 @@ public interface TorrentConfiguration {
   String TRACKER_ENABLED = "torrent.tracker.enabled";
   boolean DEFAULT_TRACKER_ENABLED = true;
   String OWN_ADDRESS = "torrent.ownAddress";
-  String FILE_SIZE_THRESHOLD = "torrent.file.size.threshold.mb";
-  int DEFAULT_FILE_SIZE_THRESHOLD = 10;
+  String FILE_SIZE_THRESHOLD = "teamcity.torrent.seeder.minFileSize";
+  String DEFAULT_FILE_SIZE_THRESHOLD = "10mb";
   String MIN_SEEDERS_FOR_DOWNLOAD = "torrent.download.seeders.count";
   int DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD = 2;
   String TRANSPORT_ENABLED = "torrent.transport.enabled";
@@ -49,7 +49,7 @@ public interface TorrentConfiguration {
    * Returns minimum supported file size to avoid seeding very small files
    * @return see above
    */
-  int getFileSizeThresholdMb();
+  long getFileSizeThresholdBytes();
 
   /**
    * Returns maximum time for download one piece

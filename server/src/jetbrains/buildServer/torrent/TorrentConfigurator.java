@@ -76,7 +76,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
         setTrackerEnabled(TeamCityProperties.getBooleanOrTrue(TRACKER_ENABLED));
         setTrackerUsesDedicatedPort(TeamCityProperties.getBoolean(TRACKER_DEDICATED_PORT));
         setMaxNumberOfSeededTorrents(TeamCityProperties.getInteger(MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS));
-        setFileSizeThresholdMb(TeamCityProperties.getInteger(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD));
+        setFileSizeThresholdMb(StringUtil.parseFileSize(TeamCityProperties.getProperty(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD)));
         setTrackerTorrentExpireTimeoutSec(TeamCityProperties.getInteger(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT));
         setAnnounceIntervalSec(TeamCityProperties.getInteger(ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL));
         setAnnounceUrl(TeamCityProperties.getProperty(ANNOUNCE_URL));
@@ -107,8 +107,9 @@ public class TorrentConfigurator implements TorrentConfiguration {
     }
   }
 
-  private void setFileSizeThresholdMb(int threshold) {
-    int oldValue = TorrentUtil.getIntegerValue(myConfiguration, FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
+  private void setFileSizeThresholdMb(long threshold) {
+    String oldValueStr = myConfiguration.getProperty(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
+    long oldValue = StringUtil.parseFileSize(oldValueStr);
     if (oldValue != threshold) {
       myConfiguration.setProperty(FILE_SIZE_THRESHOLD, String.valueOf(threshold));
       propertyChanged(FILE_SIZE_THRESHOLD, oldValue, threshold);
@@ -171,8 +172,8 @@ public class TorrentConfigurator implements TorrentConfiguration {
     return TeamCityProperties.getInteger(MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS);
   }
 
-  public int getFileSizeThresholdMb() {
-    return TeamCityProperties.getInteger(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
+  public long getFileSizeThresholdBytes() {
+    return StringUtil.parseFileSize(TeamCityProperties.getProperty(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD));
   }
 
   @Override public int getSocketTimeout() {
