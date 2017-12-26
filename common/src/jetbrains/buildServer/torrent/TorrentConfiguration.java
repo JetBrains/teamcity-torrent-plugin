@@ -13,7 +13,7 @@ public interface TorrentConfiguration {
   String OWN_ADDRESS = "torrent.ownAddress";
   String FILE_SIZE_THRESHOLD = "teamcity.torrent.seeder.minFileSize";
   String DEFAULT_FILE_SIZE_THRESHOLD = "10mb";
-  String MIN_SEEDERS_FOR_DOWNLOAD = "torrent.download.seeders.count";
+  String MIN_SEEDERS_FOR_DOWNLOAD = "teamcity.torrent.peer.download.minSeedersToStart";
   int DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD = 2;
   String TRANSPORT_ENABLED = "torrent.transport.enabled";
   boolean DEFAULT_TRANSPORT_ENABLED = false;
@@ -23,17 +23,15 @@ public interface TorrentConfiguration {
   int DEFAULT_ANNOUNCE_INTERVAL = 60;
   String TRACKER_TORRENT_EXPIRE_TIMEOUT = "torrent.tracker.expire.timeout.sec";
   int DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT = 180;
-  String MAX_NUMBER_OF_SEEDED_TORRENTS = "torrent.max.seeded.number";
+  String MAX_NUMBER_OF_SEEDED_TORRENTS = "teamcity.torrent.seeder.maxSeedingFiles";
   int DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS = 2000;
   String TRACKER_DEDICATED_PORT ="torrent.tracker.dedicated.port";
   boolean DEFAULT_TRACKER_DEDICATED_PORT = false;
   boolean DEFAULT_TORRENT_ENABLED = false;
-  String SOCKET_CONNECTION_TIMEOUT ="torrent.network.connection.timeout";
-  String MAX_INCOMING_CONNECTIONS ="torrent.network.connection.incoming";
-  String MAX_OUTGOING_CONNECTIONS ="torrent.network.connection.outgoing";
-  int DEFAULT_MAX_OUTGOING_CONNECTIONS = 20;
-  int DEFAULT_MAX_INCOMING_CONNECTIONS = 15;
-  String CLEANUP_TIMEOUT ="torrent.network.cleanup.timeout";
+  String SOCKET_CONNECTION_TIMEOUT ="teamcity.torrent.peer.connection.operationTimeout.seconds";
+  String MAX_INCOMING_CONNECTIONS ="teamcity.torrent.peer.download.maxConnections";
+  int DEFAULT_MAX_CONNECTIONS = 50;
+  String CLEANUP_TIMEOUT ="teamcity.torrent.peer.connection.operationTimeoutCheckInterval.seconds";
   String MAX_PIECE_DOWNLOAD_TIME ="teamcity.torrent.peer.download.pieceTotalTimeout.seconds";
   int DEFAULT_MAX_PIECE_DOWNLOAD_TIME = 15;
   // this is fake option to multicast announce url changes;
@@ -100,17 +98,9 @@ public interface TorrentConfiguration {
   int getCleanupTimeout();
 
   /**
-   * Return max incoming connections count. If client already have more open connections, that this value,
-   * then all incoming will be ignored
+   * Return max connections count.
    * @return see above
    */
-  int getMaxIncomingConnectionsCount();
-
-  /**
-   * Return max outgoing connections count. If client already have more open connections, that this value,
-   * then all outgoing will be ignored
-   * @return see above
-   */
-  int getMaxOutgoingConnectionsCount();
+  int getMaxConnectionsCount();
 
 }

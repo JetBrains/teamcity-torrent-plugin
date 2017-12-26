@@ -169,10 +169,19 @@ public class TorrentConfigurator implements TorrentConfiguration {
   }
 
   public int getMaxNumberOfSeededTorrents() {
+    String oldPropertyName = "torrent.max.seeded.number";
+    if (!"".equals(TeamCityProperties.getProperty(oldPropertyName))) {
+      return TeamCityProperties.getInteger(oldPropertyName, DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
+    }
     return TeamCityProperties.getInteger(MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS);
   }
 
   public long getFileSizeThresholdBytes() {
+    boolean newValueNotExist = "".equals(TeamCityProperties.getProperty(FILE_SIZE_THRESHOLD));
+    if (newValueNotExist) {
+      String oldPropertyName = "torrent.file.size.threshold.mb";
+      return TeamCityProperties.getInteger(oldPropertyName, 10);
+    }
     return StringUtil.parseFileSize(TeamCityProperties.getProperty(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD));
   }
 
@@ -186,12 +195,8 @@ public class TorrentConfigurator implements TorrentConfiguration {
     return TeamCityProperties.getInteger(CLEANUP_TIMEOUT, defaultTimeout);
   }
 
-  @Override public int getMaxIncomingConnectionsCount() {
-    return TeamCityProperties.getInteger(MAX_INCOMING_CONNECTIONS, DEFAULT_MAX_INCOMING_CONNECTIONS);
-  }
-
-  @Override public int getMaxOutgoingConnectionsCount() {
-    return TeamCityProperties.getInteger(MAX_OUTGOING_CONNECTIONS, DEFAULT_MAX_OUTGOING_CONNECTIONS);
+  @Override public int getMaxConnectionsCount() {
+    return TeamCityProperties.getInteger(MAX_INCOMING_CONNECTIONS, DEFAULT_MAX_CONNECTIONS);
   }
 
   public int getAnnounceIntervalSec() {
@@ -220,6 +225,10 @@ public class TorrentConfigurator implements TorrentConfiguration {
 
   @Override
   public int getMinSeedersForDownload() {
+    String oldPropertyName = "torrent.download.seeders.count";
+    if (!"".equals(TeamCityProperties.getProperty(oldPropertyName))) {
+      return TeamCityProperties.getInteger(oldPropertyName, DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
+    }
     return TeamCityProperties.getInteger(MIN_SEEDERS_FOR_DOWNLOAD, DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
   }
 

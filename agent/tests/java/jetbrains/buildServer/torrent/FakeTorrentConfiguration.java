@@ -58,11 +58,7 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
     return 60;
   }
 
-  @Override public int getMaxIncomingConnectionsCount() {
-    return 10;
-  }
-
-  @Override public int getMaxOutgoingConnectionsCount() {
+  @Override public int getMaxConnectionsCount() {
     return 10;
   }
 

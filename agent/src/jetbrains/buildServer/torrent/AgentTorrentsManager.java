@@ -56,8 +56,9 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       myTorrentsSeeder.setSocketTimeout(myTrackerManager.getSocketTimeout());
       myTorrentsSeeder.setCleanupTimeout(myTrackerManager.getCleanupTimeout());
       myTorrentsSeeder.setAnnounceInterval(myAnnounceIntervalSec);
-      myTorrentsSeeder.setMaxIncomingConnectionsCount(myTrackerManager.getMaxIncomingConnectionsCount());
-      myTorrentsSeeder.setMaxOutgoingConnectionsCount(myTrackerManager.getMaxOutgoingConnectionsCount());
+      final int maxConnectionsCount = myTrackerManager.getMaxConnectionsCount();
+      myTorrentsSeeder.setMaxIncomingConnectionsCount(maxConnectionsCount);
+      myTorrentsSeeder.setMaxOutgoingConnectionsCount(maxConnectionsCount);
       boolean enabled = myTrackerManager.isTorrentEnabled();
       myTorrentEnabled = enabled;
       if (enabled) {

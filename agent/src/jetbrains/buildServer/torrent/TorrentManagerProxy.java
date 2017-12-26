@@ -75,12 +75,8 @@ public class TorrentManagerProxy implements TorrentConfiguration {
     return call("getCleanupTimeout", defaultTimeout);
   }
 
-  @Override public int getMaxIncomingConnectionsCount() {
-    return call("getMaxIncomingConnectionsCount", TorrentConfiguration.DEFAULT_MAX_INCOMING_CONNECTIONS);
-  }
-
-  @Override public int getMaxOutgoingConnectionsCount() {
-    return call("getMaxOutgoingConnectionsCount", TorrentConfiguration.DEFAULT_MAX_OUTGOING_CONNECTIONS);
+  @Override public int getMaxConnectionsCount() {
+    return call("getMaxConnectionsCount", TorrentConfiguration.DEFAULT_MAX_CONNECTIONS);
   }
 
   public boolean isTorrentEnabled() {
