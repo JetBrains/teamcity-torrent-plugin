@@ -128,7 +128,7 @@ public class TorrentTransportTest extends BaseTestCase {
 
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder,
                     new HttpClient(), myBuild.getBuildLogger(),
-            "http://localhost:12345", myConfiguration, new TorrentsDownloadStatistic()){
+            "http://localhost:12345", myConfiguration, new TorrentsDownloadStatistic(), 15){
       @Override
       protected byte[] download(@NotNull String urlString) throws IOException {
         if (myDownloadHonestly) {

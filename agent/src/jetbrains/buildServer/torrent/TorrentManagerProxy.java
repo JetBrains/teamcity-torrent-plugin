@@ -42,13 +42,19 @@ public class TorrentManagerProxy implements TorrentConfiguration {
     return call("getAnnounceUrl", "http://localhost:8111/trackerAnnounce.html");
   }
 
-  public int getFileSizeThresholdMb() {
-    return call("getFileSizeThresholdMb", TorrentConfiguration.DEFAULT_FILE_SIZE_THRESHOLD);
+  public long getFileSizeThresholdBytes() {
+    final String fileSizeThresholdBytes = call("getFileSizeThresholdBytes", TorrentConfiguration.DEFAULT_FILE_SIZE_THRESHOLD);
+    return StringUtil.parseFileSize(fileSizeThresholdBytes);
   }
 
   @Override
   public int getMinSeedersForDownload() {
     return call("getMinSeedersForDownload", TorrentConfiguration.DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
+  }
+
+  @Override
+  public int getMaxPieceDownloadTime() {
+    return call("getMaxPieceDownloadTime", TorrentConfiguration.DEFAULT_MAX_PIECE_DOWNLOAD_TIME);
   }
 
   public int getAnnounceIntervalSec() {
@@ -69,12 +75,8 @@ public class TorrentManagerProxy implements TorrentConfiguration {
     return call("getCleanupTimeout", defaultTimeout);
   }
 
-  @Override public int getMaxIncomingConnectionsCount() {
-    return call("getMaxIncomingConnectionsCount", TorrentConfiguration.DEFAULT_MAX_INCOMING_CONNECTIONS);
-  }
-
-  @Override public int getMaxOutgoingConnectionsCount() {
-    return call("getMaxOutgoingConnectionsCount", TorrentConfiguration.DEFAULT_MAX_OUTGOING_CONNECTIONS);
+  @Override public int getMaxConnectionsCount() {
+    return call("getMaxConnectionsCount", TorrentConfiguration.DEFAULT_MAX_CONNECTIONS);
   }
 
   public boolean isTorrentEnabled() {

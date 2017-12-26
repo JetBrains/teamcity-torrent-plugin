@@ -76,7 +76,7 @@ public class TorrentConfigurator implements TorrentConfiguration {
         setTrackerEnabled(TeamCityProperties.getBooleanOrTrue(TRACKER_ENABLED));
         setTrackerUsesDedicatedPort(TeamCityProperties.getBoolean(TRACKER_DEDICATED_PORT));
         setMaxNumberOfSeededTorrents(TeamCityProperties.getInteger(MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS));
-        setFileSizeThresholdMb(TeamCityProperties.getInteger(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD));
+        setFileSizeThresholdMb(getFileSizeThreshold());
         setTrackerTorrentExpireTimeoutSec(TeamCityProperties.getInteger(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT));
         setAnnounceIntervalSec(TeamCityProperties.getInteger(ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL));
         setAnnounceUrl(TeamCityProperties.getProperty(ANNOUNCE_URL));
@@ -107,8 +107,21 @@ public class TorrentConfigurator implements TorrentConfiguration {
     }
   }
 
-  private void setFileSizeThresholdMb(int threshold) {
-    int oldValue = TorrentUtil.getIntegerValue(myConfiguration, FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
+  private long getFileSizeThreshold() {
+    String strValue = TeamCityProperties.getProperty(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
+    try {
+      return StringUtil.parseFileSize(strValue);
+    } catch (NumberFormatException e) {
+      return StringUtil.parseFileSize(DEFAULT_FILE_SIZE_THRESHOLD);
+    }
+  }
+
+  private void setFileSizeThresholdMb(long threshold) {
+    String oldValueStr = myConfiguration.getProperty(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
+    long oldValue = 0;
+    try {
+      oldValue = StringUtil.parseFileSize(oldValueStr);
+    } catch (NumberFormatException ignored) {}
     if (oldValue != threshold) {
       myConfiguration.setProperty(FILE_SIZE_THRESHOLD, String.valueOf(threshold));
       propertyChanged(FILE_SIZE_THRESHOLD, oldValue, threshold);
@@ -168,11 +181,20 @@ public class TorrentConfigurator implements TorrentConfiguration {
   }
 
   public int getMaxNumberOfSeededTorrents() {
+    String oldPropertyName = "torrent.max.seeded.number";
+    if (!"".equals(TeamCityProperties.getProperty(oldPropertyName))) {
+      return TeamCityProperties.getInteger(oldPropertyName, DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
+    }
     return TeamCityProperties.getInteger(MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS);
   }
 
-  public int getFileSizeThresholdMb() {
-    return TeamCityProperties.getInteger(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
+  public long getFileSizeThresholdBytes() {
+    boolean newValueNotExist = "".equals(TeamCityProperties.getProperty(FILE_SIZE_THRESHOLD));
+    if (newValueNotExist) {
+      String oldPropertyName = "torrent.file.size.threshold.mb";
+      return TeamCityProperties.getInteger(oldPropertyName, 10);
+    }
+    return getFileSizeThreshold();
   }
 
   @Override public int getSocketTimeout() {
@@ -185,12 +207,8 @@ public class TorrentConfigurator implements TorrentConfiguration {
     return TeamCityProperties.getInteger(CLEANUP_TIMEOUT, defaultTimeout);
   }
 
-  @Override public int getMaxIncomingConnectionsCount() {
-    return TeamCityProperties.getInteger(MAX_INCOMING_CONNECTIONS, DEFAULT_MAX_INCOMING_CONNECTIONS);
-  }
-
-  @Override public int getMaxOutgoingConnectionsCount() {
-    return TeamCityProperties.getInteger(MAX_OUTGOING_CONNECTIONS, DEFAULT_MAX_OUTGOING_CONNECTIONS);
+  @Override public int getMaxConnectionsCount() {
+    return TeamCityProperties.getInteger(MAX_INCOMING_CONNECTIONS, DEFAULT_MAX_CONNECTIONS);
   }
 
   public int getAnnounceIntervalSec() {
@@ -219,6 +237,10 @@ public class TorrentConfigurator implements TorrentConfiguration {
 
   @Override
   public int getMinSeedersForDownload() {
+    String oldPropertyName = "torrent.download.seeders.count";
+    if (!"".equals(TeamCityProperties.getProperty(oldPropertyName))) {
+      return TeamCityProperties.getInteger(oldPropertyName, DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
+    }
     return TeamCityProperties.getInteger(MIN_SEEDERS_FOR_DOWNLOAD, DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
   }
 
@@ -307,6 +329,11 @@ public class TorrentConfigurator implements TorrentConfiguration {
       } catch (Exception ex) {
       }
     }
+  }
+
+  @Override
+  public int getMaxPieceDownloadTime() {
+    return TeamCityProperties.getInteger(MAX_PIECE_DOWNLOAD_TIME, DEFAULT_MAX_PIECE_DOWNLOAD_TIME);
   }
 
   //4tests

@@ -24,8 +24,8 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
     return "http://localhost:6969/announce";
   }
 
-  public int getFileSizeThresholdMb() {
-    return 1;
+  public long getFileSizeThresholdBytes() {
+    return 1024*1024;
   }
 
   public int getAnnounceIntervalSec() {
@@ -41,6 +41,11 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
   }
 
   @Override
+  public int getMaxPieceDownloadTime() {
+    return 15;
+  }
+
+  @Override
   public int getMinSeedersForDownload() {
     return 1;
   }
@@ -53,11 +58,7 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
     return 60;
   }
 
-  @Override public int getMaxIncomingConnectionsCount() {
-    return 10;
-  }
-
-  @Override public int getMaxOutgoingConnectionsCount() {
+  @Override public int getMaxConnectionsCount() {
     return 10;
   }
 

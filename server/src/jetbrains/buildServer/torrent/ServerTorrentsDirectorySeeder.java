@@ -106,11 +106,9 @@ public class ServerTorrentsDirectorySeeder {
           case TorrentConfiguration.ANNOUNCE_INTERVAL:
             myTorrentsSeeder.setAnnounceInterval((Integer) evt.getNewValue());
             break;
-          case TorrentConfiguration.MAX_OUTGOING_CONNECTIONS:
-            myTorrentsSeeder.setMaxOutgoingConnectionsCount((Integer) evt.getNewValue());
-            break;
           case TorrentConfiguration.MAX_INCOMING_CONNECTIONS:
             myTorrentsSeeder.setMaxIncomingConnectionsCount((Integer) evt.getNewValue());
+            myTorrentsSeeder.setMaxOutgoingConnectionsCount((Integer) evt.getNewValue());
             break;
           case TorrentConfiguration.SOCKET_CONNECTION_TIMEOUT:
             myTorrentsSeeder.setSocketTimeout((Integer) evt.getNewValue());
