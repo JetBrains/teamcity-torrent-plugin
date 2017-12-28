@@ -15,9 +15,9 @@ public interface TorrentConfiguration {
   String DEFAULT_FILE_SIZE_THRESHOLD = "10mb";
   String MIN_SEEDERS_FOR_DOWNLOAD = "teamcity.torrent.peer.download.minSeedersToStart";
   int DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD = 2;
-  String TRANSPORT_ENABLED = "torrent.transport.enabled";
+  String TRANSPORT_ENABLED = "teamcity.torrent.transport.enabled";
   boolean DEFAULT_TRANSPORT_ENABLED = false;
-  String DOWNLOAD_ENABLED = "torrent.download.enabled";
+  String DOWNLOAD_ENABLED = "teamcity.torrent.download.enabled";
   boolean DEFAULT_DOWNLOAD_ENABLED = false;
   String ANNOUNCE_INTERVAL = "torrent.announce.interval.sec";
   int DEFAULT_ANNOUNCE_INTERVAL = 60;

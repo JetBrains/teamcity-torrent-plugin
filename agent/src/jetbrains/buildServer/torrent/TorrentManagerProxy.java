@@ -1,10 +1,7 @@
 package jetbrains.buildServer.torrent;
 
 import com.turn.ttorrent.Constants;
-import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
-import jetbrains.buildServer.agent.AgentLifeCycleListener;
-import jetbrains.buildServer.agent.BuildAgent;
-import jetbrains.buildServer.agent.BuildAgentConfiguration;
+import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.xmlrpc.XmlRpcFactory;
@@ -12,6 +9,7 @@ import jetbrains.buildServer.xmlrpc.XmlRpcTarget;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,10 +21,14 @@ public class TorrentManagerProxy implements TorrentConfiguration {
   private XmlRpcTarget myXmlRpcTarget;
   @NotNull
   final private BuildAgentConfiguration myBuildAgentConfiguration;
+  @NotNull
+  private final CurrentBuildTracker myCurrentBuildTracker;
 
   public TorrentManagerProxy(@NotNull final EventDispatcher<AgentLifeCycleListener> dispatcher,
-                             @NotNull final BuildAgentConfiguration buildAgentConfiguration) {
+                             @NotNull final BuildAgentConfiguration buildAgentConfiguration,
+                             @NotNull CurrentBuildTracker currentBuildTracker) {
     this.myBuildAgentConfiguration = buildAgentConfiguration;
+    myCurrentBuildTracker = currentBuildTracker;
     dispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
       public void afterAgentConfigurationLoaded(@NotNull BuildAgent agent) {
@@ -61,8 +63,14 @@ public class TorrentManagerProxy implements TorrentConfiguration {
     return call("getAnnounceIntervalSec", TorrentConfiguration.DEFAULT_ANNOUNCE_INTERVAL);
   }
 
+  @Override
   public boolean isTransportEnabled() {
-    return call("isTransportEnabled", TorrentConfiguration.DEFAULT_TRANSPORT_ENABLED);
+    try {
+      final Map<String, String> sharedConfigParameters = myCurrentBuildTracker.getCurrentBuild().getSharedConfigParameters();
+      return Boolean.parseBoolean(sharedConfigParameters.get(TorrentConfiguration.TRANSPORT_ENABLED));
+    } catch (NoRunningBuildException ignored) {
+    }
+    return false;
   }
 
   @Override public int getSocketTimeout() {
@@ -79,6 +87,7 @@ public class TorrentManagerProxy implements TorrentConfiguration {
     return call("getMaxConnectionsCount", TorrentConfiguration.DEFAULT_MAX_CONNECTIONS);
   }
 
+  @Override
   public boolean isTorrentEnabled() {
     return call("isTorrentEnabled", TorrentConfiguration.DEFAULT_TORRENT_ENABLED);
   }

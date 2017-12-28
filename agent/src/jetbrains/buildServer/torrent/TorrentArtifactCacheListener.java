@@ -57,7 +57,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   public void onBeforeAddOrUpdate(@NotNull File file) {
     if (isTorrentFile(file)) return;
 
-    if (!myTorrentsManager.isTorrentEnabled())
+    if (!myTorrentsManager.isTransportEnabled())
       return;
     myTorrentsSeeder.unregisterSrcFile(file);
   }
@@ -67,7 +67,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     if (isTeamcityIVYFile(file)) return;
 
     final String absolutePath = file.getAbsolutePath();
-    if (!myTorrentsManager.isTorrentEnabled()) {
+    if (!myTorrentsManager.isTransportEnabled()) {
       LOG.debug("Torrent plugin disabled. Won't seed " + absolutePath);
       return;
     }
@@ -183,7 +183,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   public void onBeforeDelete(@NotNull File file) {
     if (isTorrentFile(file)) return;
 
-    if (!myTorrentsManager.isTorrentEnabled())
+    if (!myTorrentsManager.isTransportEnabled())
       return;
     myTorrentsSeeder.unregisterSrcFile(file);
   }

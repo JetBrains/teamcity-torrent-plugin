@@ -98,7 +98,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       return null;
     }
 
-    if (!myAgentTorrentsManager.isTorrentEnabled()) {
+    if (!myAgentTorrentsManager.isTransportEnabled()) {
       return null;
     }
 

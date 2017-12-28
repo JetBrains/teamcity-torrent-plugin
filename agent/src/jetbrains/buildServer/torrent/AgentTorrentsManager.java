@@ -29,7 +29,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   private final TorrentsDownloadStatistic myTorrentsDownloadStatistic;
   private volatile URI myTrackerAnnounceUrl;
   private volatile Integer myAnnounceIntervalSec = com.turn.ttorrent.Constants.DEFAULT_ANNOUNCE_INTERVAL_SEC;
-  private boolean myTorrentEnabled = false;
+  private boolean myTransportEnabled = false;
   private TorrentsSeeder myTorrentsSeeder;
 
   public AgentTorrentsManager(@NotNull final EventDispatcher<AgentLifeCycleListener> eventDispatcher,
@@ -59,13 +59,8 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       final int maxConnectionsCount = myTrackerManager.getMaxConnectionsCount();
       myTorrentsSeeder.setMaxIncomingConnectionsCount(maxConnectionsCount);
       myTorrentsSeeder.setMaxOutgoingConnectionsCount(maxConnectionsCount);
-      boolean enabled = myTrackerManager.isTorrentEnabled();
-      myTorrentEnabled = enabled;
-      if (enabled) {
-        startSeeder();
-      } else {
-        stopSeeder();
-      }
+      myTransportEnabled = myTrackerManager.isTransportEnabled();
+      startSeeder();
     } catch (Exception e) {
       LOG.warn("Error updating torrent settings", e);
       return false;
@@ -76,6 +71,11 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   @Override
   public void agentStarted(@NotNull BuildAgent agent) {
     checkReady();
+    try {
+      startSeeder();
+    } catch (IOException e) {
+      LOG.warnAndDebugDetails("error start seeder on agent started", e);
+    }
   }
 
   public void checkReady() {
@@ -130,7 +130,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     return myTorrentsDownloadStatistic;
   }
 
-  public boolean isTorrentEnabled() {
-    return myTorrentEnabled;
+  public boolean isTransportEnabled() {
+    return myTransportEnabled;
   }
 }
