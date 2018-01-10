@@ -3,7 +3,6 @@
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/torrent/build/lib/jargs-1.0.jar!/" />
       <root url="jar://$PROJECT_DIR$/torrent/build/lib/commons-io-2.1.jar!/" />
-      <root url="jar://$PROJECT_DIR$/torrent/build/lib/log4j-1.2.16.jar!/" />
       <root url="jar://$PROJECT_DIR$/torrent/build/lib/simple-4.1.21.jar!/" />
       <root url="jar://$PROJECT_DIR$/torrent/build/lib/commons-codec-1.4.jar!/" />
       <root url="jar://$PROJECT_DIR$/torrent/build/lib/bsh-2.0b4.jar!/" />
