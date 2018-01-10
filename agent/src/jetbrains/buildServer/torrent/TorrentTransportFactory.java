@@ -12,6 +12,7 @@ import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.artifacts.impl.HttpTransport;
 import jetbrains.buildServer.http.HttpUtil;
+import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
@@ -48,8 +49,6 @@ import static jetbrains.buildServer.torrent.Constants.TEAMCITY_IVY;
  *         Time: 2:52 PM
  */
 public class TorrentTransportFactory implements TransportFactoryExtension {
-
-  private final static Logger LOG = Logger.getInstance(TorrentTransportFactory.class.getName());
 
   public static final String TEAMCITY_TORRENTS = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/torrents/";
 
@@ -156,7 +155,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     @Nullable
     public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
-      LOG.info(String.format("trying to download %s via bittorrent", urlString));
+      Loggers.AGENT.info(String.format("trying to download %s via bittorrent", urlString));
       ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(urlString);
       if (urlString.endsWith(TEAMCITY_IVY)) {
         // downloading teamcity-ivy.xml and parsing it:
@@ -166,7 +165,9 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       Torrent torrent = downloadTorrent(parsedArtifactUrl);
       if (torrent == null) {
         myTorrentsDownloadStatistic.fileDownloadFailed();
-        log2Build("unable download torrent file for " + urlString);
+        final String msg = "unable download torrent file for " + urlString;
+        log2Build(msg);
+        Loggers.AGENT.info(msg);
         return null;
       }
 
@@ -176,19 +177,19 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         final int seedersCount = TrackerHelper.getSeedersCount(torrent);
         final int minSeedersForDownload = myConfiguration.getMinSeedersForDownload();
 
-        LOG.debug("seeders count " + seedersCount);
-
         if (seedersCount < minSeedersForDownload) {
           String logMsg = String.format("found only %s seeders, but min required is %s for torrent %s",
                   seedersCount, minSeedersForDownload, urlString);
           log2Build(logMsg);
+          Loggers.AGENT.info(logMsg);
           myTorrentsDownloadStatistic.fileDownloadFailed();
           return null;
         }
         final long startTime = System.currentTimeMillis();
 
         final AtomicReference<Exception> exceptionHolder = new AtomicReference<Exception>();
-        LOG.debug("start download file " + target.getName());
+        Loggers.AGENT.debug("start download file " + target.getName());
+
         Thread th = myClient.downloadAndShareOrFailAsync(
                 torrent, target, target.getParentFile(), myMaxPieceDownloadTimeSec, minSeedersForDownload, myInterrupted, exceptionHolder);
         myCurrentDownload.set(th);
@@ -196,6 +197,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         myCurrentDownload.set(null);
         if (exceptionHolder.get() != null) {
           myTorrentsDownloadStatistic.fileDownloadFailed();
+          Loggers.AGENT.warnAndDebugDetails("unable to download file " + torrent.getName() + " "
+                  + exceptionHolder.get().getMessage(), exceptionHolder.get());
           throw exceptionHolder.get();
         }
 
@@ -293,7 +296,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         byte[] torrentData = download(parsedArtifactUrl.getTorrentUrl());
         return new Torrent(torrentData, true);
       } catch (NoSuchAlgorithmException e) {
-        LOG.warnAndDebugDetails("Failed to load downloaded torrent file, error: " + e.toString(), e);
+        Loggers.AGENT.warnAndDebugDetails("Failed to load downloaded torrent file, error: " + e.toString(), e);
       } catch (IOException e) {
         log2Build(String.format("Unable to download: %s", e.getMessage()));
       }
