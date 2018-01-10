@@ -5,10 +5,13 @@ import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
+import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.messages.serviceMessages.BuildStatisticValue;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.spi.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -76,6 +79,13 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     } catch (IOException e) {
       LOG.warnAndDebugDetails("error start seeder on agent started", e);
     }
+
+    LogManager.getLogger("com.turn.ttorrent", new LoggerFactory() {
+      @Override
+      public org.apache.log4j.Logger makeNewLoggerInstance(String s) {
+        return org.apache.log4j.Logger.getLogger(Loggers.AGENT_CATEGORY);
+      }
+    });
   }
 
   public void checkReady() {
