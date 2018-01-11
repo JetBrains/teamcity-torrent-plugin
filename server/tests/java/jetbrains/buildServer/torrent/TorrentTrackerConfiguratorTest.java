@@ -6,6 +6,7 @@ import com.turn.ttorrent.common.protocol.http.HTTPTrackerMessage;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.TrackerRequestProcessor;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
+import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.WaitFor;
 import jetbrains.buildServer.util.executors.ExecutorsFactory;
@@ -84,7 +85,6 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
 
   public void test_enable_disable_seeder(){
     myConfigurator.setDownloadEnabled(false);
-    myConfigurator.setTransportEnabled(false);
     assertTrue(myTorrentsSeeder.getTorrentsSeeder().isStopped());
 
     myConfigurator.setDownloadEnabled(true);
@@ -96,12 +96,6 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
     myConfigurator.getConfigurationWatcher().checkForModifications();
     assertTrue(TorrentUtil.shouldCreateTorrentFor(200 * 1024 * 1024, myConfigurator));
     assertFalse(TorrentUtil.shouldCreateTorrentFor(200 * 1024 * 1024 - 1, myConfigurator));
-  }
-
-  public void testMinSeedersCount() {
-    assertEquals(TorrentConfiguration.DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD, myConfigurator.getMinSeedersForDownload());
-    System.setProperty(TorrentConfiguration.MIN_SEEDERS_FOR_DOWNLOAD, "5");
-    assertEquals(5, myConfigurator.getMinSeedersForDownload());
   }
 
   public void test_announce_interval() throws IOException, TrackerMessage.MessageValidationException {
@@ -201,17 +195,17 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
   }
 
   public void test_max_number_of_seeded_torrents() {
-    String oldProperty = System.getProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS);
+    String oldProperty = System.getProperty(SeedSettings.MAX_NUMBER_OF_SEEDED_TORRENTS);
     try {
-      System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
+      System.setProperty(SeedSettings.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
       myConfigurator.getConfigurationWatcher().checkForModifications();
       assertEquals(3, myConfigurator.getMaxNumberOfSeededTorrents());
       assertEquals(3, myTorrentsSeeder.getTorrentsSeeder().getMaxTorrentsToSeed());
     } finally {
       if (Objects.isNull(oldProperty)) {
-        System.clearProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS);
+        System.clearProperty(SeedSettings.MAX_NUMBER_OF_SEEDED_TORRENTS);
       } else {
-        System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, oldProperty);
+        System.setProperty(SeedSettings.MAX_NUMBER_OF_SEEDED_TORRENTS, oldProperty);
       }
     }
   }

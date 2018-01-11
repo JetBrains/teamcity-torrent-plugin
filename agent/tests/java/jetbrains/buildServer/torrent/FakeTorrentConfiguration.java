@@ -40,16 +40,6 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
     return true;
   }
 
-  @Override
-  public int getMaxPieceDownloadTime() {
-    return 15;
-  }
-
-  @Override
-  public int getMinSeedersForDownload() {
-    return 1;
-  }
-
   @Override public int getSocketTimeout() {
     return 60;
   }
@@ -62,8 +52,4 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
     return 10;
   }
 
-  @Override
-  public String getServerURL() {
-    return "http://localhost:6969/bs";
-  }
 }

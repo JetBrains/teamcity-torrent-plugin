@@ -80,11 +80,7 @@ public class TorrentTrackerManager {
       return;
     }
 
-    if (myConfigurator.isTorrentEnabled()) {
-      startTracker();
-    } else {
-      stopTracker();
-    }
+    startTracker();
   }
 
   public void integerPropertyChanged(@NotNull final String propertyName, int newValue){

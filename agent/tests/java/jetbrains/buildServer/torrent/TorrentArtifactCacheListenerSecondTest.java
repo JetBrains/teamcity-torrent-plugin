@@ -7,6 +7,8 @@ import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.impl.DirectoryCacheProviderImpl;
 import jetbrains.buildServer.artifacts.impl.SimpleDigestCalculator;
+import jetbrains.buildServer.torrent.settings.LeechSettings;
+import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.apache.commons.io.FileUtils;
@@ -46,7 +48,8 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
     myBuildTracker = myM.mock(CurrentBuildTracker.class);
     myCacheProvider = myM.mock(ArtifactCacheProvider.class);
     myAgentConfiguration = myM.mock(BuildAgentConfiguration.class);
-
+    final LeechSettings leechSettings = myM.mock(LeechSettings.class);
+    final SeedSettings seedingSettings = myM.mock(SeedSettings.class);
     myM.checking(new Expectations() {{
       allowing(myBuildTracker).getCurrentBuild();
       will(returnValue(build));
@@ -60,11 +63,14 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
       will(returnValue(new File(myAgentDirectory, "system")));
       allowing(myAgentConfiguration).getCacheDirectory(with(Constants.TORRENTS_DIRNAME));
       will(returnValue(new File(myAgentDirectory, "torrents")));
+      allowing(myAgentConfiguration).getServerUrl(); will(returnValue("http://localhost:6969/bs"));
       allowing(build).getBuildTypeExternalId();
       will(returnValue(BUILD_EXTERNAL_ID));
       allowing(build).getBuildId();
       will(returnValue(BUILD_ID));
       allowing(myCacheProvider).addListener(with(any(ArtifactsCacheListener.class)));
+      allowing(leechSettings).isDownloadEnabled(); will(returnValue(true));
+      allowing(seedingSettings).isSeedingEnabled(); will(returnValue(true));
     }});
 
     final TorrentConfiguration configuration = new FakeTorrentConfiguration();
@@ -81,9 +87,11 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
             seeder,
             torrentsFactory,
             myArtifactsWatcher,
-            new TorrentsDownloadStatistic());
+            new TorrentsDownloadStatistic(),
+            leechSettings,
+            myAgentConfiguration, seedingSettings);
 
-    myCacheListener = new TorrentArtifactCacheListener(seeder, myBuildTracker, configuration, manager, torrentsFactory, myArtifactsWatcher);
+    myCacheListener = new TorrentArtifactCacheListener(seeder, myBuildTracker, configuration, manager, torrentsFactory, myArtifactsWatcher, myAgentConfiguration);
 
     myCacheListener.onCacheInitialized(new DirectoryCacheProviderImpl(new File(myAgentDirectory, "cache"), new SimpleDigestCalculator()));
     manager.checkReady();

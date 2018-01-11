@@ -57,8 +57,9 @@ public class ServerTorrentsSeederTestCase extends BaseTestCase {
     myConfigurator = new TorrentConfigurator(serverPaths, rootUrlHolder, new XmlRpcHandlerManager() {
       public void addHandler(String handlerName, Object handler) {}
       public void addSessionHandler(String handlerName, Object handler) {}
-    }, serverSettings);
+    });
     myConfigurator.setDownloadEnabled(true);
+    myConfigurator.setSeedingEnabled(true);
 
     myDispatcher = new BuildServerListenerEventDispatcher(new SecurityContextImpl());
 

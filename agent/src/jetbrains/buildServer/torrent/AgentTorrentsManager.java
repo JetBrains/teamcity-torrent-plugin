@@ -8,6 +8,8 @@ import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.messages.serviceMessages.BuildStatisticValue;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
+import jetbrains.buildServer.torrent.settings.LeechSettings;
+import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.apache.log4j.LogManager;
@@ -34,6 +36,8 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   private volatile Integer myAnnounceIntervalSec = com.turn.ttorrent.Constants.DEFAULT_ANNOUNCE_INTERVAL_SEC;
   private boolean myTransportEnabled = false;
   private TorrentsSeeder myTorrentsSeeder;
+  private final LeechSettings myLeechSettings;
+  private final SeedSettings mySeedingSettings;
 
   public AgentTorrentsManager(@NotNull final EventDispatcher<AgentLifeCycleListener> eventDispatcher,
                               @NotNull final ArtifactCacheProvider artifactsCacheProvider,
@@ -42,12 +46,24 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
                               @NotNull final AgentTorrentsSeeder torrentsSeeder,
                               @NotNull final TorrentFilesFactory torrentFilesFactory,
                               @NotNull final ArtifactsWatcher artifactsWatcher,
-                              @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic) throws Exception {
+                              @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic,
+                              @NotNull final LeechSettings leechSettings,
+                              @NotNull final BuildAgentConfiguration agentConfiguration,
+                              @NotNull final SeedSettings seedingSettings) throws Exception {
+    myLeechSettings = leechSettings;
+    mySeedingSettings = seedingSettings;
     eventDispatcher.addListener(this);
     myTrackerManager = trackerManager;
     myTorrentsSeeder = torrentsSeeder;
     myTorrentsDownloadStatistic = torrentsDownloadStatistic;
-    artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(torrentsSeeder, currentBuildTracker, trackerManager, this, torrentFilesFactory, artifactsWatcher));
+    artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(
+            torrentsSeeder,
+            currentBuildTracker,
+            trackerManager,
+            this,
+            torrentFilesFactory,
+            artifactsWatcher,
+            agentConfiguration));
   }
 
   private boolean updateSettings() {
@@ -55,15 +71,20 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       String announceUrl = myTrackerManager.getAnnounceUrl();
       if (announceUrl == null) return false;
       myTrackerAnnounceUrl = new URI(announceUrl);
-      myAnnounceIntervalSec = myTrackerManager.getAnnounceIntervalSec();
       myTorrentsSeeder.setSocketTimeout(myTrackerManager.getSocketTimeout());
       myTorrentsSeeder.setCleanupTimeout(myTrackerManager.getCleanupTimeout());
       myTorrentsSeeder.setAnnounceInterval(myAnnounceIntervalSec);
       final int maxConnectionsCount = myTrackerManager.getMaxConnectionsCount();
       myTorrentsSeeder.setMaxIncomingConnectionsCount(maxConnectionsCount);
       myTorrentsSeeder.setMaxOutgoingConnectionsCount(maxConnectionsCount);
-      myTransportEnabled = myTrackerManager.isTransportEnabled();
-      startSeeder();
+      myTransportEnabled = myLeechSettings.isDownloadEnabled();
+
+      boolean needEnableTorrent = (mySeedingSettings.isSeedingEnabled() || myTransportEnabled);
+      if (needEnableTorrent) {
+        startSeeder();
+      } else {
+        stopSeeder();
+      }
     } catch (Exception e) {
       LOG.warn("Error updating torrent settings", e);
       return false;

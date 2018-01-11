@@ -55,6 +55,10 @@ public class ArtifactProcessorImpl implements ArtifactProcessor {
         return;
       }
 
+      if (!myConfigurator.isSeedingEnabled()) {
+        return;
+      }
+
       if (TorrentUtil.shouldCreateTorrentFor(artifact.getSize(), myConfigurator)) {
         String artifactRelativePath = artifact.getRelativePath();
         Path fullPath = myArtifactsDirectory.resolve(artifactRelativePath);
@@ -67,7 +71,7 @@ public class ArtifactProcessorImpl implements ArtifactProcessor {
           LOG.info(String.format("torrent file for artifact %s doesn't exist", artifactRelativePath));
           return;
         }
-        myTorrentsSeeder.registerSrcAndTorrentFile(fullPath.toFile(), torrent.toFile(), myConfigurator.isTorrentEnabled());
+        myTorrentsSeeder.registerSrcAndTorrentFile(fullPath.toFile(), torrent.toFile(), true);
       }
     });
   }

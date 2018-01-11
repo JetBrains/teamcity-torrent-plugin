@@ -1,6 +1,5 @@
 package jetbrains.buildServer.torrent;
 
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.StreamUtil;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.TrackerHelper;
@@ -14,6 +13,7 @@ import jetbrains.buildServer.artifacts.impl.HttpTransport;
 import jetbrains.buildServer.http.HttpUtil;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
+import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
@@ -59,15 +59,18 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   private final CurrentBuildTracker myBuildTracker;
   private final TorrentConfiguration myConfiguration;
   private final BuildAgentConfigurationEx myAgentConfig;
+  private final LeechSettings myLeechSettings;
 
   public TorrentTransportFactory(@NotNull final AgentTorrentsManager agentTorrentsManager,
                                  @NotNull final CurrentBuildTracker currentBuildTracker,
                                  @NotNull final TorrentConfiguration configuration,
-                                 @NotNull final BuildAgentConfigurationEx config) {
+                                 @NotNull final BuildAgentConfigurationEx config,
+                                 @NotNull final LeechSettings leechSettings) {
     myAgentTorrentsManager = agentTorrentsManager;
     myBuildTracker = currentBuildTracker;
     myConfiguration = configuration;
     myAgentConfig = config;
+    myLeechSettings = leechSettings;
   }
 
   private HttpClient createHttpClient() {
@@ -104,10 +107,9 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     return new TorrentTransport(myAgentTorrentsManager.getTorrentsSeeder(),
             createHttpClient(),
             buildLogger,
-            myConfiguration.getServerURL(),
-            myConfiguration,
+            myAgentConfig.getServerUrl(),
             myAgentTorrentsManager.getTorrentsDownloadStatistic(),
-            myConfiguration.getMaxPieceDownloadTime());
+            myLeechSettings);
   }
 
   private boolean shouldUseTorrentTransport() {
@@ -115,7 +117,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     if (param != null) {
       return param.equals(TorrentTransport.class.getSimpleName());
     }
-    return myConfiguration.isTransportEnabled();
+    return myLeechSettings.isDownloadEnabled();
   }
 
   protected static class TorrentTransport extends HttpTransport implements URLContentRetriever {
@@ -126,8 +128,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     private final BuildProgressLogger myBuildLogger;
     private final AtomicReference<Thread> myCurrentDownload;
     private final AtomicBoolean myInterrupted;
-    private final TorrentConfiguration myConfiguration;
-    private final int myMaxPieceDownloadTimeSec;
+    private final LeechSettings myLeechSettings;
     @NotNull
     private final TorrentsDownloadStatistic myTorrentsDownloadStatistic;
 
@@ -137,13 +138,11 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
                                @NotNull final HttpClient httpClient,
                                @NotNull final BuildProgressLogger buildLogger,
                                @NotNull final String serverUrl,
-                               @NotNull final TorrentConfiguration configuration,
                                @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic,
-                               final int maxPieceDownloadTimeSec) {
+                               @NotNull final LeechSettings leechSettings) {
       super(httpClient, serverUrl);
       mySeeder = seeder;
-      myConfiguration = configuration;
-      myMaxPieceDownloadTimeSec = maxPieceDownloadTimeSec;
+      myLeechSettings = leechSettings;
       myClient = mySeeder.getClient();
       myTorrentsDownloadStatistic = torrentsDownloadStatistic;
       myHttpClient = httpClient;
@@ -175,7 +174,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         myBuildLogger.progressStarted("Downloading " + target.getName() + " via BitTorrent protocol.");
 
         final int seedersCount = TrackerHelper.getSeedersCount(torrent);
-        final int minSeedersForDownload = myConfiguration.getMinSeedersForDownload();
+        final int minSeedersForDownload = myLeechSettings.getMinSeedersForDownload();
 
         if (seedersCount < minSeedersForDownload) {
           String logMsg = String.format("found only %s seeders, but min required is %s for torrent %s",
@@ -191,7 +190,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         Loggers.AGENT.debug("start download file " + target.getName());
 
         Thread th = myClient.downloadAndShareOrFailAsync(
-                torrent, target, target.getParentFile(), myMaxPieceDownloadTimeSec, minSeedersForDownload, myInterrupted, exceptionHolder);
+                torrent, target, target.getParentFile(), myLeechSettings.getMaxPieceDownloadTime(), minSeedersForDownload, myInterrupted, exceptionHolder);
         myCurrentDownload.set(th);
         th.join();
         myCurrentDownload.set(null);

@@ -25,6 +25,7 @@ import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
+import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
@@ -78,6 +79,7 @@ public class TorrentTransportTest extends BaseTestCase {
   private boolean myDownloadHonestly;
   private TorrentsSeeder mySeeder;
   private final BuildAgentConfigurationFixture myAgentConfigurationFixture = new BuildAgentConfigurationFixture();
+  private LeechSettings myLeechSettings;
 
   @BeforeMethod
   public void setUp() throws Exception {
@@ -115,12 +117,16 @@ public class TorrentTransportTest extends BaseTestCase {
 
     Mockery m = new Mockery();
     myBuild = m.mock(AgentRunningBuild.class);
+    myLeechSettings = m.mock(LeechSettings.class);
     final BuildProgressLogger myLogger = new FakeBuildProgressLogger();
 
     m.checking(new Expectations(){{
       allowing(myBuild).getSharedConfigParameters(); will (returnValue(myAgentParametersMap));
       allowing(myBuild).getBuildTypeId(); will (returnValue("TC_Gaya80x_BuildDist"));
       allowing(myBuild).getBuildLogger(); will (returnValue(myLogger));
+      allowing(myLeechSettings).isDownloadEnabled(); will(returnValue(true));
+      allowing(myLeechSettings).getMaxPieceDownloadTime(); will(returnValue(15));
+      allowing(myLeechSettings).getMinSeedersForDownload(); will(returnValue(1));
     }});
 
     BuildAgentConfiguration agentConfiguration = myAgentConfigurationFixture.setUp();
@@ -128,7 +134,8 @@ public class TorrentTransportTest extends BaseTestCase {
 
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder,
                     new HttpClient(), myBuild.getBuildLogger(),
-            "http://localhost:12345", myConfiguration, new TorrentsDownloadStatistic(), 15){
+            "http://localhost:12345", new TorrentsDownloadStatistic(),
+            myLeechSettings){
       @Override
       protected byte[] download(@NotNull String urlString) throws IOException {
         if (myDownloadHonestly) {
@@ -205,7 +212,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
     Tracker tracker = new Tracker(6969);
     List<Client> clientList = new ArrayList<Client>();
-    for (int i = 0; i < myConfiguration.getMinSeedersForDownload(); i++) {
+    for (int i = 0; i < myLeechSettings.getMinSeedersForDownload(); i++) {
       clientList.add(createClientWithClosingExecutorServiceOnStop());
     }
     try {
@@ -264,7 +271,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
     Tracker tracker = new Tracker(6969);
     List<Client> clientList = new ArrayList<Client>();
-    for (int i = 0; i < myConfiguration.getMinSeedersForDownload(); i++) {
+    for (int i = 0; i < myLeechSettings.getMinSeedersForDownload(); i++) {
       final ExecutorService es = Executors.newFixedThreadPool(2);
       clientList.add(createClientWithClosingExecutorServiceOnStop());
     }

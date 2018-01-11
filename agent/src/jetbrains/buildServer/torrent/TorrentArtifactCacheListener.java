@@ -1,10 +1,7 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
-import jetbrains.buildServer.agent.AgentRunningBuild;
-import jetbrains.buildServer.agent.BuildProgressLogger;
-import jetbrains.buildServer.agent.CurrentBuildTracker;
-import jetbrains.buildServer.agent.NoRunningBuildException;
+import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
@@ -35,19 +32,22 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   private final TorrentConfiguration myConfiguration;
   private final AgentTorrentsManager myTorrentsManager;
   private final ArtifactsWatcher myArtifactsWatcher;
+  private final BuildAgentConfiguration myAgentConfiguration;
 
   public TorrentArtifactCacheListener(@NotNull final TorrentsSeeder torrentsSeeder,
                                       @NotNull final CurrentBuildTracker currentBuildTracker,
                                       @NotNull final TorrentConfiguration configuration,
                                       @NotNull final AgentTorrentsManager torrentsManager,
                                       @NotNull final TorrentFilesFactory torrentFilesFactory,
-                                      @NotNull final ArtifactsWatcher artifactsWatcher) {
+                                      @NotNull final ArtifactsWatcher artifactsWatcher,
+                                      @NotNull final BuildAgentConfiguration agentConfiguration) {
     myTorrentsSeeder = torrentsSeeder;
     myBuildTracker = currentBuildTracker;
     myConfiguration = configuration;
     myTorrentsManager = torrentsManager;
     myTorrentFilesFactory = torrentFilesFactory;
     myArtifactsWatcher = artifactsWatcher;
+    myAgentConfiguration = agentConfiguration;
   }
 
   public void onCacheInitialized(@NotNull final ArtifactCacheProvider artifactCacheProvider) {
@@ -172,7 +172,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
 
   @NotNull
   private File getProjectsDir(final File cacheDir) {
-    String serverUrlAsDirectoriesPath = StringUtils.parseServerUrlToDirectoriesPath(myConfiguration.getServerURL());
+    String serverUrlAsDirectoriesPath = StringUtils.parseServerUrlToDirectoriesPath(myAgentConfiguration.getServerUrl());
     return new File(cacheDir, serverUrlAsDirectoriesPath + File.separator + Constants.CACHE_STATIC_DIRS);
   }
 

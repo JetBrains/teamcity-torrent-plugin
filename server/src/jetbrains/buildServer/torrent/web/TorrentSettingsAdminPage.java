@@ -9,6 +9,8 @@ import jetbrains.buildServer.torrent.TorrentConfigurator;
 import jetbrains.buildServer.torrent.TorrentTrackerManager;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.controllers.admin.AdminPage;
+import jetbrains.buildServer.torrent.settings.LeechSettings;
+import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.web.openapi.PagePlaces;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
@@ -46,9 +48,9 @@ public class TorrentSettingsAdminPage extends AdminPage {
       @Override
       protected ModelAndView doHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) throws Exception {
         if (request.getParameter("save") != null) {
-          boolean transportEnabled = request.getParameter("transportEnabled")!=null;
+          boolean seedingEnabled = request.getParameter("seedingEnabled")!=null;
           boolean downloadEnabled = request.getParameter("downloadEnabled")!=null;
-          myTorrentConfigurator.setTransportEnabled(transportEnabled);
+          myTorrentConfigurator.setSeedingEnabled(seedingEnabled);
           myTorrentConfigurator.setDownloadEnabled(downloadEnabled);
           myTorrentConfigurator.persistConfiguration();
         }
@@ -64,6 +66,8 @@ public class TorrentSettingsAdminPage extends AdminPage {
     model.put("announcedTorrentsNum", myTorrentTrackerManager.getAnnouncedTorrentsNum());
     model.put("connectedClientsNum", myTorrentTrackerManager.getConnectedClientsNum());
     model.put("seededTorrentsNum", myTorrentSeeder.getNumberOfSeededTorrents());
+    model.put("downloadEnabledKey", LeechSettings.DOWNLOAD_ENABLED);
+    model.put("seedingEnabledKey", SeedSettings.SEEDING_ENABLED);
   }
 
   @NotNull

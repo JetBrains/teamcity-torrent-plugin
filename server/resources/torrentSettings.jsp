@@ -3,6 +3,8 @@
 <jsp:useBean id="announcedTorrentsNum" type="java.lang.Integer" scope="request"/>
 <jsp:useBean id="connectedClientsNum" type="java.lang.Integer" scope="request"/>
 <jsp:useBean id="seededTorrentsNum" type="java.lang.Integer" scope="request"/>
+<jsp:useBean id="downloadEnabledKey" type="java.lang.String" scope="request"/>
+<jsp:useBean id="seedingEnabledKey" type="java.lang.String" scope="request"/>
 <form method="post" action="<c:url value='/admin/torrentSettings.html'/>">
   <table class="runnerFormTable">
 <tr>
@@ -22,19 +24,31 @@
         </td>
       </tr>
     </c:if>
-  <tr>
-    <th>Settings:</th>
-    <td>
-      <div>
-        <forms:checkbox name="transportEnabled" checked="${torrentConfigurator.transportEnabled}"/>
-        <label for="transportEnabled">Use BitTorrent for artifact dependencies</label>
-      </div>
-      <div>
-        <forms:checkbox name="downloadEnabled" checked="${torrentConfigurator.downloadEnabled}"/>
-        <label for="downloadEnabled">Allow users to download artifacts via a BitTorrent client</label>
-      </div>
-    </td>
-  </tr>
+    <tr>
+      <th>Server settings:</th>
+      <td>
+        <div>
+          <forms:checkbox name="seedingEnabled" checked="${torrentConfigurator.seedingEnabled}"/>
+          <label for="seedingEnabled">Enable artifacts seeding by server</label>
+        </div>
+        <div>
+          <forms:checkbox name="downloadEnabled" checked="${torrentConfigurator.downloadEnabled}"/>
+          <label for="downloadEnabled">Allow users to download artifacts via a BitTorrent client</label>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <th>Agent settings:</th>
+      <td>
+        <div>
+          For enable downloading/seeding artifacts by agent set next properties as <strong>true</strong> in build parameters:
+          <ul style="margin-top:0; padding-left: 1em;">
+            <li><strong>${downloadEnabledKey}</strong> - for enable downloading</li>
+            <li><strong>${seedingEnabledKey}</strong> - for enable seeding</li>
+          </ul>
+        </div>
+      </td>
+    </tr>
   <tr>
     <td colspan="2"><forms:submit label="Save" name="save"/></td>
   </tr>

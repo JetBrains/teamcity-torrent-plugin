@@ -35,6 +35,7 @@ public class BuildAgentConfigurationFixture {
     Mockery m = new Mockery();
     final BuildAgentConfiguration agentConfiguration = m.mock(BuildAgentConfiguration.class);
     m.checking(new Expectations() {{
+      allowing(agentConfiguration).getServerUrl(); will(returnValue("http://localhost:8111/bs"));
       allowing(agentConfiguration).getSystemDirectory(); will(returnValue(systemDir));
       allowing(agentConfiguration).getCacheDirectory(with(Constants.TORRENTS_DIRNAME)); will(returnValue(torrentsDir));
     }});

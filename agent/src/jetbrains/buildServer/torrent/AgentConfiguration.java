@@ -2,6 +2,8 @@ package jetbrains.buildServer.torrent;
 
 import com.turn.ttorrent.Constants;
 import jetbrains.buildServer.agent.*;
+import jetbrains.buildServer.torrent.settings.LeechSettings;
+import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.xmlrpc.XmlRpcFactory;
@@ -9,7 +11,6 @@ import jetbrains.buildServer.xmlrpc.XmlRpcTarget;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -17,16 +18,16 @@ import java.util.concurrent.TimeUnit;
  * Date: 10/12/12
  * Time: 4:06 PM
  */
-public class TorrentManagerProxy implements TorrentConfiguration {
+public class AgentConfiguration implements TorrentConfiguration, SeedSettings, LeechSettings {
   private XmlRpcTarget myXmlRpcTarget;
   @NotNull
   final private BuildAgentConfiguration myBuildAgentConfiguration;
   @NotNull
   private final CurrentBuildTracker myCurrentBuildTracker;
 
-  public TorrentManagerProxy(@NotNull final EventDispatcher<AgentLifeCycleListener> dispatcher,
-                             @NotNull final BuildAgentConfiguration buildAgentConfiguration,
-                             @NotNull CurrentBuildTracker currentBuildTracker) {
+  public AgentConfiguration(@NotNull final EventDispatcher<AgentLifeCycleListener> dispatcher,
+                            @NotNull final BuildAgentConfiguration buildAgentConfiguration,
+                            @NotNull CurrentBuildTracker currentBuildTracker) {
     this.myBuildAgentConfiguration = buildAgentConfiguration;
     myCurrentBuildTracker = currentBuildTracker;
     dispatcher.addListener(new AgentLifeCycleAdapter() {
@@ -44,33 +45,41 @@ public class TorrentManagerProxy implements TorrentConfiguration {
     return call("getAnnounceUrl", "http://localhost:8111/trackerAnnounce.html");
   }
 
+  @Override
   public long getFileSizeThresholdBytes() {
-    final String fileSizeThresholdBytes = call("getFileSizeThresholdBytes", TorrentConfiguration.DEFAULT_FILE_SIZE_THRESHOLD);
-    return StringUtil.parseFileSize(fileSizeThresholdBytes);
+    final String fileSizeThresholdBytes = getPropertyFromBuildOrDefault(FILE_SIZE_THRESHOLD, DEFAULT_FILE_SIZE_THRESHOLD);
+    try {
+      return StringUtil.parseFileSize(fileSizeThresholdBytes);
+    } catch (NumberFormatException e) {
+      return StringUtil.parseFileSize(DEFAULT_FILE_SIZE_THRESHOLD);
+    }
+  }
+
+  @Override
+  public boolean isDownloadEnabled() {
+    String value = getPropertyFromBuildOrDefault(LeechSettings.DOWNLOAD_ENABLED, String.valueOf(LeechSettings.DEFAULT_DOWNLOAD_ENABLED));
+    return Boolean.parseBoolean(value);
+  }
+
+  @Override
+  public boolean isSeedingEnabled() {
+    String value = getPropertyFromBuildOrDefault(SeedSettings.SEEDING_ENABLED, String.valueOf(SeedSettings.DEFAULT_SEEDING_ENABLED));
+    return Boolean.parseBoolean(value);
+  }
+
+  @Override
+  public int getMaxNumberOfSeededTorrents() {
+    return getFromBuildOrDefault(SeedSettings.MAX_NUMBER_OF_SEEDED_TORRENTS, 500);
   }
 
   @Override
   public int getMinSeedersForDownload() {
-    return call("getMinSeedersForDownload", TorrentConfiguration.DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
+    return getFromBuildOrDefault(LeechSettings.MIN_SEEDERS_FOR_DOWNLOAD, LeechSettings.DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD);
   }
 
   @Override
   public int getMaxPieceDownloadTime() {
-    return call("getMaxPieceDownloadTime", TorrentConfiguration.DEFAULT_MAX_PIECE_DOWNLOAD_TIME);
-  }
-
-  public int getAnnounceIntervalSec() {
-    return call("getAnnounceIntervalSec", TorrentConfiguration.DEFAULT_ANNOUNCE_INTERVAL);
-  }
-
-  @Override
-  public boolean isTransportEnabled() {
-    try {
-      final Map<String, String> sharedConfigParameters = myCurrentBuildTracker.getCurrentBuild().getSharedConfigParameters();
-      return Boolean.parseBoolean(sharedConfigParameters.get(TorrentConfiguration.TRANSPORT_ENABLED));
-    } catch (NoRunningBuildException ignored) {
-    }
-    return false;
+    return getFromBuildOrDefault(LeechSettings.MAX_PIECE_DOWNLOAD_TIME, LeechSettings.DEFAULT_MAX_PIECE_DOWNLOAD_TIME);
   }
 
   @Override public int getSocketTimeout() {
@@ -87,14 +96,28 @@ public class TorrentManagerProxy implements TorrentConfiguration {
     return call("getMaxConnectionsCount", TorrentConfiguration.DEFAULT_MAX_CONNECTIONS);
   }
 
-  @Override
-  public boolean isTorrentEnabled() {
-    return call("isTorrentEnabled", TorrentConfiguration.DEFAULT_TORRENT_ENABLED);
+  private int getFromBuildOrDefault(String key, int defaultValue) {
+    String value = getPropertyFromBuildOrDefault(key, String.valueOf(defaultValue));
+    try {
+      return Integer.parseInt(value);
+    } catch (NumberFormatException e) {
+      return defaultValue;
+    }
   }
 
-  @Override
-  public String getServerURL() {
-    return myBuildAgentConfiguration.getServerUrl();
+  @NotNull
+  private String getPropertyFromBuildOrDefault(String key, String defaultValue) {
+    AgentRunningBuild currentBuild;
+    try {
+      currentBuild = myCurrentBuildTracker.getCurrentBuild();
+    } catch (NoRunningBuildException e) {
+      return defaultValue;
+    }
+    final String value = currentBuild.getSharedConfigParameters().get(key);
+    if (value == null) {
+      return defaultValue;
+    }
+    return value;
   }
 
   @NotNull

@@ -22,6 +22,7 @@ import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.TempFiles;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
+import jetbrains.buildServer.torrent.settings.SeedSettings;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
@@ -55,7 +56,7 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
 
 
   public void new_file_seedeed_old_removed() throws IOException, InterruptedException, NoSuchAlgorithmException {
-    System.setProperty(TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
+    System.setProperty(SeedSettings.MAX_NUMBER_OF_SEEDED_TORRENTS, "3");
     System.setProperty(TorrentConfiguration.ANNOUNCE_URL, "http://localhost:6969/announce");
     System.setProperty(TorrentConfiguration.FILE_SIZE_THRESHOLD, "1");
     System.setProperty(TorrentConfiguration.TRACKER_ENABLED, "true");

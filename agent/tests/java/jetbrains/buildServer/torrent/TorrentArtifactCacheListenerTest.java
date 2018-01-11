@@ -9,12 +9,13 @@ import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.impl.DirectoryCacheProviderImpl;
 import jetbrains.buildServer.artifacts.impl.SimpleDigestCalculator;
+import jetbrains.buildServer.torrent.settings.LeechSettings;
+import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
-import org.jmock.Mock;
 import org.jmock.Mockery;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -55,6 +56,8 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     final BuildProgressLogger logger = new FakeBuildProgressLogger();
     final CurrentBuildTracker buildTracker = m.mock(CurrentBuildTracker.class);
     final ArtifactCacheProvider cacheProvider = m.mock(ArtifactCacheProvider.class);
+    final LeechSettings leechSettings = m.mock(LeechSettings.class);
+    final SeedSettings seedingSettings = m.mock(SeedSettings.class);
 
     m.checking(new Expectations(){{
       allowing(buildTracker).getCurrentBuild(); will(returnValue(build));
@@ -63,6 +66,8 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
       allowing(cacheProvider).addListener(with(any(ArtifactsCacheListener.class)));
       allowing(build).getBuildTypeExternalId(); will(returnValue("1"));
       allowing(build).getBuildId(); will(returnValue(1L));
+      allowing(leechSettings).isDownloadEnabled(); will(returnValue(true));
+      allowing(seedingSettings).isSeedingEnabled(); will(returnValue(true));
     }});
 
     final TorrentConfiguration configuration = new FakeTorrentConfiguration();
@@ -79,9 +84,11 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
             mySeeder,
             torrentsFactory,
             artifactsWatcher,
-            new TorrentsDownloadStatistic());
+            new TorrentsDownloadStatistic(),
+            leechSettings,
+            myAgentConfiguration, seedingSettings);
 
-    myCacheListener = new TorrentArtifactCacheListener(mySeeder, buildTracker, configuration, manager, torrentsFactory, artifactsWatcher);
+    myCacheListener = new TorrentArtifactCacheListener(mySeeder, buildTracker, configuration, manager, torrentsFactory, artifactsWatcher, myAgentConfiguration);
 
     myCacheListener.onCacheInitialized(new DirectoryCacheProviderImpl(getTorrentsDirectory(), new SimpleDigestCalculator()));
     manager.checkReady();

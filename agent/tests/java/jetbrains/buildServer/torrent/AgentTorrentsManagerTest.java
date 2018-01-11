@@ -21,12 +21,13 @@ import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
-import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildAgent;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.agent.impl.CurrentBuildTrackerImpl;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
+import jetbrains.buildServer.torrent.settings.LeechSettings;
+import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
@@ -59,9 +60,13 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
     final TorrentConfiguration trackerConfiguration = new FakeTorrentConfiguration();
 
     Mockery m = new Mockery();
+    final LeechSettings leechSettings = m.mock(LeechSettings.class);
+    final SeedSettings seedingSettings = m.mock(SeedSettings.class);
     final ArtifactCacheProvider cacheProvider = m.mock(ArtifactCacheProvider.class);
     m.checking(new Expectations() {{
       allowing(cacheProvider).addListener(with(any(TorrentArtifactCacheListener.class)));
+      allowing(leechSettings).isDownloadEnabled(); will(returnValue(true));
+      allowing(seedingSettings).isSeedingEnabled(); will(returnValue(true));
     }});
     final ArtifactsWatcher artifactsWatcher = m.mock(ArtifactsWatcher.class);
 
@@ -76,7 +81,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
             seeder,
             tff,
             artifactsWatcher,
-            myTorrentsDownloadStatistic);
+            myTorrentsDownloadStatistic, leechSettings, agentConfiguration, seedingSettings);
   }
 
   @AfterMethod

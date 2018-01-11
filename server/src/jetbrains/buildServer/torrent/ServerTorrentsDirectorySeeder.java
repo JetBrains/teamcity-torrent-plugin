@@ -14,6 +14,7 @@ import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.torrent.seeder.ParentDirConverter;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
+import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.FileUtil;
@@ -67,24 +68,20 @@ public class ServerTorrentsDirectorySeeder {
         // and to stop showing torrent icons for users
         myTorrentsSeeder.setRemoveExpiredTorrentFiles(true);
 
-        if (myConfigurator.isTorrentEnabled()) {
-          startSeeder();
-        }
+        startSeeder();
       }
 
       @Override
       public void buildFinished(@NotNull SRunningBuild build) {
-        if (myConfigurator.isTorrentEnabled()) {
-          File artifactsDirectory = build.getArtifactsDirectory();
-          final File torrentsDir = getTorrentFilesBaseDir(artifactsDirectory);
-          torrentsDir.mkdirs();
-          Path torrentsPath = torrentsDir.toPath();
-          announceBuildArtifacts(torrentsPath,
-                  build.getArtifacts(BuildArtifactsViewMode.VIEW_INTERNAL_ONLY),
-                  new ArtifactsCollectorImpl(),
-                  new ArtifactProcessorImpl(torrentsPath, artifactsDirectory.toPath(), myTorrentsSeeder, myConfigurator),
-                  new UnusedTorrentFilesRemoverImpl(Files::delete, Files::walkFileTree));
-        }
+        File artifactsDirectory = build.getArtifactsDirectory();
+        final File torrentsDir = getTorrentFilesBaseDir(artifactsDirectory);
+        torrentsDir.mkdirs();
+        Path torrentsPath = torrentsDir.toPath();
+        announceBuildArtifacts(torrentsPath,
+                build.getArtifacts(BuildArtifactsViewMode.VIEW_INTERNAL_ONLY),
+                new ArtifactsCollectorImpl(),
+                new ArtifactProcessorImpl(torrentsPath, artifactsDirectory.toPath(), myTorrentsSeeder, myConfigurator),
+                new UnusedTorrentFilesRemoverImpl(Files::delete, Files::walkFileTree));
       }
 
       public void serverShutdown() {
@@ -99,7 +96,7 @@ public class ServerTorrentsDirectorySeeder {
       public void propertyChange(PropertyChangeEvent evt) {
         String propertyName = evt.getPropertyName();
         switch (propertyName) {
-          case TorrentConfiguration.MAX_NUMBER_OF_SEEDED_TORRENTS:
+          case SeedSettings.MAX_NUMBER_OF_SEEDED_TORRENTS:
             setMaxNumberOfSeededTorrents((Integer) evt.getNewValue());
             myTorrentsSeeder.setMaxTorrentsToSeed(myMaxTorrentsToSeed);
             break;
@@ -120,7 +117,7 @@ public class ServerTorrentsDirectorySeeder {
             setAnnounceURI(URI.create(String.valueOf(evt.getNewValue())));
             break;
           case TorrentConfiguration.DOWNLOAD_ENABLED:
-          case TorrentConfiguration.TRANSPORT_ENABLED:
+          case SeedSettings.SEEDING_ENABLED:
             boolean enabled = (Boolean) evt.getNewValue();
             if (enabled) {
               startSeeder();
@@ -148,7 +145,7 @@ public class ServerTorrentsDirectorySeeder {
         addresses = NetworkUtil.getSelfAddresses(null);
       }
 
-      myTorrentsSeeder.start(addresses, myAnnounceURI, myConfigurator.getAnnounceIntervalSec());
+      myTorrentsSeeder.start(addresses, myAnnounceURI, TorrentConfiguration.DEFAULT_ANNOUNCE_INTERVAL);
     } catch (Exception e) {
       Loggers.SERVER.warn("Failed to start torrent seeder", e);
     }
