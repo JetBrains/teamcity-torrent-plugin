@@ -3,6 +3,7 @@ package jetbrains.buildServer.torrent;
 import com.turn.ttorrent.common.protocol.TrackerMessage;
 import com.turn.ttorrent.common.protocol.http.HTTPAnnounceResponseMessage;
 import com.turn.ttorrent.common.protocol.http.HTTPTrackerMessage;
+import com.turn.ttorrent.tracker.AddressChecker;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.TrackerRequestProcessor;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
@@ -11,6 +12,7 @@ import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.WaitFor;
 import jetbrains.buildServer.util.executors.ExecutorsFactory;
 import org.jetbrains.annotations.NotNull;
+import org.jmock.Mockery;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -33,7 +35,8 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-
+    Mockery m = new Mockery();
+    final AddressChecker addressChecker = m.mock(AddressChecker.class);
     myTrackerManager = new TorrentTrackerManager(myConfigurator, new ExecutorServices() {
       @NotNull
       public ScheduledExecutorService getNormalExecutorService() {
@@ -44,7 +47,7 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
       public ExecutorService getLowPriorityExecutorService() {
         return null;
       }
-    }, myDispatcher);
+    }, myDispatcher, addressChecker);
 
     myDispatcher.getMulticaster().serverStartup();
 

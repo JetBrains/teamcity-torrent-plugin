@@ -1,6 +1,7 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.turn.ttorrent.tracker.AddressChecker;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.Tracker;
 import com.turn.ttorrent.tracker.TrackerRequestProcessor;
@@ -34,11 +35,12 @@ public class TorrentTrackerManager {
 
   public TorrentTrackerManager(@NotNull final TorrentConfigurator configurator,
                                @NotNull final ExecutorServices executorServices,
-                               @NotNull final EventDispatcher<BuildServerListener> dispatcher) {
+                               @NotNull final EventDispatcher<BuildServerListener> dispatcher,
+                               @NotNull final AddressChecker addressChecker) {
     myConfigurator = configurator;
     myExecutorService = executorServices.getNormalExecutorService();
 
-    myTrackerService = new TrackerRequestProcessor();
+    myTrackerService = new TrackerRequestProcessor(addressChecker);
     myTrackerService.setAcceptForeignTorrents(true);
     myTorrents = new ConcurrentHashMap<String, TrackedTorrent>();
     dispatcher.addListener(new BuildServerAdapter(){
