@@ -12,6 +12,7 @@ import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.WaitFor;
 import jetbrains.buildServer.util.executors.ExecutorsFactory;
 import org.jetbrains.annotations.NotNull;
+import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -37,6 +38,9 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
     super.setUp();
     Mockery m = new Mockery();
     final AddressChecker addressChecker = m.mock(AddressChecker.class);
+    m.checking(new Expectations() {{
+      allowing(addressChecker).isBadAddress(with(any(String.class))); will(returnValue(false));
+    }});
     myTrackerManager = new TorrentTrackerManager(myConfigurator, new ExecutorServices() {
       @NotNull
       public ScheduledExecutorService getNormalExecutorService() {
