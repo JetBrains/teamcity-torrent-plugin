@@ -41,10 +41,10 @@
       <th>Agent settings:</th>
       <td>
         <div>
-          For enable downloading/seeding artifacts by agent set next properties as <strong>true</strong> in build parameters:
+          To enable downloading/seeding artifacts from the agent set the following configuration parameters in a project or a build configuration
           <ul style="margin-top:0; padding-left: 1em;">
-            <li><strong>${downloadEnabledKey}</strong> - for enable downloading</li>
-            <li><strong>${seedingEnabledKey}</strong> - for enable seeding</li>
+            <li><strong>${downloadEnabledKey}=true</strong></li>
+            <li><strong>${seedingEnabledKey}=true</strong></li>
           </ul>
         </div>
       </td>
