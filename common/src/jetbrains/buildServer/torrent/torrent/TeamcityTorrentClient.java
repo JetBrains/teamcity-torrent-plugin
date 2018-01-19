@@ -6,7 +6,6 @@ import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.client.peer.SharingPeer;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.common.TorrentHash;
-import com.turn.ttorrent.tracker.TrackerHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,13 +43,6 @@ public class TeamcityTorrentClient {
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) throws IOException, NoSuchAlgorithmException {
     Torrent torrent = loadTorrent(torrentFile);
-    if (!TrackerHelper.tryTracker(torrent)){
-      if (myClient.getDefaultTrackerURI() == null){
-        return false;
-      }
-      torrent = torrent.createWithNewTracker(myClient.getDefaultTrackerURI());
-      torrent.save(torrentFile);
-    }
     return seedTorrent(torrent, srcFile);
   }
 
