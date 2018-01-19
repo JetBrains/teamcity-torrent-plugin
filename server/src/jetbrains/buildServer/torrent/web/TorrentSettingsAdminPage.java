@@ -4,12 +4,11 @@
  */
 package jetbrains.buildServer.torrent.web;
 
-import com.turn.ttorrent.client.peer.SharingPeer;
+import jetbrains.buildServer.controllers.BaseController;
+import jetbrains.buildServer.controllers.admin.AdminPage;
 import jetbrains.buildServer.torrent.ServerTorrentsDirectorySeeder;
 import jetbrains.buildServer.torrent.TorrentConfigurator;
 import jetbrains.buildServer.torrent.TorrentTrackerManager;
-import jetbrains.buildServer.controllers.BaseController;
-import jetbrains.buildServer.controllers.admin.AdminPage;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.web.openapi.PagePlaces;
@@ -69,7 +68,8 @@ public class TorrentSettingsAdminPage extends AdminPage {
     model.put("seededTorrentsNum", myTorrentSeeder.getNumberOfSeededTorrents());
     model.put("downloadEnabledKey", LeechSettings.DOWNLOAD_ENABLED);
     model.put("activePeersCount", myTorrentSeeder.getPeers().size());
-    model.put("totalSpeedMegabytesPerSecond", myTorrentSeeder.getPeers().stream().mapToDouble(it->it.getULRate().get()).sum());
+    final double speedBytesPerSecond = myTorrentSeeder.getPeers().stream().mapToDouble(it -> it.getULRate().get()).sum();
+    model.put("totalSpeedMegabytesPerSecond", speedBytesPerSecond / (1024 * 1024));
     model.put("seedingEnabledKey", SeedSettings.SEEDING_ENABLED);
   }
 
