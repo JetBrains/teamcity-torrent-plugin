@@ -3,6 +3,7 @@ package jetbrains.buildServer.torrent.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.client.peer.SharingPeer;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.common.TorrentHash;
 import com.turn.ttorrent.tracker.TrackerHelper;
@@ -15,6 +16,8 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,6 +52,12 @@ public class TeamcityTorrentClient {
       torrent.save(torrentFile);
     }
     return seedTorrent(torrent, srcFile);
+  }
+
+  public Set<SharingPeer> getPeers() {
+    Client local = myClient;
+    if (local == null) return new HashSet<SharingPeer>();
+    return local.getPeers();
   }
 
   public boolean seedTorrent(@NotNull Torrent torrent, @NotNull File srcFile) {

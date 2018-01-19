@@ -5,6 +5,8 @@
 <jsp:useBean id="seededTorrentsNum" type="java.lang.Integer" scope="request"/>
 <jsp:useBean id="downloadEnabledKey" type="java.lang.String" scope="request"/>
 <jsp:useBean id="seedingEnabledKey" type="java.lang.String" scope="request"/>
+<jsp:useBean id="activePeersCount" type="java.lang.Integer" scope="request"/>
+<jsp:useBean id="totalSpeedMegabytesPerSecond" type="java.lang.Double" scope="request"/>
 <form method="post" action="<c:url value='/admin/torrentSettings.html'/>">
   <table class="runnerFormTable">
 <tr>
@@ -17,13 +19,22 @@
         <td>
           <ul style="margin-top:0; padding-left: 1em;">
             <li>announced torrents: <strong>${announcedTorrentsNum}</strong></li>
-            <li>connected/downloading clients: <strong>${connectedClientsNum}</strong></li>
-            <li>number of currently seeded torrents: <strong>${seededTorrentsNum}
-              (of ${torrentConfigurator.maxNumberOfSeededTorrents})</strong></li>
+            <li>connected clients: <strong>${connectedClientsNum}</strong></li>
           </ul>
         </td>
       </tr>
     </c:if>
+    <tr>
+      <th>Server seeding information:</th>
+      <td>
+        <ul style="margin-top:0; padding-left: 1em;">
+          <li>downloading clients: <strong>${activePeersCount}</strong></li>
+          <li>Total download speed: <strong>${totalSpeedMegabytesPerSecond}</strong></li>
+          <li>number of currently seeded torrents: <strong>${seededTorrentsNum}
+            (of ${torrentConfigurator.maxNumberOfSeededTorrents})</strong></li>
+        </ul>
+      </td>
+    </tr>
     <tr>
       <th>Server settings:</th>
       <td>

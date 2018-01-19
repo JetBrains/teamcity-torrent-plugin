@@ -6,6 +6,7 @@ package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.client.peer.SharingPeer;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.*;
@@ -31,6 +32,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Maxim Podkolzine (maxim.podkolzine@jetbrains.com)
@@ -202,6 +204,10 @@ public class ServerTorrentsDirectorySeeder {
 
   public Collection<SharedTorrent> getSharedTorrents() {
     return myTorrentsSeeder.getSharedTorrents();
+  }
+
+  public Set<SharingPeer> getPeers() {
+    return myTorrentsSeeder.getClient().getPeers();
   }
 
   //for tests
