@@ -66,13 +66,13 @@ public class TorrentsDownloadStatistic {
   }
 
   /**
-   * @return average speed of downloaded torrents (Kilobytes/second). Return zero, if time is 0
+   * @return average speed of downloaded torrents (Megabytes/second). Return zero, if time is 0
    */
   public float getAverageSpeedKbS() {
     if (myTotalTimeMillis.get() == 0) return 0;
     float size = myTotalSize.get();
     float time = myTotalTimeMillis.get();
     float averageSpeed = size / time;//bytes/millisecond
-    return averageSpeed * 1000 / 1024;
+    return averageSpeed * 1000 / (1024 * 1024);
   }
 }
