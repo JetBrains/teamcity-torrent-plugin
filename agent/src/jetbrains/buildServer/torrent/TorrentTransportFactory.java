@@ -163,7 +163,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
       Torrent torrent = downloadTorrent(parsedArtifactUrl);
       if (torrent == null) {
-        myTorrentsDownloadStatistic.fileDownloadFailed();
         final String msg = "No .torrent file for: " + urlString + ", will use default transport";
         log2Build(msg);
         Loggers.AGENT.info(msg);
@@ -299,6 +298,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       } catch (IOException e) {
         log2Build(String.format("Unable to download: %s", e.getMessage()));
       }
+      myTorrentsDownloadStatistic.fileDownloadFailed();
       return null;
     }
 
