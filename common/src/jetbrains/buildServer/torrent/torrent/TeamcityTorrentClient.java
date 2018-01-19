@@ -15,7 +15,6 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +26,8 @@ import static jetbrains.buildServer.torrent.torrent.TorrentUtil.isConnectionMana
 public class TeamcityTorrentClient {
   private final static Logger LOG = Logger.getInstance(TeamcityTorrentClient.class.getName());
 
-  private Client myClient;
+  @NotNull
+  private final Client myClient;
 
   public TeamcityTorrentClient(ExecutorService es) {
     myClient = new Client(es);
@@ -47,13 +47,10 @@ public class TeamcityTorrentClient {
   }
 
   public Set<SharingPeer> getPeers() {
-    Client local = myClient;
-    if (local == null) return new HashSet<SharingPeer>();
-    return local.getPeers();
+    return myClient.getPeers();
   }
 
   public boolean seedTorrent(@NotNull Torrent torrent, @NotNull File srcFile) {
-    if (myClient == null) return false;
     try {
       final SharedTorrent st = new SharedTorrent(torrent, srcFile.getParentFile(), false, true);
       myClient.addTorrent(st);
@@ -65,7 +62,6 @@ public class TeamcityTorrentClient {
   }
 
   public void stopSeeding(@NotNull File torrentFile) {
-    if (myClient == null) return;
     try {
       Torrent t = loadTorrent(torrentFile);
       myClient.removeTorrent(t);
@@ -76,7 +72,6 @@ public class TeamcityTorrentClient {
     }
   }
   public void stopSeeding(@NotNull TorrentHash torrentHash) {
-    if (myClient == null) return;
     myClient.removeTorrent(torrentHash);
   }
 
