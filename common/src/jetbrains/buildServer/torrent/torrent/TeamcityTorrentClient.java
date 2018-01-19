@@ -3,9 +3,9 @@ package jetbrains.buildServer.torrent.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.client.peer.SharingPeer;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.common.TorrentHash;
-import com.turn.ttorrent.tracker.TrackerHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,6 +15,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,7 +26,8 @@ import static jetbrains.buildServer.torrent.torrent.TorrentUtil.isConnectionMana
 public class TeamcityTorrentClient {
   private final static Logger LOG = Logger.getInstance(TeamcityTorrentClient.class.getName());
 
-  private Client myClient;
+  @NotNull
+  private final Client myClient;
 
   public TeamcityTorrentClient(ExecutorService es) {
     myClient = new Client(es);
@@ -41,18 +43,14 @@ public class TeamcityTorrentClient {
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) throws IOException, NoSuchAlgorithmException {
     Torrent torrent = loadTorrent(torrentFile);
-    if (!TrackerHelper.tryTracker(torrent)){
-      if (myClient.getDefaultTrackerURI() == null){
-        return false;
-      }
-      torrent = torrent.createWithNewTracker(myClient.getDefaultTrackerURI());
-      torrent.save(torrentFile);
-    }
     return seedTorrent(torrent, srcFile);
   }
 
+  public Set<SharingPeer> getPeers() {
+    return myClient.getPeers();
+  }
+
   public boolean seedTorrent(@NotNull Torrent torrent, @NotNull File srcFile) {
-    if (myClient == null) return false;
     try {
       final SharedTorrent st = new SharedTorrent(torrent, srcFile.getParentFile(), false, true);
       myClient.addTorrent(st);
@@ -64,7 +62,6 @@ public class TeamcityTorrentClient {
   }
 
   public void stopSeeding(@NotNull File torrentFile) {
-    if (myClient == null) return;
     try {
       Torrent t = loadTorrent(torrentFile);
       myClient.removeTorrent(t);
@@ -75,7 +72,6 @@ public class TeamcityTorrentClient {
     }
   }
   public void stopSeeding(@NotNull TorrentHash torrentHash) {
-    if (myClient == null) return;
     myClient.removeTorrent(torrentHash);
   }
 

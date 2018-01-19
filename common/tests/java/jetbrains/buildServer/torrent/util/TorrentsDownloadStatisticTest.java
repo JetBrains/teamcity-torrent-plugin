@@ -36,7 +36,7 @@ public class TorrentsDownloadStatisticTest {
 
     assertEquals(myTorrentsDownloadStatistic.getFailedDownloadCount(), 0);
     assertEquals(myTorrentsDownloadStatistic.getSuccessfulDownloadCount(), 0);
-    assertEquals(myTorrentsDownloadStatistic.getAverageSpeedKbS(), 0, 0.001);
+    assertEquals(myTorrentsDownloadStatistic.getAverageSpeedMbS(), 0, 0.001);
 
     myTorrentsDownloadStatistic.fileDownloadFailed();
     myTorrentsDownloadStatistic.fileDownloadFailed();
@@ -47,7 +47,7 @@ public class TorrentsDownloadStatisticTest {
 
     assertEquals(myTorrentsDownloadStatistic.getFailedDownloadCount(), 3);
     assertEquals(myTorrentsDownloadStatistic.getSuccessfulDownloadCount(), 2);
-    assertEquals(myTorrentsDownloadStatistic.getAverageSpeedKbS(), 2929.68, 0.1);
+    assertEquals(myTorrentsDownloadStatistic.getAverageSpeedMbS(), 2929.68/1024, 0.1);
 
   }
 

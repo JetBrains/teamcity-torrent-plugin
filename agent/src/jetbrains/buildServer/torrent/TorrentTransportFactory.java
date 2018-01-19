@@ -2,7 +2,6 @@ package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.util.io.StreamUtil;
 import com.turn.ttorrent.common.Torrent;
-import com.turn.ttorrent.tracker.TrackerHelper;
 import jetbrains.buildServer.ArtifactsConstants;
 import jetbrains.buildServer.agent.BuildAgentConfigurationEx;
 import jetbrains.buildServer.agent.BuildProgressLogger;
@@ -163,27 +162,14 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
       Torrent torrent = downloadTorrent(parsedArtifactUrl);
       if (torrent == null) {
-        myTorrentsDownloadStatistic.fileDownloadFailed();
-        final String msg = "unable download torrent file for " + urlString;
-        log2Build(msg);
-        Loggers.AGENT.info(msg);
         return null;
       }
 
       try {
         myBuildLogger.progressStarted("Downloading " + target.getName() + " via BitTorrent protocol.");
 
-        final int seedersCount = TrackerHelper.getSeedersCount(torrent);
         final int minSeedersForDownload = myLeechSettings.getMinSeedersForDownload();
 
-        if (seedersCount < minSeedersForDownload) {
-          String logMsg = String.format("found only %s seeders, but min required is %s for torrent %s",
-                  seedersCount, minSeedersForDownload, urlString);
-          log2Build(logMsg);
-          Loggers.AGENT.info(logMsg);
-          myTorrentsDownloadStatistic.fileDownloadFailed();
-          return null;
-        }
         final long startTime = System.currentTimeMillis();
 
         final AtomicReference<Exception> exceptionHolder = new AtomicReference<Exception>();
@@ -299,6 +285,10 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       } catch (IOException e) {
         log2Build(String.format("Unable to download: %s", e.getMessage()));
       }
+      final String msg = "No .torrent file for: " + parsedArtifactUrl.getArtifactPath() + ", will use default transport";
+      log2Build(msg);
+      Loggers.AGENT.info(msg);
+      myTorrentsDownloadStatistic.fileDownloadFailed();
       return null;
     }
 

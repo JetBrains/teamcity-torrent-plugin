@@ -33,7 +33,6 @@ import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -46,6 +45,7 @@ public class TorrentsSeeder {
   public static final int CHECK_TORRENTS_INTERVAL = TeamCityProperties.getInteger("teamcity.torrents.checkTorrentsIntervalSec", 5*60);
 
   public static final String EXECUTOR_NAME = "Torrent files checker";
+  public static final String PLUGIN_EXECUTOR_NAME = "Torrent plugin worker";
 
   @NotNull
   private final TeamcityTorrentClient myClient;
@@ -67,7 +67,7 @@ public class TorrentsSeeder {
         }
       }
     });
-    myWorkerExecutor = Executors.newFixedThreadPool(DEFAULT_WORKER_POOL_SIZE);
+    myWorkerExecutor = ExecutorsFactory.newExecutor(PLUGIN_EXECUTOR_NAME);
     myClient = new TeamcityTorrentClient(myWorkerExecutor);
     myExecutor = ExecutorsFactory.newFixedScheduledDaemonExecutor(EXECUTOR_NAME, 1);
   }
