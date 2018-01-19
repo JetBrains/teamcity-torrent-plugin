@@ -74,7 +74,9 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
         setTrackerEnabled(TeamCityProperties.getBooleanOrTrue(TRACKER_ENABLED));
         setTrackerUsesDedicatedPort(TeamCityProperties.getBoolean(TRACKER_DEDICATED_PORT));
         setMaxNumberOfSeededTorrents(TeamCityProperties.getInteger(MAX_NUMBER_OF_SEEDED_TORRENTS, DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS));
-        setFileSizeThresholdMb(getFileSizeThreshold());
+        long newFileSize = getFileSizeThreshold();
+        setFileSizeThresholdMb(newFileSize);
+        setMaxConnectionsCount(TeamCityProperties.getInteger(MAX_INCOMING_CONNECTIONS, DEFAULT_MAX_CONNECTIONS));
         setTrackerTorrentExpireTimeoutSec(TeamCityProperties.getInteger(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT));
         setAnnounceIntervalSec(TeamCityProperties.getInteger(ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL));
         setAnnounceUrl(TeamCityProperties.getProperty(ANNOUNCE_URL));
@@ -109,8 +111,14 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
     try {
       return StringUtil.parseFileSize(strValue);
     } catch (NumberFormatException e) {
-      return StringUtil.parseFileSize(DEFAULT_FILE_SIZE_THRESHOLD);
+      Loggers.SERVER.warnAndDebugDetails("incorrect value " + strValue + " for file size threshold property", e);
+      try {
+        return StringUtil.parseFileSize(DEFAULT_FILE_SIZE_THRESHOLD);
+      } catch (NumberFormatException nfe) {
+        Loggers.SERVER.warnAndDebugDetails("incorrect default value " + DEFAULT_FILE_SIZE_THRESHOLD + " for file size threshold property", nfe);
+      }
     }
+    return 10*1024*1024;//10mb
   }
 
   private void setFileSizeThresholdMb(long threshold) {
@@ -138,6 +146,14 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
     if (oldValue != sec) {
       myConfiguration.setProperty(ANNOUNCE_INTERVAL, String.valueOf(sec));
       propertyChanged(ANNOUNCE_INTERVAL, oldValue, sec);
+    }
+  }
+
+  private void setMaxConnectionsCount(int maxConnectionsCount) {
+    int oldValue = TorrentUtil.getIntegerValue(myConfiguration, MAX_INCOMING_CONNECTIONS, DEFAULT_MAX_CONNECTIONS);
+    if (oldValue != maxConnectionsCount) {
+      myConfiguration.setProperty(MAX_INCOMING_CONNECTIONS, String.valueOf(maxConnectionsCount));
+      propertyChanged(MAX_INCOMING_CONNECTIONS, oldValue, maxConnectionsCount);
     }
   }
 
