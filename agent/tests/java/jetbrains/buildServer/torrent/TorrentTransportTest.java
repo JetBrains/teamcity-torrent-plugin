@@ -183,8 +183,16 @@ public class TorrentTransportTest extends BaseTestCase {
     myDownloadHacks.put(torrentPath2, torrentBytes);
     setDownloadHonestly(false);
 
-    myTorrentTransport.downloadUrlTo(path1, file1);
+    try {
+      myTorrentTransport.downloadUrlTo(path1, file1);
+    } catch (Exception ignored) {
+      //really torrent file is not exist
+    }
+    try {
     myTorrentTransport.downloadUrlTo(path2, file2);
+    } catch (Exception ignored) {
+      //really torrent file is not exist
+    }
 
     // shouldn't try to download the second file:
     assertEquals(1, myDownloadHackAttempts.size());
