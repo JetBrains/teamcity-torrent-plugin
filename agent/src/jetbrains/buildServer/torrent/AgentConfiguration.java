@@ -43,7 +43,7 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
         if (StringUtil.isNotEmpty(myServerUrl)) {
           myXmlRpcTarget = XmlRpcFactory.getInstance().create(myServerUrl, "TeamCity Agent", 30000, false);
         } else {
-          Loggers.AGENT.error("cannot get server URL from configuration. Cannot create RPC instance for getting announce URL from server");
+          Loggers.AGENT.error("Cannot create RPC instance for torrent plugin: server url is not specified");
         }
       }
     });
@@ -149,13 +149,16 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
     }
     try {
       final Object retval = xmlRpcTargetLocal.call(XmlRpcConstants.TORRENT_CONFIGURATION + "." + methodName, new Object[0]);
-      if (retval != null)
-        return (T) retval;
-      else
-        Loggers.AGENT.warn("cannot be invoked method " + methodName + " via RPC");
+
+      if (retval == null) {
+        Loggers.AGENT.warn("method " + methodName + " cannot be invoked via RPC");
         return defaultValue;
+      }
+
+      return (T) retval;
+
     } catch (Exception e) {
-      Loggers.AGENT.warnAndDebugDetails("cannot be invoked method " + methodName + " via RPC. Problem: " + e.getMessage(), e);
+      Loggers.AGENT.warnAndDebugDetails("method " + methodName + " cannot be invoked via RPC", e);
       return defaultValue;
     }
   }
