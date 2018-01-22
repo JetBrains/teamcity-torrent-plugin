@@ -128,7 +128,12 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   }
 
   private void startSeeder() throws IOException {
-    myTorrentsSeeder.start(NetworkUtil.getSelfAddresses(null), myTrackerAnnounceUrl, myAnnounceIntervalSec);
+    final URI trackerAnnounceUrlLocal = myTrackerAnnounceUrl;
+    if (trackerAnnounceUrlLocal == null) {
+      Loggers.AGENT.error("Announce url is null. Seeding is disabled");
+      return;
+    }
+    myTorrentsSeeder.start(NetworkUtil.getSelfAddresses(null), trackerAnnounceUrlLocal, myAnnounceIntervalSec);
   }
 
   private void stopSeeder() {

@@ -2,6 +2,7 @@ package jetbrains.buildServer.torrent;
 
 import com.turn.ttorrent.Constants;
 import jetbrains.buildServer.agent.*;
+import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -19,22 +20,29 @@ import java.util.concurrent.TimeUnit;
  * Time: 4:06 PM
  */
 public class AgentConfiguration implements TorrentConfiguration, SeedSettings, LeechSettings {
-  private XmlRpcTarget myXmlRpcTarget;
+
+  private final static String ANNOUNCE_URL_KEY = "teamcity.torrent.announce.url";
+
+  @Nullable
+  private volatile XmlRpcTarget myXmlRpcTarget;
   @NotNull
-  final private BuildAgentConfiguration myBuildAgentConfiguration;
+  private final BuildAgentConfiguration myBuildAgentConfiguration;
   @NotNull
   private final CurrentBuildTracker myCurrentBuildTracker;
 
   public AgentConfiguration(@NotNull final EventDispatcher<AgentLifeCycleListener> dispatcher,
                             @NotNull final BuildAgentConfiguration buildAgentConfiguration,
                             @NotNull CurrentBuildTracker currentBuildTracker) {
-    this.myBuildAgentConfiguration = buildAgentConfiguration;
     myCurrentBuildTracker = currentBuildTracker;
+    myBuildAgentConfiguration = buildAgentConfiguration;
     dispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
       public void afterAgentConfigurationLoaded(@NotNull BuildAgent agent) {
-        if (StringUtil.isNotEmpty(agent.getConfiguration().getServerUrl())) {
-          myXmlRpcTarget = XmlRpcFactory.getInstance().create(agent.getConfiguration().getServerUrl(), "TeamCity Agent", 30000, false);
+        String serverUrl = agent.getConfiguration().getServerUrl();
+        if (StringUtil.isNotEmpty(serverUrl)) {
+          myXmlRpcTarget = XmlRpcFactory.getInstance().create(serverUrl, "TeamCity Agent", 30000, false);
+        } else {
+          Loggers.AGENT.error("Cannot create RPC instance for torrent plugin: server url is not specified");
         }
       }
     });
@@ -42,7 +50,16 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
 
   @Nullable
   public String getAnnounceUrl() {
-    return call("getAnnounceUrl", "http://localhost:8111/trackerAnnounce.html");
+
+    String announceUrlLocal = myBuildAgentConfiguration.getConfigurationParameters().get(ANNOUNCE_URL_KEY);
+    if (StringUtil.isNotEmpty(announceUrlLocal)) return announceUrlLocal;
+
+    String serverUrlLocal = myBuildAgentConfiguration.getServerUrl();
+    if (serverUrlLocal == null) return null;
+
+    serverUrlLocal = StringUtil.removeTailingSlash(serverUrlLocal);
+
+    return call("getAnnounceUrl", serverUrlLocal + "/trackerAnnounce.html");
   }
 
   @Override
@@ -122,16 +139,23 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
 
   @NotNull
   private <T> T call(@NotNull String methodName, @NotNull final T defaultValue) {
-    if (myXmlRpcTarget == null) {
+    final XmlRpcTarget xmlRpcTargetLocal = myXmlRpcTarget;
+    if (xmlRpcTargetLocal == null) {
+      Loggers.AGENT.warn("RPC object is not initialized");
       return defaultValue;
     }
     try {
-      final Object retval = myXmlRpcTarget.call(XmlRpcConstants.TORRENT_CONFIGURATION + "." + methodName, new Object[0]);
-      if (retval != null)
-        return (T) retval;
-      else
+      final Object retval = xmlRpcTargetLocal.call(XmlRpcConstants.TORRENT_CONFIGURATION + "." + methodName, new Object[0]);
+
+      if (retval == null) {
+        Loggers.AGENT.warn("method " + methodName + " cannot be invoked via RPC");
         return defaultValue;
+      }
+
+      return (T) retval;
+
     } catch (Exception e) {
+      Loggers.AGENT.warnAndDebugDetails("method " + methodName + " cannot be invoked via RPC", e);
       return defaultValue;
     }
   }
