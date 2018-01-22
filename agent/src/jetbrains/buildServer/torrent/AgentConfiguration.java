@@ -2,6 +2,7 @@ package jetbrains.buildServer.torrent;
 
 import com.turn.ttorrent.Constants;
 import jetbrains.buildServer.agent.*;
+import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -19,7 +20,11 @@ import java.util.concurrent.TimeUnit;
  * Time: 4:06 PM
  */
 public class AgentConfiguration implements TorrentConfiguration, SeedSettings, LeechSettings {
-  private XmlRpcTarget myXmlRpcTarget;
+
+  @Nullable
+  private volatile XmlRpcTarget myXmlRpcTarget;
+  @Nullable
+  private volatile String serverUrl;
   @NotNull
   final private BuildAgentConfiguration myBuildAgentConfiguration;
   @NotNull
@@ -33,8 +38,11 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
     dispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
       public void afterAgentConfigurationLoaded(@NotNull BuildAgent agent) {
-        if (StringUtil.isNotEmpty(agent.getConfiguration().getServerUrl())) {
-          myXmlRpcTarget = XmlRpcFactory.getInstance().create(agent.getConfiguration().getServerUrl(), "TeamCity Agent", 30000, false);
+        serverUrl = agent.getConfiguration().getServerUrl();
+        if (StringUtil.isNotEmpty(serverUrl)) {
+          myXmlRpcTarget = XmlRpcFactory.getInstance().create(serverUrl, "TeamCity Agent", 30000, false);
+        } else {
+          Loggers.AGENT.error("cannot get server URL from configuration. Cannot create RPC instance for getting announce URL from server");
         }
       }
     });
@@ -42,7 +50,14 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
 
   @Nullable
   public String getAnnounceUrl() {
-    return call("getAnnounceUrl", "http://localhost:8111/trackerAnnounce.html");
+    String serverUrlLocal = serverUrl;
+    if (serverUrlLocal == null) return null;
+
+    if (serverUrlLocal.endsWith("/")) {
+      serverUrlLocal = serverUrlLocal.substring(0, serverUrlLocal.length() - 1);
+    }
+
+    return call("getAnnounceUrl", serverUrlLocal + "/trackerAnnounce.html");
   }
 
   @Override
@@ -123,6 +138,7 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
   @NotNull
   private <T> T call(@NotNull String methodName, @NotNull final T defaultValue) {
     if (myXmlRpcTarget == null) {
+      Loggers.AGENT.warn("RPC object is not initialized");
       return defaultValue;
     }
     try {
@@ -130,8 +146,10 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
       if (retval != null)
         return (T) retval;
       else
+        Loggers.AGENT.warn("cannot be invoked method " + methodName + " via RPC");
         return defaultValue;
     } catch (Exception e) {
+      Loggers.AGENT.warnAndDebugDetails("cannot be invoked method " + methodName + " via RPC. Problem: " + e.getMessage(), e);
       return defaultValue;
     }
   }
