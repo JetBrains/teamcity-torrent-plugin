@@ -143,12 +143,13 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
 
   @NotNull
   private <T> T call(@NotNull String methodName, @NotNull final T defaultValue) {
-    if (myXmlRpcTarget == null) {
+    final XmlRpcTarget xmlRpcTargetLocal = myXmlRpcTarget;
+    if (xmlRpcTargetLocal == null) {
       Loggers.AGENT.warn("RPC object is not initialized");
       return defaultValue;
     }
     try {
-      final Object retval = myXmlRpcTarget.call(XmlRpcConstants.TORRENT_CONFIGURATION + "." + methodName, new Object[0]);
+      final Object retval = xmlRpcTargetLocal.call(XmlRpcConstants.TORRENT_CONFIGURATION + "." + methodName, new Object[0]);
       if (retval != null)
         return (T) retval;
       else
