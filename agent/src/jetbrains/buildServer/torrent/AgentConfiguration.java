@@ -58,9 +58,7 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
     String serverUrlLocal = myServerUrl;
     if (serverUrlLocal == null) return null;
 
-    if (serverUrlLocal.endsWith("/")) {
-      serverUrlLocal = serverUrlLocal.substring(0, serverUrlLocal.length() - 1);
-    }
+    serverUrlLocal = StringUtil.removeTailingSlash(serverUrlLocal);
 
     return call("getAnnounceUrl", serverUrlLocal + "/trackerAnnounce.html");
   }
