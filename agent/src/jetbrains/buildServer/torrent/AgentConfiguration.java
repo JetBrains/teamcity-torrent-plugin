@@ -21,10 +21,14 @@ import java.util.concurrent.TimeUnit;
  */
 public class AgentConfiguration implements TorrentConfiguration, SeedSettings, LeechSettings {
 
+  private final static String ANNOUNCE_URL_KEY = "teamcity.torrent.announce.url";
+
   @Nullable
   private volatile XmlRpcTarget myXmlRpcTarget;
   @Nullable
-  private volatile String serverUrl;
+  private volatile String myServerUrl;
+  @Nullable
+  private volatile String myAnnounceUrlFromAgentProperties;
   @NotNull
   final private BuildAgentConfiguration myBuildAgentConfiguration;
   @NotNull
@@ -38,9 +42,10 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
     dispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
       public void afterAgentConfigurationLoaded(@NotNull BuildAgent agent) {
-        serverUrl = agent.getConfiguration().getServerUrl();
-        if (StringUtil.isNotEmpty(serverUrl)) {
-          myXmlRpcTarget = XmlRpcFactory.getInstance().create(serverUrl, "TeamCity Agent", 30000, false);
+        myServerUrl = agent.getConfiguration().getServerUrl();
+        myAnnounceUrlFromAgentProperties = agent.getConfiguration().getConfigurationParameters().get(ANNOUNCE_URL_KEY);
+        if (StringUtil.isNotEmpty(myServerUrl)) {
+          myXmlRpcTarget = XmlRpcFactory.getInstance().create(myServerUrl, "TeamCity Agent", 30000, false);
         } else {
           Loggers.AGENT.error("cannot get server URL from configuration. Cannot create RPC instance for getting announce URL from server");
         }
@@ -50,7 +55,11 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
 
   @Nullable
   public String getAnnounceUrl() {
-    String serverUrlLocal = serverUrl;
+
+    String announceUrlLocal = myAnnounceUrlFromAgentProperties;
+    if (StringUtil.isNotEmpty(announceUrlLocal)) return announceUrlLocal;
+
+    String serverUrlLocal = myServerUrl;
     if (serverUrlLocal == null) return null;
 
     if (serverUrlLocal.endsWith("/")) {
