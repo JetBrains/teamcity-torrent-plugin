@@ -30,14 +30,11 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
   @Nullable
   private volatile String myAnnounceUrlFromAgentProperties;
   @NotNull
-  final private BuildAgentConfiguration myBuildAgentConfiguration;
-  @NotNull
   private final CurrentBuildTracker myCurrentBuildTracker;
 
   public AgentConfiguration(@NotNull final EventDispatcher<AgentLifeCycleListener> dispatcher,
                             @NotNull final BuildAgentConfiguration buildAgentConfiguration,
                             @NotNull CurrentBuildTracker currentBuildTracker) {
-    this.myBuildAgentConfiguration = buildAgentConfiguration;
     myCurrentBuildTracker = currentBuildTracker;
     dispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
