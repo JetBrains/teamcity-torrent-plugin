@@ -25,23 +25,22 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
 
   @Nullable
   private volatile XmlRpcTarget myXmlRpcTarget;
-  @Nullable
-  private volatile String myServerUrl;
-  @Nullable
-  private volatile String myAnnounceUrlFromAgentProperties;
+  @NotNull
+  private final BuildAgentConfiguration myBuildAgentConfiguration;
   @NotNull
   private final CurrentBuildTracker myCurrentBuildTracker;
 
   public AgentConfiguration(@NotNull final EventDispatcher<AgentLifeCycleListener> dispatcher,
+                            @NotNull final BuildAgentConfiguration buildAgentConfiguration,
                             @NotNull CurrentBuildTracker currentBuildTracker) {
     myCurrentBuildTracker = currentBuildTracker;
+    myBuildAgentConfiguration = buildAgentConfiguration;
     dispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
       public void afterAgentConfigurationLoaded(@NotNull BuildAgent agent) {
-        myServerUrl = agent.getConfiguration().getServerUrl();
-        myAnnounceUrlFromAgentProperties = agent.getConfiguration().getConfigurationParameters().get(ANNOUNCE_URL_KEY);
-        if (StringUtil.isNotEmpty(myServerUrl)) {
-          myXmlRpcTarget = XmlRpcFactory.getInstance().create(myServerUrl, "TeamCity Agent", 30000, false);
+        String serverUrl = agent.getConfiguration().getServerUrl();
+        if (StringUtil.isNotEmpty(serverUrl)) {
+          myXmlRpcTarget = XmlRpcFactory.getInstance().create(serverUrl, "TeamCity Agent", 30000, false);
         } else {
           Loggers.AGENT.error("Cannot create RPC instance for torrent plugin: server url is not specified");
         }
@@ -52,10 +51,10 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
   @Nullable
   public String getAnnounceUrl() {
 
-    String announceUrlLocal = myAnnounceUrlFromAgentProperties;
+    String announceUrlLocal = myBuildAgentConfiguration.getConfigurationParameters().get(ANNOUNCE_URL_KEY);
     if (StringUtil.isNotEmpty(announceUrlLocal)) return announceUrlLocal;
 
-    String serverUrlLocal = myServerUrl;
+    String serverUrlLocal = myBuildAgentConfiguration.getServerUrl();
     if (serverUrlLocal == null) return null;
 
     serverUrlLocal = StringUtil.removeTailingSlash(serverUrlLocal);
