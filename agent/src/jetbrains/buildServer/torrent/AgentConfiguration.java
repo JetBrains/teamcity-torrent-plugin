@@ -33,7 +33,6 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
   private final CurrentBuildTracker myCurrentBuildTracker;
 
   public AgentConfiguration(@NotNull final EventDispatcher<AgentLifeCycleListener> dispatcher,
-                            @NotNull final BuildAgentConfiguration buildAgentConfiguration,
                             @NotNull CurrentBuildTracker currentBuildTracker) {
     myCurrentBuildTracker = currentBuildTracker;
     dispatcher.addListener(new AgentLifeCycleAdapter() {
