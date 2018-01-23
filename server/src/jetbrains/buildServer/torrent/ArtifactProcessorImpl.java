@@ -68,7 +68,7 @@ public class ArtifactProcessorImpl implements ArtifactProcessor {
         }
         Path torrent = findTorrent(fullPath, artifactRelativePath);
         if (!Files.exists(torrent)) {
-          LOG.info(String.format("torrent file for artifact %s doesn't exist", artifactRelativePath));
+          LOG.debug(String.format("torrent file for artifact %s doesn't exist", artifactRelativePath));
           return;
         }
         myTorrentsSeeder.registerSrcAndTorrentFile(fullPath.toFile(), torrent.toFile(), true);
