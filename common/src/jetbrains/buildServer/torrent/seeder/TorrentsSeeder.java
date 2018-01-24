@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TorrentsSeeder {
   private final static Logger LOG = Logger.getInstance(TorrentsSeeder.class.getName());
-  private final static int DEFAULT_WORKER_POOL_SIZE = 8;
+  private final static int DEFAULT_WORKER_POOL_SIZE = 10;
 
   public static final String TORRENTS_DIT_PATH = ".teamcity/torrents";
 
@@ -67,7 +67,7 @@ public class TorrentsSeeder {
         }
       }
     });
-    myWorkerExecutor = ExecutorsFactory.newExecutor(PLUGIN_EXECUTOR_NAME);
+    myWorkerExecutor = ExecutorsFactory.newFixedExecutor(PLUGIN_EXECUTOR_NAME, DEFAULT_WORKER_POOL_SIZE);
     myClient = new TeamcityTorrentClient(myWorkerExecutor);
     myExecutor = ExecutorsFactory.newFixedScheduledDaemonExecutor(EXECUTOR_NAME, 1);
   }
