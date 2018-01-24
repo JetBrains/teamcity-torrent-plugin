@@ -153,7 +153,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     @Nullable
     public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
-      Loggers.AGENT.info(String.format("trying to download %s via bittorrent", urlString));
       ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(urlString);
       if (urlString.endsWith(TEAMCITY_IVY)) {
         // downloading teamcity-ivy.xml and parsing it:
@@ -166,6 +165,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       }
 
       try {
+        Loggers.AGENT.info(String.format("trying to download %s via bittorrent", urlString));
         myBuildLogger.progressStarted("Downloading " + target.getName() + " via BitTorrent protocol.");
 
         final int minSeedersForDownload = myLeechSettings.getMinSeedersForDownload();
