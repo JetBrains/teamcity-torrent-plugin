@@ -29,7 +29,7 @@
       <td>
         <ul style="margin-top:0; padding-left: 1em;">
           <li>downloading clients: <strong>${activePeersCount}</strong></li>
-          <li>Total download speed: <strong>${totalSpeedMegabytesPerSecond}</strong></li>
+          <li>Total uploading speed (MB/s): <strong>${totalSpeedMegabytesPerSecond}</strong></li>
           <li>number of currently seeded torrents: <strong>${seededTorrentsNum}
             (of ${torrentConfigurator.maxNumberOfSeededTorrents})</strong></li>
         </ul>
