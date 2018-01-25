@@ -98,7 +98,7 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
   }
 
   public void setSendBufferSize(int newValue) {
-    propertyChanged(RECEIVE_BUFFER_SIZE, -1, newValue);
+    propertyChanged(SEND_BUFFER_SIZE, -1, newValue);
   }
 
   private void initConfigFile(File configFile) {
