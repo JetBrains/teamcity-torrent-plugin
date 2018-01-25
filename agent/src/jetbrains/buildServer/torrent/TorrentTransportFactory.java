@@ -177,7 +177,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
         Thread th = myClient.downloadAndShareOrFailAsync(
                 torrent, target, target.getParentFile(), myLeechSettings.getMaxPieceDownloadTime(), minSeedersForDownload, myInterrupted, exceptionHolder);
-        myCurrentDownload.set(th);
+        myCurrentDownload.set(Thread.currentThread());
         th.join();
         myCurrentDownload.set(null);
         if (exceptionHolder.get() != null) {
