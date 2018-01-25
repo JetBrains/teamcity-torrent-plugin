@@ -61,6 +61,14 @@ public class TeamcityTorrentClient {
     }
   }
 
+  public void setReceiveBufferSize(int size) {
+    myClient.setReceiveBufferSize(size);
+  }
+
+  public void setSendBufferSize(int size) {
+    myClient.setSendBufferSize(size);
+  }
+
   public void stopSeeding(@NotNull File torrentFile) {
     try {
       Torrent t = loadTorrent(torrentFile);

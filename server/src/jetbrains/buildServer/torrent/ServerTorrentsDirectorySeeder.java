@@ -112,6 +112,12 @@ public class ServerTorrentsDirectorySeeder {
           case TorrentConfiguration.SOCKET_CONNECTION_TIMEOUT:
             myTorrentsSeeder.setSocketTimeout((Integer) evt.getNewValue());
             break;
+          case TorrentConfigurator.RECEIVE_BUFFER_SIZE:
+            myTorrentsSeeder.getClient().setReceiveBufferSize((Integer) evt.getNewValue());
+            break;
+          case TorrentConfigurator.SEND_BUFFER_SIZE:
+            myTorrentsSeeder.getClient().setSendBufferSize((Integer) evt.getNewValue());
+            break;
           case TorrentConfiguration.CLEANUP_TIMEOUT:
             myTorrentsSeeder.setCleanupTimeout((Integer) evt.getNewValue());
             break;

@@ -45,6 +45,10 @@ import java.util.concurrent.TimeUnit;
 
 public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
 
+  final static String SEND_BUFFER_SIZE = "teamcity.torrent.network.sendBufferSize";
+  final static String RECEIVE_BUFFER_SIZE = "teamcity.torrent.network.receiveBufferSize";
+  private final static int DEFAULT_BUFFER_SIZE = -1;
+
   private final static int DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS = 2000;
 
   private final ServerPaths myServerPaths;
@@ -80,11 +84,21 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
         setTrackerTorrentExpireTimeoutSec(TeamCityProperties.getInteger(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT));
         setAnnounceIntervalSec(TeamCityProperties.getInteger(ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL));
         setAnnounceUrl(TeamCityProperties.getProperty(ANNOUNCE_URL));
+        setReceiveBufferSize(TeamCityProperties.getInteger(RECEIVE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE));
+        setSendBufferSize(TeamCityProperties.getInteger(SEND_BUFFER_SIZE, DEFAULT_BUFFER_SIZE));
       }
     });
 
     myConfigurationWatcher.registerChangeProvider(myConfigurationWatcher);
     myConfigurationWatcher.start();
+  }
+
+  public void setReceiveBufferSize(int newValue) {
+    propertyChanged(RECEIVE_BUFFER_SIZE, -1, newValue);
+  }
+
+  public void setSendBufferSize(int newValue) {
+    propertyChanged(RECEIVE_BUFFER_SIZE, -1, newValue);
   }
 
   private void initConfigFile(File configFile) {
@@ -365,6 +379,8 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
       myStoredProperties.put(TRACKER_TORRENT_EXPIRE_TIMEOUT, TeamCityProperties.getProperty(TRACKER_TORRENT_EXPIRE_TIMEOUT));
       myStoredProperties.put(MAX_NUMBER_OF_SEEDED_TORRENTS, TeamCityProperties.getProperty(MAX_NUMBER_OF_SEEDED_TORRENTS));
       myStoredProperties.put(TRACKER_DEDICATED_PORT, TeamCityProperties.getProperty(TRACKER_DEDICATED_PORT));
+      myStoredProperties.put(RECEIVE_BUFFER_SIZE, TeamCityProperties.getProperty(RECEIVE_BUFFER_SIZE));
+      myStoredProperties.put(SEND_BUFFER_SIZE, TeamCityProperties.getProperty(SEND_BUFFER_SIZE));
     }
 
     @Nullable
