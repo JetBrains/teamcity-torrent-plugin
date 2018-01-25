@@ -18,7 +18,7 @@ public interface TorrentConfiguration {
   String ANNOUNCE_INTERVAL = "torrent.announce.interval.sec";
   int DEFAULT_ANNOUNCE_INTERVAL = 60;
   String TRACKER_TORRENT_EXPIRE_TIMEOUT = "torrent.tracker.expire.timeout.sec";
-  int DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT = 180;
+  int DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT = 600;
   String TRACKER_DEDICATED_PORT ="torrent.tracker.dedicated.port";
   boolean DEFAULT_TRACKER_DEDICATED_PORT = false;
   boolean DEFAULT_TORRENT_ENABLED = false;
