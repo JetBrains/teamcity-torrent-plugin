@@ -26,6 +26,9 @@ public interface TorrentConfiguration {
   String MAX_INCOMING_CONNECTIONS ="teamcity.torrent.peer.download.maxConnections";
   int DEFAULT_MAX_CONNECTIONS = 50;
   String CLEANUP_TIMEOUT ="teamcity.torrent.peer.connection.operationTimeoutCheckInterval.seconds";
+  String SEND_BUFFER_SIZE = "teamcity.torrent.network.sendBufferSize";
+  String RECEIVE_BUFFER_SIZE = "teamcity.torrent.network.receiveBufferSize";
+  int DEFAULT_BUFFER_SIZE_WINDOWS = 1024*1024;
   // this is fake option to multicast announce url changes;
   String ANNOUNCE_URL = "announce.url";
 

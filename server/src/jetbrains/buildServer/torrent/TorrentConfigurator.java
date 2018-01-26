@@ -16,6 +16,7 @@
 
 package jetbrains.buildServer.torrent;
 
+import com.intellij.openapi.util.SystemInfo;
 import com.turn.ttorrent.Constants;
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
@@ -44,10 +45,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
-
-  final static String SEND_BUFFER_SIZE = "teamcity.torrent.network.sendBufferSize";
-  final static String RECEIVE_BUFFER_SIZE = "teamcity.torrent.network.receiveBufferSize";
-  private final static int DEFAULT_BUFFER_SIZE = -1;
 
   private final static int DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS = 2000;
 
@@ -84,8 +81,9 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
         setTrackerTorrentExpireTimeoutSec(TeamCityProperties.getInteger(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT));
         setAnnounceIntervalSec(TeamCityProperties.getInteger(ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL));
         setAnnounceUrl(TeamCityProperties.getProperty(ANNOUNCE_URL));
-        setReceiveBufferSize(TeamCityProperties.getInteger(RECEIVE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE));
-        setSendBufferSize(TeamCityProperties.getInteger(SEND_BUFFER_SIZE, DEFAULT_BUFFER_SIZE));
+        final int defaultBufferSize = SystemInfo.isWindows ? DEFAULT_BUFFER_SIZE_WINDOWS : -1;
+        setReceiveBufferSize(TeamCityProperties.getInteger(RECEIVE_BUFFER_SIZE, defaultBufferSize));
+        setSendBufferSize(TeamCityProperties.getInteger(SEND_BUFFER_SIZE, defaultBufferSize));
       }
     });
 
