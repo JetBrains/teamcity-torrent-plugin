@@ -21,8 +21,9 @@ import com.intellij.openapi.util.io.FileUtil;
 import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
+import jetbrains.buildServer.util.NamedThreadFactory;
 import jetbrains.buildServer.util.ThreadUtil;
-import jetbrains.buildServer.util.executors.ExecutorsFactory;
+import jetbrains.buildServer.util.executors.TeamCityThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,11 +32,11 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
 
 public class TorrentsSeeder {
   private final static Logger LOG = Logger.getInstance(TorrentsSeeder.class.getName());
@@ -72,7 +73,10 @@ public class TorrentsSeeder {
         }
       }
     });
-    myWorkerExecutor = ExecutorsFactory.newFixedExecutor(PLUGIN_EXECUTOR_NAME, DEFAULT_WORKER_POOL_SIZE);
+    myWorkerExecutor = new TeamCityThreadPoolExecutor(0, DEFAULT_WORKER_POOL_SIZE,
+            60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<Runnable>(),
+            new NamedThreadFactory(PLUGIN_EXECUTOR_NAME));
     myClient = new TeamcityTorrentClient(myWorkerExecutor);
     myExecutor = executor;
   }
