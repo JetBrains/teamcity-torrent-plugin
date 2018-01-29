@@ -20,6 +20,7 @@ import org.springframework.web.servlet.view.RedirectView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.text.DecimalFormat;
 import java.util.Map;
 
 /**
@@ -69,7 +70,8 @@ public class TorrentSettingsAdminPage extends AdminPage {
     model.put("downloadEnabledKey", LeechSettings.DOWNLOAD_ENABLED);
     model.put("activePeersCount", myTorrentSeeder.getPeers().size());
     final double speedBytesPerSecond = myTorrentSeeder.getPeers().stream().mapToDouble(it -> it.getULRate().get()).sum();
-    model.put("totalSpeedMegabytesPerSecond", speedBytesPerSecond / (1024 * 1024));
+    final DecimalFormat decimalFormat = new DecimalFormat("#.###");
+    model.put("totalSpeedMegabytesPerSecond", decimalFormat.format(speedBytesPerSecond / (1024 * 1024)));
     model.put("seedingEnabledKey", SeedSettings.SEEDING_ENABLED);
   }
 

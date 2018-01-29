@@ -6,7 +6,7 @@
 <jsp:useBean id="downloadEnabledKey" type="java.lang.String" scope="request"/>
 <jsp:useBean id="seedingEnabledKey" type="java.lang.String" scope="request"/>
 <jsp:useBean id="activePeersCount" type="java.lang.Integer" scope="request"/>
-<jsp:useBean id="totalSpeedMegabytesPerSecond" type="java.lang.Double" scope="request"/>
+<jsp:useBean id="totalSpeedMegabytesPerSecond" type="java.lang.String" scope="request"/>
 <form method="post" action="<c:url value='/admin/torrentSettings.html'/>">
   <table class="runnerFormTable">
 <tr>
