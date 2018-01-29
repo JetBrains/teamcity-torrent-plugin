@@ -13,6 +13,7 @@ import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
+import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.torrent.seeder.ParentDirConverter;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
@@ -49,7 +50,8 @@ public class ServerTorrentsDirectorySeeder {
   public ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
                                        @NotNull final ServerSettings serverSettings,
                                        @NotNull final TorrentConfigurator configurator,
-                                       @NotNull final EventDispatcher<BuildServerListener> eventDispatcher) {
+                                       @NotNull final EventDispatcher<BuildServerListener> eventDispatcher,
+                                       @NotNull final ExecutorServices executorServices) {
     setMaxNumberOfSeededTorrents(configurator.getMaxNumberOfSeededTorrents());
     myConfigurator = configurator;
     eventDispatcher.addListener(new BuildServerAdapter() {
@@ -63,7 +65,7 @@ public class ServerTorrentsDirectorySeeder {
           public File getParentDir() {
             return serverSettings.getArtifactDirectories().get(0);
           }
-        });
+        }, executorServices.getNormalExecutorService());
 
         // if torrent file expires, it will be removed from disk as well
         // this is needed to prevent agents from downloading this torrent file (because most likely no one is going to seed this torrent in the future)

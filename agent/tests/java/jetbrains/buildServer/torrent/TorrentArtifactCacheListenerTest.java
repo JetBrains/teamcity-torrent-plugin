@@ -88,7 +88,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
             leechSettings,
             myAgentConfiguration, seedingSettings);
 
-    myCacheListener = new TorrentArtifactCacheListener(mySeeder, buildTracker, configuration, manager, torrentsFactory, artifactsWatcher, myAgentConfiguration);
+    myCacheListener = new TorrentArtifactCacheListener(mySeeder.getTorrentsSeeder(), buildTracker, configuration, manager, torrentsFactory, artifactsWatcher, myAgentConfiguration);
 
     myCacheListener.onCacheInitialized(new DirectoryCacheProviderImpl(getTorrentsDirectory(), new SimpleDigestCalculator()));
     manager.checkReady();

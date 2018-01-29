@@ -28,10 +28,13 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Test
 public class TorrentsSeederTest extends BaseTestCase {
   private TorrentsSeeder myDirectorySeeder;
+  private ScheduledExecutorService myExecutorService;
   private Tracker myTracker;
 
   @BeforeMethod
@@ -40,8 +43,9 @@ public class TorrentsSeederTest extends BaseTestCase {
     super.setUp();
     myTracker = new Tracker(6969);
     myTracker.start(false);
+    myExecutorService = Executors.newScheduledThreadPool(1);
 
-    myDirectorySeeder = new TorrentsSeeder(createTempDir(), 100, null);
+    myDirectorySeeder = new TorrentsSeeder(createTempDir(), 100, null, myExecutorService);
     myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, myTracker.getAnnounceURI(), 3);
   }
 
@@ -90,6 +94,7 @@ public class TorrentsSeederTest extends BaseTestCase {
   protected void tearDown() throws Exception {
     super.tearDown();
     myDirectorySeeder.dispose();
+    myExecutorService.shutdownNow();
     myTracker.stop();
   }
 }

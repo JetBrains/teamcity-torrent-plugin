@@ -77,7 +77,7 @@ public class TorrentTransportTest extends BaseTestCase {
   private List<String> myDownloadHackAttempts;
   private File myTempDir;
   private boolean myDownloadHonestly;
-  private TorrentsSeeder mySeeder;
+  private AgentTorrentsSeeder mySeeder;
   private final BuildAgentConfigurationFixture myAgentConfigurationFixture = new BuildAgentConfigurationFixture();
   private LeechSettings myLeechSettings;
 
@@ -132,7 +132,7 @@ public class TorrentTransportTest extends BaseTestCase {
     BuildAgentConfiguration agentConfiguration = myAgentConfigurationFixture.setUp();
     mySeeder = new AgentTorrentsSeeder(agentConfiguration);
 
-    myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder,
+    myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder.getTorrentsSeeder(),
                     new HttpClient(), myBuild.getBuildLogger(),
             "http://localhost:12345", new TorrentsDownloadStatistic(),
             myLeechSettings){

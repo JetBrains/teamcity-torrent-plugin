@@ -39,7 +39,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   private volatile Integer myAnnounceIntervalSec = com.turn.ttorrent.Constants.DEFAULT_ANNOUNCE_INTERVAL_SEC;
   private boolean myTransportEnabled = false;
   @NotNull
-  private final TorrentsSeeder myTorrentsSeeder;
+  private final AgentTorrentsSeeder myTorrentsSeeder;
   private final LeechSettings myLeechSettings;
   private final SeedSettings mySeedingSettings;
 
@@ -61,7 +61,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     myTorrentsSeeder = torrentsSeeder;
     myTorrentsDownloadStatistic = torrentsDownloadStatistic;
     artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(
-            torrentsSeeder,
+            torrentsSeeder.getTorrentsSeeder(),
             currentBuildTracker,
             trackerManager,
             this,
@@ -157,7 +157,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
 
   @NotNull
   public TorrentsSeeder getTorrentsSeeder() {
-    return myTorrentsSeeder;
+    return myTorrentsSeeder.getTorrentsSeeder();
   }
 
   @Override public void beforeBuildFinish(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {
