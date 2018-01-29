@@ -65,7 +65,7 @@ public class ServerTorrentsDirectorySeeder {
           public File getParentDir() {
             return serverSettings.getArtifactDirectories().get(0);
           }
-        }, executorServices.getNormalExecutorService());
+        }, executorServices.getNormalExecutorService(), configurator);
 
         // if torrent file expires, it will be removed from disk as well
         // this is needed to prevent agents from downloading this torrent file (because most likely no one is going to seed this torrent in the future)

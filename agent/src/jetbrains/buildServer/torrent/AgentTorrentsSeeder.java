@@ -39,7 +39,8 @@ public class AgentTorrentsSeeder {
   private final ScheduledExecutorService myExecutorService;
   private final TorrentsSeeder myTorrentsSeeder;
 
-  public AgentTorrentsSeeder(@NotNull final BuildAgentConfiguration agentConfiguration) {
+  public AgentTorrentsSeeder(@NotNull final BuildAgentConfiguration agentConfiguration,
+                             @NotNull final TorrentConfiguration torrentConfiguration) {
     myExecutorService = Executors.newScheduledThreadPool(1);
     myTorrentsSeeder = new TorrentsSeeder(agentConfiguration.getCacheDirectory(Constants.TORRENTS_DIRNAME), TeamCityProperties.getInteger("teamcity.torrents.agent.maxSeededTorrents", 5000), new ParentDirConverter() {
       @NotNull
@@ -47,7 +48,7 @@ public class AgentTorrentsSeeder {
       public File getParentDir() {
         return agentConfiguration.getSystemDirectory();
       }
-    }, myExecutorService);
+    }, myExecutorService, torrentConfiguration);
   }
 
   public void setRemoveExpiredTorrentFiles(boolean removeExpiredTorrentFiles) {

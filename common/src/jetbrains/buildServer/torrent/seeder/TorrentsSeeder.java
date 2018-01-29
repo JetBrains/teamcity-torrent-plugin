@@ -20,6 +20,7 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.FileUtil;
 import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
+import jetbrains.buildServer.torrent.TorrentConfiguration;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.util.NamedThreadFactory;
 import jetbrains.buildServer.util.ThreadUtil;
@@ -40,7 +41,6 @@ import java.util.concurrent.*;
 
 public class TorrentsSeeder {
   private final static Logger LOG = Logger.getInstance(TorrentsSeeder.class.getName());
-  private final static int DEFAULT_WORKER_POOL_SIZE = 10;
 
   public static final String TORRENTS_DIT_PATH = ".teamcity/torrents";
 
@@ -51,7 +51,7 @@ public class TorrentsSeeder {
   @NotNull
   private final TeamcityTorrentClient myClient;
   @NotNull
-  private final ExecutorService myWorkerExecutor;
+  private final TeamCityThreadPoolExecutor myWorkerExecutor;
   private final TorrentFilesDB myTorrentFilesDB;
   private final ScheduledExecutorService myExecutor;
   private volatile boolean myRemoveExpiredTorrentFiles;
@@ -63,7 +63,8 @@ public class TorrentsSeeder {
   public TorrentsSeeder(@NotNull File torrentStorage,
                         int maxTorrentsToSeed,
                         @Nullable PathConverter pathConverter,
-                        ScheduledExecutorService executor) {
+                        ScheduledExecutorService executor,
+                        @NotNull final TorrentConfiguration torrentConfiguration) {
     myMaxTorrentsToSeed = maxTorrentsToSeed;
     myTorrentFilesDB = new TorrentFilesDB(new File(torrentStorage, "torrents.db"), maxTorrentsToSeed, pathConverter, new TorrentFilesDB.CacheListener() {
       public void onRemove(@NotNull Map.Entry<File, File> removedEntry) {
@@ -73,10 +74,12 @@ public class TorrentsSeeder {
         }
       }
     });
-    myWorkerExecutor = new TeamCityThreadPoolExecutor(0, DEFAULT_WORKER_POOL_SIZE,
+    int workerPoolSize = torrentConfiguration.getWorkerPoolSize();
+    myWorkerExecutor = new TeamCityThreadPoolExecutor(workerPoolSize, workerPoolSize,
             60L, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<Runnable>(),
+            new LinkedBlockingQueue<Runnable>(2000),
             new NamedThreadFactory(PLUGIN_EXECUTOR_NAME));
+    myWorkerExecutor.allowCoreThreadTimeOut(true);
     myClient = new TeamcityTorrentClient(myWorkerExecutor);
     myExecutor = executor;
   }

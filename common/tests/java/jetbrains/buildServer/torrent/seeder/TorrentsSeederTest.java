@@ -19,7 +19,10 @@ package jetbrains.buildServer.torrent.seeder;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
+import jetbrains.buildServer.torrent.TorrentConfiguration;
 import jetbrains.buildServer.util.FileUtil;
+import org.jmock.Expectations;
+import org.jmock.Mockery;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -44,8 +47,14 @@ public class TorrentsSeederTest extends BaseTestCase {
     myTracker = new Tracker(6969);
     myTracker.start(false);
     myExecutorService = Executors.newScheduledThreadPool(1);
+    Mockery m = new Mockery();
+    final TorrentConfiguration torrentConfiguration = m.mock(TorrentConfiguration.class);
+    m.checking(new Expectations(){{
+      allowing(torrentConfiguration).getWorkerPoolSize(); will(returnValue(10));
+    }});
 
-    myDirectorySeeder = new TorrentsSeeder(createTempDir(), 100, null, myExecutorService);
+    myDirectorySeeder = new TorrentsSeeder(
+            createTempDir(), 100, null, myExecutorService, torrentConfiguration);
     myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, myTracker.getAnnounceURI(), 3);
   }
 

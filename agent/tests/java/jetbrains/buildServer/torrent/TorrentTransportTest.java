@@ -130,7 +130,7 @@ public class TorrentTransportTest extends BaseTestCase {
     }});
 
     BuildAgentConfiguration agentConfiguration = myAgentConfigurationFixture.setUp();
-    mySeeder = new AgentTorrentsSeeder(agentConfiguration);
+    mySeeder = new AgentTorrentsSeeder(agentConfiguration, myConfiguration);
 
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder.getTorrentsSeeder(),
                     new HttpClient(), myBuild.getBuildLogger(),

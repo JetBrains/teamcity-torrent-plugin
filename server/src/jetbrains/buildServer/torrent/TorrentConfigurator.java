@@ -225,6 +225,11 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
   }
 
   @Override
+  public int getWorkerPoolSize() {
+    return TeamCityProperties.getInteger(WORKER_POOL_SIZE, DEFAULT_WORKER_POOL_SIZE);
+  }
+
+  @Override
   public int getSocketTimeout() {
     int defaultTimeout = (int) TimeUnit.MILLISECONDS.toSeconds(Constants.DEFAULT_SOCKET_CONNECTION_TIMEOUT_MILLIS);
     return TeamCityProperties.getInteger(SOCKET_CONNECTION_TIMEOUT, defaultTimeout);

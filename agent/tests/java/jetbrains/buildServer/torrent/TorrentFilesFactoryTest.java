@@ -51,7 +51,7 @@ public class TorrentFilesFactoryTest extends BaseTestCase {
     final TorrentConfiguration configuration = new FakeTorrentConfiguration();
 
     myFakeAgentIdleTasks = new FakeAgentIdleTasks();
-    mySeeder = new AgentTorrentsSeeder(agentConfiguration);
+    mySeeder = new AgentTorrentsSeeder(agentConfiguration, configuration);
     myTorrentFilesFactory = new TorrentFilesFactory(agentConfiguration, configuration, myFakeAgentIdleTasks, mySeeder);
   }
 

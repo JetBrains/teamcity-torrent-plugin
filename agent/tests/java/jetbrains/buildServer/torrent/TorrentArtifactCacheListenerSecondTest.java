@@ -76,7 +76,7 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
     final TorrentConfiguration configuration = new FakeTorrentConfiguration();
     myArtifactsWatcher = myM.mock(ArtifactsWatcher.class);
 
-    AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(myAgentConfiguration);
+    AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(myAgentConfiguration, configuration);
     TorrentFilesFactory torrentsFactory = new TorrentFilesFactory(myAgentConfiguration, configuration, new FakeAgentIdleTasks(), seeder);
 
     final EventDispatcher<AgentLifeCycleListener> eventDispatcher = EventDispatcher.create(AgentLifeCycleListener.class);

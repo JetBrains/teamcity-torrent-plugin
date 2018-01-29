@@ -48,6 +48,11 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
     return 60;
   }
 
+  @Override
+  public int getWorkerPoolSize() {
+    return 10;
+  }
+
   @Override public int getMaxConnectionsCount() {
     return 10;
   }
