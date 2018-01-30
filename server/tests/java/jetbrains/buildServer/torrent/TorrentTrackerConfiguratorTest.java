@@ -1,5 +1,6 @@
 package jetbrains.buildServer.torrent;
 
+import com.turn.ttorrent.common.PeerUID;
 import com.turn.ttorrent.common.protocol.TrackerMessage;
 import com.turn.ttorrent.common.protocol.http.HTTPAnnounceResponseMessage;
 import com.turn.ttorrent.common.protocol.http.HTTPTrackerMessage;
@@ -191,7 +192,9 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
       }
     };
     final TrackedTorrent trackedTorrent = torrents.get(torrentHash);
-    assertNotContains(trackedTorrent.getPeers().keySet(), "4142434445464748494A4B4C4D4E4F5051525354");
+    for (PeerUID peerUID : trackedTorrent.getPeers().keySet()) {
+      if (peerUID.getTorrentHash().equals("4142434445464748494A4B4C4D4E4F5051525354")) fail();
+    }
     new WaitFor(15*1000){
       @Override
       protected boolean condition() {
