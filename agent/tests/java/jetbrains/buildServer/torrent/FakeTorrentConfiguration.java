@@ -16,6 +16,7 @@
 
 package jetbrains.buildServer.torrent;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class FakeTorrentConfiguration implements TorrentConfiguration {
@@ -46,6 +47,18 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
 
   @Override public int getCleanupTimeout() {
     return 60;
+  }
+
+  @NotNull
+  @Override
+  public String getOwnTorrentAddress() {
+    return "";
+  }
+
+  @NotNull
+  @Override
+  public String getAgentAddressPrefix() {
+    return "";
   }
 
   @Override

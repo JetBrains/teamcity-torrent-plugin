@@ -306,15 +306,22 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
     propertyChanged(ANNOUNCE_URL, oldAnnounceUrl, announceUrl);
   }
 
-  @Nullable
-  public String getOwnAddress() {
-    return myConfiguration.getProperty(OWN_ADDRESS);
+  @NotNull
+  @Override
+  public String getOwnTorrentAddress() {
+    return myConfiguration.getProperty(OWN_ADDRESS, "");
+  }
+
+  @NotNull
+  @Override
+  public String getAgentAddressPrefix() {
+    return "";
   }
 
   @NotNull
   public String getResolvedOwnAddress() {
-    String hostName = getOwnAddress();
-    if (hostName != null) return hostName;
+    String hostName = getOwnTorrentAddress();
+    if (!hostName.isEmpty()) return hostName;
 
     try {
       return InetAddress.getLocalHost().getCanonicalHostName();

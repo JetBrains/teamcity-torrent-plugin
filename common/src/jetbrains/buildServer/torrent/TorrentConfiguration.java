@@ -1,5 +1,6 @@
 package jetbrains.buildServer.torrent;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -10,7 +11,8 @@ import org.jetbrains.annotations.Nullable;
 public interface TorrentConfiguration {
   String TRACKER_ENABLED = "torrent.tracker.enabled";
   boolean DEFAULT_TRACKER_ENABLED = true;
-  String OWN_ADDRESS = "torrent.ownAddress";
+  String OWN_ADDRESS = "teamcity.torrent.network.ownAddress";
+  String PREFIX_ADDRESS = "teamcity.torrent.network.prefixAddress";
   String FILE_SIZE_THRESHOLD = "teamcity.torrent.seeder.minFileSize";
   String DEFAULT_FILE_SIZE_THRESHOLD = "10mb";
   String DOWNLOAD_ENABLED = "teamcity.torrent.download.enabled";
@@ -39,6 +41,18 @@ public interface TorrentConfiguration {
    * @return see above
    */
   @Nullable String getAnnounceUrl();
+
+  /**
+   * host address, which must be used by agent/server in tracker announce messages
+   * @return see above
+   */
+  @NotNull String getOwnTorrentAddress();
+
+  /**
+   * prefix of agent inet address. Can also be used for detect really agent address when it have many net interfaces
+   * @return see above
+   */
+  @NotNull String getAgentAddressPrefix();
 
   /**
    * Returns minimum supported file size to avoid seeding very small files

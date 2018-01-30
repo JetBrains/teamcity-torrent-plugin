@@ -49,6 +49,18 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
     });
   }
 
+  @NotNull
+  @Override
+  public String getOwnTorrentAddress() {
+    return TeamCityProperties.getProperty(OWN_ADDRESS, "");
+  }
+
+  @NotNull
+  @Override
+  public String getAgentAddressPrefix() {
+    return TeamCityProperties.getProperty(PREFIX_ADDRESS, "172.");
+  }
+
   @Nullable
   public String getAnnounceUrl() {
 

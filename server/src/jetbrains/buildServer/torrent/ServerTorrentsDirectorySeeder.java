@@ -149,8 +149,8 @@ public class ServerTorrentsDirectorySeeder {
     try {
 
       final InetAddress[] addresses;
-      if (myConfigurator.getOwnAddress() != null) {
-        addresses = new InetAddress[]{InetAddress.getByName(myConfigurator.getOwnAddress())};
+      if (myConfigurator.getOwnTorrentAddress() != null) {
+        addresses = new InetAddress[]{InetAddress.getByName(myConfigurator.getOwnTorrentAddress())};
       } else {
         addresses = NetworkUtil.getSelfAddresses(null);
       }

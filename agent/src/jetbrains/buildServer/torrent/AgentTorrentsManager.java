@@ -15,12 +15,14 @@ import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
+import jetbrains.buildServer.util.filters.Filter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.spi.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 
 /**
@@ -143,7 +145,22 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       Loggers.AGENT.error("Announce url is null. Seeding is disabled");
       return;
     }
-    myTorrentsSeeder.start(NetworkUtil.getSelfAddresses(null), trackerAnnounceUrlLocal, myAnnounceIntervalSec);
+    String ownAddress = myTrackerManager.getOwnTorrentAddress();
+    final String agentAddressPrefix = myTrackerManager.getAgentAddressPrefix();
+    final InetAddress[] selfAddresses;
+    if (!ownAddress.isEmpty()) {
+      selfAddresses = new InetAddress[]{InetAddress.getByName(ownAddress)};
+    } else if (!agentAddressPrefix.isEmpty()) {
+      selfAddresses = NetworkUtil.getSelfAddresses(new Filter<InetAddress>() {
+        @Override
+        public boolean accept(@NotNull InetAddress data) {
+          return data.getHostAddress().startsWith(agentAddressPrefix);
+        }
+      });
+    } else {
+      selfAddresses = NetworkUtil.getSelfAddresses(null);
+    }
+    myTorrentsSeeder.start(selfAddresses, trackerAnnounceUrlLocal, myAnnounceIntervalSec);
   }
 
   private void stopSeeder() {
