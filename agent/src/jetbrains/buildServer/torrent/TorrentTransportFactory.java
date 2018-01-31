@@ -171,12 +171,13 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         final int minSeedersForDownload = myLeechSettings.getMinSeedersForDownload();
 
         final long startTime = System.currentTimeMillis();
+        final long timeoutForConnectToPeersMs = 5000;
 
         final AtomicReference<Exception> exceptionHolder = new AtomicReference<Exception>();
         Loggers.AGENT.debug("start download file " + target.getName());
 
         Thread th = myClient.downloadAndShareOrFailAsync(
-                torrent, target, target.getParentFile(), myLeechSettings.getMaxPieceDownloadTime(), minSeedersForDownload, myInterrupted, exceptionHolder);
+                torrent, target, target.getParentFile(), myLeechSettings.getMaxPieceDownloadTime(), minSeedersForDownload, myInterrupted, timeoutForConnectToPeersMs, exceptionHolder);
         myCurrentDownload.set(Thread.currentThread());
         th.join();
         myCurrentDownload.set(null);

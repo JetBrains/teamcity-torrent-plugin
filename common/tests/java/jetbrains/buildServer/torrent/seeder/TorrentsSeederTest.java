@@ -19,7 +19,10 @@ package jetbrains.buildServer.torrent.seeder;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
+import jetbrains.buildServer.torrent.TorrentConfiguration;
 import jetbrains.buildServer.util.FileUtil;
+import org.jmock.Expectations;
+import org.jmock.Mockery;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -28,10 +31,13 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Test
 public class TorrentsSeederTest extends BaseTestCase {
   private TorrentsSeeder myDirectorySeeder;
+  private ScheduledExecutorService myExecutorService;
   private Tracker myTracker;
 
   @BeforeMethod
@@ -40,8 +46,15 @@ public class TorrentsSeederTest extends BaseTestCase {
     super.setUp();
     myTracker = new Tracker(6969);
     myTracker.start(false);
+    myExecutorService = Executors.newScheduledThreadPool(1);
+    Mockery m = new Mockery();
+    final TorrentConfiguration torrentConfiguration = m.mock(TorrentConfiguration.class);
+    m.checking(new Expectations(){{
+      allowing(torrentConfiguration).getWorkerPoolSize(); will(returnValue(10));
+    }});
 
-    myDirectorySeeder = new TorrentsSeeder(createTempDir(), 100, null);
+    myDirectorySeeder = new TorrentsSeeder(
+            createTempDir(), 100, null, myExecutorService, torrentConfiguration);
     myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, myTracker.getAnnounceURI(), 3);
   }
 
@@ -90,6 +103,7 @@ public class TorrentsSeederTest extends BaseTestCase {
   protected void tearDown() throws Exception {
     super.tearDown();
     myDirectorySeeder.dispose();
+    myExecutorService.shutdownNow();
     myTracker.stop();
   }
 }

@@ -20,9 +20,11 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.FileUtil;
 import com.turn.ttorrent.client.SharedTorrent;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
+import jetbrains.buildServer.torrent.TorrentConfiguration;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
+import jetbrains.buildServer.util.NamedThreadFactory;
 import jetbrains.buildServer.util.ThreadUtil;
-import jetbrains.buildServer.util.executors.ExecutorsFactory;
+import jetbrains.buildServer.util.executors.TeamCityThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,33 +33,38 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
 
 public class TorrentsSeeder {
   private final static Logger LOG = Logger.getInstance(TorrentsSeeder.class.getName());
-  private final static int DEFAULT_WORKER_POOL_SIZE = 10;
 
   public static final String TORRENTS_DIT_PATH = ".teamcity/torrents";
 
   public static final int CHECK_TORRENTS_INTERVAL = TeamCityProperties.getInteger("teamcity.torrents.checkTorrentsIntervalSec", 5*60);
 
-  public static final String EXECUTOR_NAME = "Torrent files checker";
   public static final String PLUGIN_EXECUTOR_NAME = "Torrent plugin worker";
 
   @NotNull
   private final TeamcityTorrentClient myClient;
   @NotNull
-  private final ExecutorService myWorkerExecutor;
+  private final TeamCityThreadPoolExecutor myWorkerExecutor;
   private final TorrentFilesDB myTorrentFilesDB;
   private final ScheduledExecutorService myExecutor;
   private volatile boolean myRemoveExpiredTorrentFiles;
   private volatile boolean myStopped = true;
   private volatile int myMaxTorrentsToSeed; // no limit by default
+  @Nullable
+  private volatile ScheduledFuture<?> myBrokenFilesCheckerFuture;
 
-  public TorrentsSeeder(@NotNull File torrentStorage, int maxTorrentsToSeed, @Nullable PathConverter pathConverter) {
+  public TorrentsSeeder(@NotNull File torrentStorage,
+                        int maxTorrentsToSeed,
+                        @Nullable PathConverter pathConverter,
+                        ScheduledExecutorService executor,
+                        @NotNull final TorrentConfiguration torrentConfiguration) {
     myMaxTorrentsToSeed = maxTorrentsToSeed;
     myTorrentFilesDB = new TorrentFilesDB(new File(torrentStorage, "torrents.db"), maxTorrentsToSeed, pathConverter, new TorrentFilesDB.CacheListener() {
       public void onRemove(@NotNull Map.Entry<File, File> removedEntry) {
@@ -67,9 +74,14 @@ public class TorrentsSeeder {
         }
       }
     });
-    myWorkerExecutor = ExecutorsFactory.newFixedExecutor(PLUGIN_EXECUTOR_NAME, DEFAULT_WORKER_POOL_SIZE);
+    int workerPoolSize = torrentConfiguration.getWorkerPoolSize();
+    myWorkerExecutor = new TeamCityThreadPoolExecutor(workerPoolSize, workerPoolSize,
+            60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<Runnable>(2000),
+            new NamedThreadFactory(PLUGIN_EXECUTOR_NAME));
+    myWorkerExecutor.allowCoreThreadTimeOut(true);
     myClient = new TeamcityTorrentClient(myWorkerExecutor);
-    myExecutor = ExecutorsFactory.newFixedScheduledDaemonExecutor(EXECUTOR_NAME, 1);
+    myExecutor = executor;
   }
 
   /**
@@ -117,7 +129,7 @@ public class TorrentsSeeder {
       }
     });
 
-    myExecutor.scheduleWithFixedDelay(new Runnable() {
+    myBrokenFilesCheckerFuture = myExecutor.scheduleWithFixedDelay(new Runnable() {
       public void run() {
         checkForBrokenFiles();
       }
@@ -164,7 +176,10 @@ public class TorrentsSeeder {
 
   public void dispose() {
     stop();
-    ThreadUtil.shutdownGracefully(myExecutor, EXECUTOR_NAME);
+    final ScheduledFuture<?> localFuture = myBrokenFilesCheckerFuture;
+    if (localFuture != null) {
+      localFuture.cancel(true);
+    }
     ThreadUtil.shutdownGracefully(myWorkerExecutor, "bittorrent client worker executor");
   }
 

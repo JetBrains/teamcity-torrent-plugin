@@ -156,11 +156,12 @@ public class TeamcityTorrentClient {
                                             final long downloadTimeoutSec,
                                             final int minSeedersCount,
                                             final AtomicBoolean isInterrupted,
+                                            final long maxTimeoutForConnect,
                                             final AtomicReference<Exception> occuredException) throws IOException, NoSuchAlgorithmException, InterruptedException {
     final Thread thread = new Thread(new Runnable() {
       public void run() {
         try {
-          downloadAndShareOrFail(torrent, destFile, destDir, downloadTimeoutSec, minSeedersCount,isInterrupted);
+          downloadAndShareOrFail(torrent, destFile, destDir, downloadTimeoutSec, minSeedersCount, maxTimeoutForConnect, isInterrupted);
         } catch (IOException e) {
           occuredException.set(e);
         } catch (NoSuchAlgorithmException e) {
@@ -179,6 +180,7 @@ public class TeamcityTorrentClient {
                                      @NotNull final File destDir,
                                      final long downloadTimeoutSec,
                                      final int minSeedersCount,
+                                     final long maxTimeoutForConnect,
                                      final AtomicBoolean isInterrupted) throws IOException, NoSuchAlgorithmException, InterruptedException {
     boolean torrentContainsFile = false;
     for (String filePath : torrent.getFilenames()) {
@@ -202,7 +204,7 @@ public class TeamcityTorrentClient {
     SharedTorrent downTorrent = new SharedTorrent(torrent, destDir, false);
     LOG.info(String.format("Will attempt to download uninterruptibly %s into %s. Timeout:%d",
             destFile.getAbsolutePath(), destDir.getAbsolutePath(), downloadTimeoutSec));
-    myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec, minSeedersCount, isInterrupted);
+    myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec, minSeedersCount, isInterrupted, maxTimeoutForConnect);
   }
 
   public Collection<SharedTorrent> getSharedTorrents(){

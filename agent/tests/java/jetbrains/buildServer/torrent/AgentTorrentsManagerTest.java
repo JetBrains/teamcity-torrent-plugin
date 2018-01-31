@@ -70,7 +70,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
     }});
     final ArtifactsWatcher artifactsWatcher = m.mock(ArtifactsWatcher.class);
 
-    AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(agentConfiguration);
+    AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(agentConfiguration, trackerConfiguration);
     TorrentFilesFactory tff = new TorrentFilesFactory(agentConfiguration, trackerConfiguration, new FakeAgentIdleTasks(), seeder);
 
     myTorrentsDownloadStatistic = new TorrentsDownloadStatistic();

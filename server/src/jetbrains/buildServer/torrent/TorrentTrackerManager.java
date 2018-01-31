@@ -1,6 +1,7 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.turn.ttorrent.common.PeerUID;
 import com.turn.ttorrent.tracker.AddressChecker;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.Tracker;
@@ -184,7 +185,7 @@ public class TorrentTrackerManager {
     if (!myTrackerRunning){
       return 0;
     }
-    Set<String> uniquePeers = new HashSet<String>();
+    Set<PeerUID> uniquePeers = new HashSet<PeerUID>();
     for (TrackedTorrent tt : myTorrents.values()) {
       uniquePeers.addAll(tt.getPeers().keySet());
     }

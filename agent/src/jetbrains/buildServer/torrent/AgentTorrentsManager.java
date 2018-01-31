@@ -1,23 +1,28 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.util.SystemInfo;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.messages.serviceMessages.BuildStatisticValue;
+import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
+import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
+import jetbrains.buildServer.util.filters.Filter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.spi.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 
 /**
@@ -35,7 +40,8 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   private volatile URI myTrackerAnnounceUrl;
   private volatile Integer myAnnounceIntervalSec = com.turn.ttorrent.Constants.DEFAULT_ANNOUNCE_INTERVAL_SEC;
   private boolean myTransportEnabled = false;
-  private TorrentsSeeder myTorrentsSeeder;
+  @NotNull
+  private final AgentTorrentsSeeder myTorrentsSeeder;
   private final LeechSettings myLeechSettings;
   private final SeedSettings mySeedingSettings;
 
@@ -57,7 +63,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     myTorrentsSeeder = torrentsSeeder;
     myTorrentsDownloadStatistic = torrentsDownloadStatistic;
     artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(
-            torrentsSeeder,
+            torrentsSeeder.getTorrentsSeeder(),
             currentBuildTracker,
             trackerManager,
             this,
@@ -68,6 +74,12 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
 
   private boolean updateSettings() {
     try {
+
+      final int defaultSize = SystemInfo.isWindows ? TorrentConfiguration.DEFAULT_BUFFER_SIZE_WINDOWS : -1;
+      final TeamcityTorrentClient client = myTorrentsSeeder.getClient();
+      client.setSendBufferSize(TeamCityProperties.getInteger(TorrentConfiguration.SEND_BUFFER_SIZE, defaultSize));
+      client.setReceiveBufferSize(TeamCityProperties.getInteger(TorrentConfiguration.RECEIVE_BUFFER_SIZE, defaultSize));
+
       String announceUrl = myTrackerManager.getAnnounceUrl();
       if (announceUrl == null) return false;
       myTrackerAnnounceUrl = new URI(announceUrl);
@@ -133,7 +145,22 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       Loggers.AGENT.error("Announce url is null. Seeding is disabled");
       return;
     }
-    myTorrentsSeeder.start(NetworkUtil.getSelfAddresses(null), trackerAnnounceUrlLocal, myAnnounceIntervalSec);
+    String ownAddress = myTrackerManager.getOwnTorrentAddress();
+    final String agentAddressPrefix = myTrackerManager.getAgentAddressPrefix();
+    final InetAddress[] selfAddresses;
+    if (!ownAddress.isEmpty()) {
+      selfAddresses = new InetAddress[]{InetAddress.getByName(ownAddress)};
+    } else if (!agentAddressPrefix.isEmpty()) {
+      selfAddresses = NetworkUtil.getSelfAddresses(new Filter<InetAddress>() {
+        @Override
+        public boolean accept(@NotNull InetAddress data) {
+          return data.getHostAddress().startsWith(agentAddressPrefix);
+        }
+      });
+    } else {
+      selfAddresses = NetworkUtil.getSelfAddresses(null);
+    }
+    myTorrentsSeeder.start(selfAddresses, trackerAnnounceUrlLocal, myAnnounceIntervalSec);
   }
 
   private void stopSeeder() {
@@ -147,7 +174,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
 
   @NotNull
   public TorrentsSeeder getTorrentsSeeder() {
-    return myTorrentsSeeder;
+    return myTorrentsSeeder.getTorrentsSeeder();
   }
 
   @Override public void beforeBuildFinish(@NotNull AgentRunningBuild build, @NotNull BuildFinishedStatus buildStatus) {

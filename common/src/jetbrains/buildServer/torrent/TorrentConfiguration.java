@@ -1,5 +1,6 @@
 package jetbrains.buildServer.torrent;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -10,7 +11,8 @@ import org.jetbrains.annotations.Nullable;
 public interface TorrentConfiguration {
   String TRACKER_ENABLED = "torrent.tracker.enabled";
   boolean DEFAULT_TRACKER_ENABLED = true;
-  String OWN_ADDRESS = "torrent.ownAddress";
+  String OWN_ADDRESS = "teamcity.torrent.network.ownAddress";
+  String PREFIX_ADDRESS = "teamcity.torrent.network.prefixAddress";
   String FILE_SIZE_THRESHOLD = "teamcity.torrent.seeder.minFileSize";
   String DEFAULT_FILE_SIZE_THRESHOLD = "10mb";
   String DOWNLOAD_ENABLED = "teamcity.torrent.download.enabled";
@@ -26,6 +28,11 @@ public interface TorrentConfiguration {
   String MAX_INCOMING_CONNECTIONS ="teamcity.torrent.peer.download.maxConnections";
   int DEFAULT_MAX_CONNECTIONS = 50;
   String CLEANUP_TIMEOUT ="teamcity.torrent.peer.connection.operationTimeoutCheckInterval.seconds";
+  String SEND_BUFFER_SIZE = "teamcity.torrent.network.sendBufferSize";
+  String RECEIVE_BUFFER_SIZE = "teamcity.torrent.network.receiveBufferSize";
+  String WORKER_POOL_SIZE = "teamcity.torrent.network.poolSize";
+  int DEFAULT_WORKER_POOL_SIZE = 10;
+  int DEFAULT_BUFFER_SIZE_WINDOWS = 1024*1024;
   // this is fake option to multicast announce url changes;
   String ANNOUNCE_URL = "announce.url";
 
@@ -36,10 +43,28 @@ public interface TorrentConfiguration {
   @Nullable String getAnnounceUrl();
 
   /**
+   * host address, which must be used by agent/server in tracker announce messages
+   * @return see above
+   */
+  @NotNull String getOwnTorrentAddress();
+
+  /**
+   * prefix of agent inet address. Can also be used for detect really agent address when it have many net interfaces
+   * @return see above
+   */
+  @NotNull String getAgentAddressPrefix();
+
+  /**
    * Returns minimum supported file size to avoid seeding very small files
    * @return see above
    */
   long getFileSizeThresholdBytes();
+
+  /**
+   * Returns max pool size for library worker executor
+   * @return see above
+   */
+  int getWorkerPoolSize();
 
   /**
    * Returns socket connection timeout in seconds.

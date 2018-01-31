@@ -3,6 +3,7 @@ package jetbrains.buildServer.torrent;
 import com.turn.ttorrent.Constants;
 import jetbrains.buildServer.agent.*;
 import jetbrains.buildServer.log.Loggers;
+import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -48,6 +49,18 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
     });
   }
 
+  @NotNull
+  @Override
+  public String getOwnTorrentAddress() {
+    return TeamCityProperties.getProperty(OWN_ADDRESS, "");
+  }
+
+  @NotNull
+  @Override
+  public String getAgentAddressPrefix() {
+    return TeamCityProperties.getProperty(PREFIX_ADDRESS, "172.");
+  }
+
   @Nullable
   public String getAnnounceUrl() {
 
@@ -70,6 +83,11 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
     } catch (NumberFormatException e) {
       return StringUtil.parseFileSize(DEFAULT_FILE_SIZE_THRESHOLD);
     }
+  }
+
+  @Override
+  public int getWorkerPoolSize() {
+    return TeamCityProperties.getInteger(WORKER_POOL_SIZE, DEFAULT_WORKER_POOL_SIZE);
   }
 
   @Override

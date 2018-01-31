@@ -76,7 +76,7 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
     final TorrentConfiguration configuration = new FakeTorrentConfiguration();
     myArtifactsWatcher = myM.mock(ArtifactsWatcher.class);
 
-    AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(myAgentConfiguration);
+    AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(myAgentConfiguration, configuration);
     TorrentFilesFactory torrentsFactory = new TorrentFilesFactory(myAgentConfiguration, configuration, new FakeAgentIdleTasks(), seeder);
 
     final EventDispatcher<AgentLifeCycleListener> eventDispatcher = EventDispatcher.create(AgentLifeCycleListener.class);
@@ -91,7 +91,7 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
             leechSettings,
             myAgentConfiguration, seedingSettings);
 
-    myCacheListener = new TorrentArtifactCacheListener(seeder, myBuildTracker, configuration, manager, torrentsFactory, myArtifactsWatcher, myAgentConfiguration);
+    myCacheListener = new TorrentArtifactCacheListener(seeder.getTorrentsSeeder(), myBuildTracker, configuration, manager, torrentsFactory, myArtifactsWatcher, myAgentConfiguration);
 
     myCacheListener.onCacheInitialized(new DirectoryCacheProviderImpl(new File(myAgentDirectory, "cache"), new SimpleDigestCalculator()));
     manager.checkReady();

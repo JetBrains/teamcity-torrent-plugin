@@ -23,6 +23,7 @@ import jetbrains.buildServer.serverSide.BuildServerListener;
 import jetbrains.buildServer.serverSide.BuildServerListenerEventDispatcher;
 import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.serverSide.ServerSettings;
+import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.serverSide.impl.auth.SecurityContextImpl;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jmock.Expectations;
@@ -31,11 +32,14 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 import java.util.Collections;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class ServerTorrentsSeederTestCase extends BaseTestCase {
   protected EventDispatcher<BuildServerListener> myDispatcher;
   protected ServerTorrentsDirectorySeeder myTorrentsSeeder;
   protected TorrentConfigurator myConfigurator;
+  private ScheduledExecutorService myExecutorService;
 
   @BeforeMethod
   @Override
@@ -45,8 +49,11 @@ public class ServerTorrentsSeederTestCase extends BaseTestCase {
 
     final ServerPaths serverPaths = new ServerPaths(createTempDir().getAbsolutePath());
     final RootUrlHolder rootUrlHolder = m.mock(RootUrlHolder.class);
+    final ExecutorServices executorServices = m.mock(ExecutorServices.class);
+    myExecutorService = Executors.newScheduledThreadPool(1);
     m.checking(new Expectations(){{
       allowing(rootUrlHolder).getRootUrl(); will(returnValue("http://localhost:8111/"));
+      allowing(executorServices).getNormalExecutorService(); will(returnValue(myExecutorService));
     }});
 
     final ServerSettings serverSettings = m.mock(ServerSettings.class);
@@ -63,13 +70,14 @@ public class ServerTorrentsSeederTestCase extends BaseTestCase {
 
     myDispatcher = new BuildServerListenerEventDispatcher(new SecurityContextImpl());
 
-    myTorrentsSeeder = new ServerTorrentsDirectorySeeder(serverPaths, serverSettings, myConfigurator, myDispatcher);
+    myTorrentsSeeder = new ServerTorrentsDirectorySeeder(serverPaths, serverSettings, myConfigurator, myDispatcher, executorServices);
   }
 
   @AfterMethod
   @Override
   protected void tearDown() throws Exception {
     super.tearDown();
+    myExecutorService.shutdownNow();
     myDispatcher.getMulticaster().serverShutdown();
   }
 }
