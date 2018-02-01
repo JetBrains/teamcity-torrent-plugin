@@ -62,7 +62,8 @@ public class UnusedTorrentFilesRemoverImpl implements UnusedTorrentFilesRemover 
       myFileWalker.walkFileTree(torrentsDir, new SimpleFileVisitor<Path>() {
         public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
           Path relativePath = torrentsDir.relativize(path);
-          if (expectedTorrentPathsForArtifacts.contains(relativePath.toString())) {
+          final String systemIndependentPath = relativePath.toString().replace("\\", "/");
+          if (expectedTorrentPathsForArtifacts.contains(systemIndependentPath)) {
             return FileVisitResult.CONTINUE;
           }
           torrentsForRemoving.add(path);
