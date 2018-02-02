@@ -19,6 +19,7 @@ package jetbrains.buildServer.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
+import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -62,7 +63,8 @@ public class UnusedTorrentFilesRemoverImpl implements UnusedTorrentFilesRemover 
       myFileWalker.walkFileTree(torrentsDir, new SimpleFileVisitor<Path>() {
         public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
           Path relativePath = torrentsDir.relativize(path);
-          if (expectedTorrentPathsForArtifacts.contains(relativePath.toString())) {
+          final String systemIndependentPath = FileUtil.toSystemIndependentName(relativePath.toString());
+          if (expectedTorrentPathsForArtifacts.contains(systemIndependentPath)) {
             return FileVisitResult.CONTINUE;
           }
           torrentsForRemoving.add(path);
