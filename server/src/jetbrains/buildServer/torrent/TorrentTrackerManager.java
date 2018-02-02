@@ -16,10 +16,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public class TorrentTrackerManager {
 
@@ -185,9 +187,9 @@ public class TorrentTrackerManager {
     if (!myTrackerRunning){
       return 0;
     }
-    Set<PeerUID> uniquePeers = new HashSet<PeerUID>();
+    Set<InetSocketAddress> uniquePeers = new HashSet<>();
     for (TrackedTorrent tt : myTorrents.values()) {
-      uniquePeers.addAll(tt.getPeers().keySet());
+      uniquePeers.addAll(tt.getPeers().keySet().stream().map(PeerUID::getAddress).collect(Collectors.toList()));
     }
     return uniquePeers.size();
   }
