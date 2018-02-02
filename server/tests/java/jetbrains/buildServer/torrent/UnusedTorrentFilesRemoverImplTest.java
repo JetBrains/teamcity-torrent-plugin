@@ -17,6 +17,7 @@
 package jetbrains.buildServer.torrent;
 
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
+import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 import org.testng.annotations.Test;
 
@@ -41,21 +42,21 @@ public class UnusedTorrentFilesRemoverImplTest {
               actual.add(path.toString());
             },
             (path, visitor) -> {
-              visitor.visitFile(Paths.get(".teamcity/torrents/exist.torrent"), null);
-              visitor.visitFile(Paths.get(".teamcity/torrents/notExist.torrent"), null);
-              visitor.visitFile(Paths.get(".teamcity/torrents/dir/exist.torrent"), null);
-              visitor.visitFile(Paths.get(".teamcity/torrents/dir/notExist.torrent"), null);
+              visitor.visitFile(Paths.get(".teamcity", "torrents", "exist.torrent"), null);
+              visitor.visitFile(Paths.get(".teamcity", "torrents", "notExist.torrent"), null);
+              visitor.visitFile(Paths.get(".teamcity", "torrents", "dir", "exist.torrent"), null);
+              visitor.visitFile(Paths.get(".teamcity", "torrents", "dir", "notExist.torrent"), null);
             }
     );
-    Path torrentsDir = Paths.get(".teamcity/torrents");
+    Path torrentsDir = Paths.get(".teamcity", "torrents");
     List<BuildArtifact> buildArtifacts = Arrays.asList(
             createBuildArtifact("exist", "exist"),
             createBuildArtifact("exist", "dir/exist")
     );
     unusedTorrentFilesRemover.removeUnusedTorrents(buildArtifacts, torrentsDir);
     Set<String> expected = new HashSet<>();
-    expected.add(".teamcity/torrents/notExist.torrent");
-    expected.add(".teamcity/torrents/dir/notExist.torrent");
+    expected.add(Paths.get(".teamcity", "torrents", "notExist.torrent").toString());
+    expected.add(Paths.get(".teamcity", "torrents", "dir", "notExist.torrent").toString());
     assertEquals(actual, expected);
   }
 
@@ -64,7 +65,7 @@ public class UnusedTorrentFilesRemoverImplTest {
       @NotNull
       @Override
       public String getRelativePath() {
-        return relativePath;
+        return FileUtil.toSystemIndependentName(relativePath);
       }
 
       @NotNull
