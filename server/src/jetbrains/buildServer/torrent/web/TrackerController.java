@@ -1,8 +1,10 @@
 package jetbrains.buildServer.torrent.web;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.turn.ttorrent.tracker.MultiAnnounceRequestProcessor;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.TrackerRequestProcessor;
+import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.torrent.TorrentTrackerManager;
 import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
@@ -18,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 /**
  * @author Sergey.Pak
@@ -31,6 +34,7 @@ public class TrackerController extends BaseController {
   public static final String PATH = "/trackerAnnounce.html";
 
   private final TorrentTrackerManager myTrackerManager;
+  private final MultiAnnounceRequestProcessor myMultiAnnounceRequestProcessor;
 
 
   public TrackerController(@NotNull final WebControllerManager controllerManager,
@@ -38,6 +42,7 @@ public class TrackerController extends BaseController {
                            @NotNull final AuthorizationInterceptor interceptor) {
     controllerManager.registerController(PATH, this);
     myTrackerManager = trackerManager;
+    myMultiAnnounceRequestProcessor = new MultiAnnounceRequestProcessor(trackerManager.getTrackerService());
     interceptor.addPathNotRequiringAuth(PATH);
   }
 
@@ -47,11 +52,22 @@ public class TrackerController extends BaseController {
     if (myTrackerManager.isTrackerUsesDedicatedPort() || !myTrackerManager.isTrackerRunning()){
       response.setStatus(HttpServletResponse.SC_NOT_FOUND); // return 404, if tracker uses dedicated port or not started
     }
-    if (request.getQueryString() == null) {
-      return null;
-    }
     final String uri = request.getRequestURL().append("?").append(request.getQueryString()).toString();
-    myTrackerManager.getTrackerService().process(uri, request.getRemoteAddr(), new TrackerRequestProcessor.RequestHandler() {
+    if ("POST".equalsIgnoreCase(request.getMethod())) {
+      final String body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+      myMultiAnnounceRequestProcessor.process(body, uri, request.getRemoteAddr(), getRequestHandler(response));
+    } else {
+      if (request.getQueryString() == null) {
+        return null;
+      }
+      myTrackerManager.getTrackerService().process(uri, request.getRemoteAddr(), getRequestHandler(response));
+    }
+    return null;
+  }
+
+  @NotNull
+  private TrackerRequestProcessor.RequestHandler getRequestHandler(@NotNull HttpServletResponse response) {
+    return new TrackerRequestProcessor.RequestHandler() {
       public void serveResponse(int code, String description, ByteBuffer responseData) {
         response.setStatus(code);
         try {
@@ -63,8 +79,7 @@ public class TrackerController extends BaseController {
       public ConcurrentMap<String, TrackedTorrent> getTorrentsMap() {
         return myTrackerManager.getTorrents();
       }
-    });
-    return null;
+    };
   }
 
 }
