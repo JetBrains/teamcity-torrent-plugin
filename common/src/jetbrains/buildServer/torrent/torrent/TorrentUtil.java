@@ -68,8 +68,8 @@ public class TorrentUtil {
     if (torrentFile.isFile()) {
       try {
         Torrent t =  loadTorrent(torrentFile);
-        for (List<URI> uris: t.getAnnounceList()) {
-          if (uris.contains(announceURI)) return torrentFile;
+        for (List<String> uris: t.getAnnounceList()) {
+          if (uris.contains(announceURI.toString())) return torrentFile;
         }
       } catch (IOException e) {
         LOG.warn("Failed to load existing torrent file: " + torrentFile.getAbsolutePath() + ", error: " + e.toString() + ". Will create new torrent file instead.");

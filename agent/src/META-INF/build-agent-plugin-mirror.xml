@@ -9,7 +9,7 @@
   <bean class="jetbrains.buildServer.torrent.AgentTorrentsManager"/>
   <bean class="jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic"/>
   <bean class="jetbrains.buildServer.torrent.AgentTorrentsSeeder"/>
-  <bean class="jetbrains.buildServer.torrent.TorrentFilesFactory"/>
+  <bean class="jetbrains.buildServer.torrent.TorrentFilesFactoryImpl"/>
   <bean id="torrentTransportFactory" class="jetbrains.buildServer.torrent.TorrentTransportFactory"/>
 
 </beans>

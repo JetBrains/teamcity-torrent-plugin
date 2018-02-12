@@ -4,6 +4,8 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.client.peer.SharingPeer;
+import com.turn.ttorrent.common.AnnounceableFileTorrent;
+import com.turn.ttorrent.common.AnnounceableTorrent;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.common.TorrentHash;
 import org.jetbrains.annotations.NotNull;
@@ -15,6 +17,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -42,23 +45,21 @@ public class TeamcityTorrentClient {
   }
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) throws IOException, NoSuchAlgorithmException {
-    Torrent torrent = loadTorrent(torrentFile);
-    return seedTorrent(torrent, srcFile);
+    try {
+      myClient.addTorrent(torrentFile.getAbsolutePath(), srcFile.getParent(), true);
+      return true;
+    } catch (Exception e) {
+      LOG.warn("Failed to seed file: " + srcFile.getName(), e);
+      return false;
+    }
   }
 
   public Set<SharingPeer> getPeers() {
     return myClient.getPeers();
   }
 
-  public boolean seedTorrent(@NotNull Torrent torrent, @NotNull File srcFile) {
-    try {
-      final SharedTorrent st = new SharedTorrent(torrent, srcFile.getParentFile(), false, true);
-      myClient.addTorrent(st);
-      return true;
-    } catch (Exception e) {
-      LOG.warn("Failed to seed file: " + srcFile.getName(), e);
-      return false;
-    }
+  public AnnounceableFileTorrent getAnnounceableFileTorrent(String hash) {
+    return myClient.getTorrentsStorage().getAnnounceableTorrent(hash);
   }
 
   public void setReceiveBufferSize(int size) {
@@ -81,6 +82,10 @@ public class TeamcityTorrentClient {
   }
   public void stopSeeding(@NotNull TorrentHash torrentHash) {
     myClient.removeTorrent(torrentHash);
+  }
+
+  public List<AnnounceableTorrent> getAnnounceableTorrents() {
+    return myClient.getTorrentsStorage().announceableTorrents();
   }
 
   public void stopSeedingByPath(File file){
@@ -110,7 +115,7 @@ public class TeamcityTorrentClient {
   }
 
   public boolean isSeeding(@NotNull TorrentHash torrent) {
-    return findSeedingTorrentFolder(torrent) != null;
+    return myClient.getTorrentsStorage().getAnnounceableTorrent(torrent.getHexInfoHash()) != null;
   }
 
   public File findSeedingTorrentFolder(@NotNull TorrentHash torrent){
@@ -147,10 +152,12 @@ public class TeamcityTorrentClient {
   }
 
   public int getNumberOfSeededTorrents() {
-    return myClient.getTorrents().size();
+    return myClient.getTorrentsStorage().announceableTorrents().size();
   }
 
-  public Thread downloadAndShareOrFailAsync(@NotNull final Torrent torrent,
+  public Thread downloadAndShareOrFailAsync(@NotNull final File torrentFile,
+                                            @NotNull final List<String> fileNames,
+                                            @NotNull final String hexInfoHash,
                                             @NotNull final File destFile,
                                             @NotNull final File destDir,
                                             final long downloadTimeoutSec,
@@ -161,7 +168,7 @@ public class TeamcityTorrentClient {
     final Thread thread = new Thread(new Runnable() {
       public void run() {
         try {
-          downloadAndShareOrFail(torrent, destFile, destDir, downloadTimeoutSec, minSeedersCount, maxTimeoutForConnect, isInterrupted);
+          downloadAndShareOrFail(torrentFile, fileNames, hexInfoHash, destFile, destDir, downloadTimeoutSec, minSeedersCount, maxTimeoutForConnect, isInterrupted);
         } catch (IOException e) {
           occuredException.set(e);
         } catch (NoSuchAlgorithmException e) {
@@ -175,7 +182,9 @@ public class TeamcityTorrentClient {
     return thread;
   }
 
-  public void downloadAndShareOrFail(@NotNull final Torrent torrent,
+  public void downloadAndShareOrFail(@NotNull final File torrentFile,
+                                     @NotNull final List<String> fileNames,
+                                     @NotNull final String hexInfoHash,
                                      @NotNull final File destFile,
                                      @NotNull final File destDir,
                                      final long downloadTimeoutSec,
@@ -183,7 +192,7 @@ public class TeamcityTorrentClient {
                                      final long maxTimeoutForConnect,
                                      final AtomicBoolean isInterrupted) throws IOException, NoSuchAlgorithmException, InterruptedException {
     boolean torrentContainsFile = false;
-    for (String filePath : torrent.getFilenames()) {
+    for (String filePath : fileNames) {
       final String destFileAbsolutePath = destFile.getAbsolutePath();
       final String destFileCleaned = destFileAbsolutePath.replaceAll("\\\\", "/");
       final String filePathCleaned = filePath.replaceAll("\\\\", "/");
@@ -197,14 +206,13 @@ public class TeamcityTorrentClient {
     }
 
     destDir.mkdirs();
-    if (myClient.containsTorrentWithHash(torrent.getHexInfoHash())){
-      LOG.info("Already seeding torrent with hash " + torrent.getHexInfoHash() + ". Stop seeding and try download again");
-      stopSeeding(torrent);
+    if (myClient.containsTorrentWithHash(hexInfoHash)){
+      LOG.info("Already seeding torrent with hash " + hexInfoHash + ". Stop seeding and try download again");
+      stopSeeding(torrentFile);
     }
-    SharedTorrent downTorrent = new SharedTorrent(torrent, destDir, false);
     LOG.info(String.format("Will attempt to download uninterruptibly %s into %s. Timeout:%d",
             destFile.getAbsolutePath(), destDir.getAbsolutePath(), downloadTimeoutSec));
-    myClient.downloadUninterruptibly(downTorrent, downloadTimeoutSec, minSeedersCount, isInterrupted, maxTimeoutForConnect);
+    myClient.downloadUninterruptibly(torrentFile.getAbsolutePath(), destDir.getAbsolutePath(), downloadTimeoutSec, minSeedersCount, isInterrupted, maxTimeoutForConnect);
   }
 
   public Collection<SharedTorrent> getSharedTorrents(){

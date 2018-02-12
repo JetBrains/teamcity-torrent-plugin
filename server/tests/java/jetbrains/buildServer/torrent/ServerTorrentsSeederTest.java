@@ -18,6 +18,7 @@ package jetbrains.buildServer.torrent;
 
 import com.intellij.util.WaitFor;
 import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.common.AnnounceableTorrent;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.TempFiles;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
@@ -69,6 +70,7 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
 
     final int fileSize = 1 * 1024 * 1024;
     final Queue<String> filesQueue = new ArrayDeque<String>();
+    final Queue<String> hashesQueue = new ArrayDeque<String>();
     final List<File> allArtifacts = new ArrayList<File>();
     final List<File> allTorrents = new ArrayList<File>();
     for (int i = 0; i < 5; i++) {
@@ -111,17 +113,21 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
       allTorrents.add(torrentFile);
 
       filesQueue.add(srcFile.getName());
+      hashesQueue.add(torrentMetaInfo.getHexInfoHash());
       if (filesQueue.size() > 3) {
         filesQueue.poll();
+      }
+      if (hashesQueue.size() > 3) {
+        hashesQueue.poll();
       }
       new WaitFor(5 * 1000) {
 
         @Override
         protected boolean condition() {
-          final Collection<SharedTorrent> sharedTorrents = myTorrentsSeeder.getSharedTorrents();
-          if (sharedTorrents.size() <= 3) {
-            for (SharedTorrent torrent : sharedTorrents) {
-              if (torrent.getName().equals(srcFile.getName())) {
+          final Collection<AnnounceableTorrent> torrents = myTorrentsSeeder.getAnnounceableTorrents();
+          if (torrents.size() <= 3) {
+            for (AnnounceableTorrent torrent : torrents) {
+              if (torrent.getHexInfoHash().equals(torrentMetaInfo.getHexInfoHash())) {
                 return true;
               }
             }
@@ -130,13 +136,13 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
         }
       }.assertCompleted("should have completed in 5 sec");
       assertTrue(myTorrentsSeeder.getSharedTorrents().size() <= 3);
-      Collection<String> filesFromTorrents = new ArrayList<String>();
-      for (SharedTorrent torrent : myTorrentsSeeder.getSharedTorrents()) {
-        filesFromTorrents.add(torrent.getName());
+      Collection<String> torrentsHashes = new ArrayList<String>();
+      for (AnnounceableTorrent torrent : myTorrentsSeeder.getAnnounceableTorrents()) {
+        torrentsHashes.add(torrent.getHexInfoHash());
       }
       // checking currently seeded torrents
-      assertEquals(filesQueue.size(), filesFromTorrents.size());
-      assertContains(filesQueue, filesFromTorrents.toArray(new String[filesFromTorrents.size()]));
+      assertEquals(filesQueue.size(), torrentsHashes.size());
+      assertContains(hashesQueue, torrentsHashes.toArray(new String[torrentsHashes.size()]));
 
       // checking removed ones;
       assertThat(allArtifacts, new Constraint() {

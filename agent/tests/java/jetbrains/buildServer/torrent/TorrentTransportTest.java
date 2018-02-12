@@ -17,14 +17,12 @@
 package jetbrains.buildServer.torrent;
 
 import com.turn.ttorrent.client.Client;
-import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.agent.BuildProgressLogger;
-import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import org.apache.commons.httpclient.HttpClient;
@@ -35,6 +33,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
+import org.jmock.api.Invocation;
+import org.jmock.lib.action.CustomAction;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -119,7 +119,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myBuild = m.mock(AgentRunningBuild.class);
     myLeechSettings = m.mock(LeechSettings.class);
     final BuildProgressLogger myLogger = new FakeBuildProgressLogger();
-
+    final TorrentFilesFactory torrentFilesFactory = m.mock(TorrentFilesFactory.class);
     m.checking(new Expectations(){{
       allowing(myBuild).getSharedConfigParameters(); will (returnValue(myAgentParametersMap));
       allowing(myBuild).getBuildTypeId(); will (returnValue("TC_Gaya80x_BuildDist"));
@@ -127,6 +127,7 @@ public class TorrentTransportTest extends BaseTestCase {
       allowing(myLeechSettings).isDownloadEnabled(); will(returnValue(true));
       allowing(myLeechSettings).getMaxPieceDownloadTime(); will(returnValue(15));
       allowing(myLeechSettings).getMinSeedersForDownload(); will(returnValue(1));
+      allowing(torrentFilesFactory).getTorrentFile(); will(returnValue(createTempFile()));
     }});
 
     BuildAgentConfiguration agentConfiguration = myAgentConfigurationFixture.setUp();
@@ -135,7 +136,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder.getTorrentsSeeder(),
                     new HttpClient(), myBuild.getBuildLogger(),
             "http://localhost:12345", new TorrentsDownloadStatistic(),
-            myLeechSettings){
+            myLeechSettings, torrentFilesFactory){
       @Override
       protected byte[] download(@NotNull String urlString) throws IOException {
         if (myDownloadHonestly) {
@@ -234,7 +235,7 @@ public class TorrentTransportTest extends BaseTestCase {
       myDownloadMap.put("/.teamcity/torrents/" + fileName + ".torrent", torrentFile);
       for (Client client : clientList) {
         client.start(InetAddress.getLocalHost());
-        client.addTorrent(SharedTorrent.fromFile(torrentFile, storageDir, true));
+        client.addTorrent(torrentFile.getAbsolutePath(), storageDir.getAbsolutePath(), true);
       }
       final File targetFile = new File(downloadDir, fileName);
       final String digest = myTorrentTransport.downloadUrlTo(SERVER_PATH + fileName, targetFile);
@@ -294,7 +295,7 @@ public class TorrentTransportTest extends BaseTestCase {
       myDownloadMap.put("/.teamcity/torrents/" + fileName + ".torrent", torrentFile);
       for (Client client : clientList) {
         client.start(InetAddress.getLocalHost());
-        client.addTorrent(SharedTorrent.fromFile(torrentFile, storageDir, true));
+        client.addTorrent(torrentFile.getAbsolutePath(), storageDir.getAbsolutePath(), true);
       }
       final File targetFile = new File(downloadDir, fileName);
       new Thread(){

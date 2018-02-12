@@ -50,7 +50,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
                               @NotNull final CurrentBuildTracker currentBuildTracker,
                               @NotNull final TorrentConfiguration trackerManager,
                               @NotNull final AgentTorrentsSeeder torrentsSeeder,
-                              @NotNull final TorrentFilesFactory torrentFilesFactory,
+                              @NotNull final TorrentFilesFactoryImpl torrentFilesFactory,
                               @NotNull final ArtifactsWatcher artifactsWatcher,
                               @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic,
                               @NotNull final LeechSettings leechSettings,

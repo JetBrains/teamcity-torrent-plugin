@@ -33,10 +33,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -59,17 +56,21 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   private final TorrentConfiguration myConfiguration;
   private final BuildAgentConfigurationEx myAgentConfig;
   private final LeechSettings myLeechSettings;
+  @NotNull
+  private final TorrentFilesFactory myTorrentFilesFactory;
 
   public TorrentTransportFactory(@NotNull final AgentTorrentsManager agentTorrentsManager,
                                  @NotNull final CurrentBuildTracker currentBuildTracker,
                                  @NotNull final TorrentConfiguration configuration,
                                  @NotNull final BuildAgentConfigurationEx config,
-                                 @NotNull final LeechSettings leechSettings) {
+                                 @NotNull final LeechSettings leechSettings,
+                                 @NotNull final TorrentFilesFactory torrentFilesFactory) {
     myAgentTorrentsManager = agentTorrentsManager;
     myBuildTracker = currentBuildTracker;
     myConfiguration = configuration;
     myAgentConfig = config;
     myLeechSettings = leechSettings;
+    myTorrentFilesFactory = torrentFilesFactory;
   }
 
   private HttpClient createHttpClient() {
@@ -108,7 +109,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
             buildLogger,
             myAgentConfig.getServerUrl(),
             myAgentTorrentsManager.getTorrentsDownloadStatistic(),
-            myLeechSettings);
+            myLeechSettings,
+            myTorrentFilesFactory);
   }
 
   private boolean shouldUseTorrentTransport() {
@@ -130,6 +132,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     private final LeechSettings myLeechSettings;
     @NotNull
     private final TorrentsDownloadStatistic myTorrentsDownloadStatistic;
+    @NotNull
+    private final TorrentFilesFactory myTorrentFilesFactory;
 
     private final Map<String, String> myTorrentsForArtifacts;
 
@@ -138,11 +142,13 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
                                @NotNull final BuildProgressLogger buildLogger,
                                @NotNull final String serverUrl,
                                @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic,
-                               @NotNull final LeechSettings leechSettings) {
+                               @NotNull final LeechSettings leechSettings,
+                               @NotNull final TorrentFilesFactory torrentFilesFactory) {
       super(httpClient, serverUrl);
       mySeeder = seeder;
       myLeechSettings = leechSettings;
       myClient = mySeeder.getClient();
+      myTorrentFilesFactory = torrentFilesFactory;
       myTorrentsDownloadStatistic = torrentsDownloadStatistic;
       myHttpClient = httpClient;
       myBuildLogger = buildLogger;
@@ -164,6 +170,14 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         return null;
       }
 
+      File torrentFile = myTorrentFilesFactory.getTorrentFile();
+      torrent.save(torrentFile);
+      String hexInfoHash = torrent.getHexInfoHash();
+      String name = torrent.getName();
+      List<String> fileNames = torrent.getFilenames();
+      long size = torrent.getSize();
+      torrent = null;
+
       try {
         Loggers.AGENT.info(String.format("trying to download %s via bittorrent", urlString));
         myBuildLogger.progressStarted("Downloading " + target.getName() + " via BitTorrent protocol.");
@@ -177,18 +191,18 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         Loggers.AGENT.debug("start download file " + target.getName());
 
         Thread th = myClient.downloadAndShareOrFailAsync(
-                torrent, target, target.getParentFile(), myLeechSettings.getMaxPieceDownloadTime(), minSeedersForDownload, myInterrupted, timeoutForConnectToPeersMs, exceptionHolder);
+                torrentFile, fileNames, hexInfoHash, target, target.getParentFile(), myLeechSettings.getMaxPieceDownloadTime(), minSeedersForDownload, myInterrupted, timeoutForConnectToPeersMs, exceptionHolder);
         myCurrentDownload.set(Thread.currentThread());
         th.join();
         myCurrentDownload.set(null);
         if (exceptionHolder.get() != null) {
           myTorrentsDownloadStatistic.fileDownloadFailed();
-          Loggers.AGENT.warnAndDebugDetails("unable to download file " + torrent.getName() + " "
+          Loggers.AGENT.warnAndDebugDetails("unable to download file " + name + " "
                   + exceptionHolder.get().getMessage(), exceptionHolder.get());
           throw exceptionHolder.get();
         }
 
-        if (torrent.getSize() != target.length()) {
+        if (size != target.length()) {
           myTorrentsDownloadStatistic.fileDownloadFailed();
           log2Build(String.format("Failed to download file completely via BitTorrent protocol. Expected file size: %s, actual file size: %s", String.valueOf(torrent.getSize()), String.valueOf(target.length())));
           return null;
