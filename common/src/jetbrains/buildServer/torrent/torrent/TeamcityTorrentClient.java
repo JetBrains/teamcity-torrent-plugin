@@ -46,7 +46,7 @@ public class TeamcityTorrentClient {
 
   public boolean seedTorrent(@NotNull File torrentFile, @NotNull File srcFile) throws IOException, NoSuchAlgorithmException {
     try {
-      myClient.addTorrent(torrentFile.getAbsolutePath(), srcFile.getParent(), true);
+      myClient.addTorrent(torrentFile.getAbsolutePath(), srcFile.getParent(), true, false);
       return true;
     } catch (Exception e) {
       LOG.warn("Failed to seed file: " + srcFile.getName(), e);

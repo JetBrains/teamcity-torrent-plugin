@@ -235,7 +235,7 @@ public class TorrentTransportTest extends BaseTestCase {
       myDownloadMap.put("/.teamcity/torrents/" + fileName + ".torrent", torrentFile);
       for (Client client : clientList) {
         client.start(InetAddress.getLocalHost());
-        client.addTorrent(torrentFile.getAbsolutePath(), storageDir.getAbsolutePath(), true);
+        client.addTorrent(torrentFile.getAbsolutePath(), storageDir.getAbsolutePath(), true, false);
       }
       final File targetFile = new File(downloadDir, fileName);
       final String digest = myTorrentTransport.downloadUrlTo(SERVER_PATH + fileName, targetFile);
@@ -295,7 +295,7 @@ public class TorrentTransportTest extends BaseTestCase {
       myDownloadMap.put("/.teamcity/torrents/" + fileName + ".torrent", torrentFile);
       for (Client client : clientList) {
         client.start(InetAddress.getLocalHost());
-        client.addTorrent(torrentFile.getAbsolutePath(), storageDir.getAbsolutePath(), true);
+        client.addTorrent(torrentFile.getAbsolutePath(), storageDir.getAbsolutePath(), true, false);
       }
       final File targetFile = new File(downloadDir, fileName);
       new Thread(){
