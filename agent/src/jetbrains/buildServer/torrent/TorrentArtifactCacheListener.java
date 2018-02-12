@@ -27,7 +27,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
 
   private final TorrentsSeeder myTorrentsSeeder;
   private final CurrentBuildTracker myBuildTracker;
-  private final TorrentFilesFactory myTorrentFilesFactory;
+  private final TorrentFilesFactoryImpl myTorrentFilesFactory;
   private ArtifactCacheProvider myArtifactCacheProvider;
   private final TorrentConfiguration myConfiguration;
   private final AgentTorrentsManager myTorrentsManager;
@@ -38,7 +38,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
                                       @NotNull final CurrentBuildTracker currentBuildTracker,
                                       @NotNull final TorrentConfiguration configuration,
                                       @NotNull final AgentTorrentsManager torrentsManager,
-                                      @NotNull final TorrentFilesFactory torrentFilesFactory,
+                                      @NotNull final TorrentFilesFactoryImpl torrentFilesFactory,
                                       @NotNull final ArtifactsWatcher artifactsWatcher,
                                       @NotNull final BuildAgentConfiguration agentConfiguration) {
     myTorrentsSeeder = torrentsSeeder;

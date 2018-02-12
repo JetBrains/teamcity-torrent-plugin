@@ -34,7 +34,7 @@ import java.util.List;
 
 @Test
 public class TorrentFilesFactoryTest extends BaseTestCase {
-  private TorrentFilesFactory myTorrentFilesFactory;
+  private TorrentFilesFactoryImpl myTorrentFilesFactory;
   private File myTorrentsDir;
   private AgentTorrentsSeeder mySeeder;
   private FakeAgentIdleTasks myFakeAgentIdleTasks;
@@ -52,7 +52,7 @@ public class TorrentFilesFactoryTest extends BaseTestCase {
 
     myFakeAgentIdleTasks = new FakeAgentIdleTasks();
     mySeeder = new AgentTorrentsSeeder(agentConfiguration, configuration);
-    myTorrentFilesFactory = new TorrentFilesFactory(agentConfiguration, configuration, myFakeAgentIdleTasks, mySeeder);
+    myTorrentFilesFactory = new TorrentFilesFactoryImpl(agentConfiguration, configuration, myFakeAgentIdleTasks, mySeeder);
   }
 
   public void test_factory() throws IOException {

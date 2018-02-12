@@ -1,6 +1,8 @@
 package jetbrains.buildServer.torrent;
 
-import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.common.AnnounceableFileTorrent;
+import com.turn.ttorrent.common.AnnounceableTorrent;
+import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.*;
@@ -23,6 +25,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * @author Sergey.Pak
@@ -74,7 +77,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     final ArtifactsWatcher artifactsWatcher = m.mock(ArtifactsWatcher.class);
 
     mySeeder = new AgentTorrentsSeeder(myAgentConfiguration, configuration);
-    TorrentFilesFactory torrentsFactory = new TorrentFilesFactory(myAgentConfiguration, configuration, new FakeAgentIdleTasks(), mySeeder);
+    TorrentFilesFactoryImpl torrentsFactory = new TorrentFilesFactoryImpl(myAgentConfiguration, configuration, new FakeAgentIdleTasks(), mySeeder);
 
     final EventDispatcher<AgentLifeCycleListener> eventDispatcher = EventDispatcher.create(AgentLifeCycleListener.class);
     AgentTorrentsManager manager = new AgentTorrentsManager(eventDispatcher,
@@ -94,7 +97,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     manager.checkReady();
   }
 
-  public void test_seed_when_file_appear() throws IOException {
+  public void test_seed_when_file_appear() throws IOException, NoSuchAlgorithmException {
     File file = createTempFile(1024*1025);
 
     myCacheListener.onAfterAddOrUpdate(file);
@@ -102,8 +105,10 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     waitForSeededTorrents(1);
 
     assertEquals(1, mySeeder.getNumberOfSeededTorrents());
-    final SharedTorrent torrent = mySeeder.getSharedTorrents().iterator().next();
-    assertEquals(file.getAbsolutePath(), torrent.getParentFile().getAbsolutePath() + File.separatorChar + torrent.getFilenames().get(0));
+    final AnnounceableTorrent announceableTorrent = mySeeder.getTorrentsSeeder().getClient().getAnnounceableTorrents().iterator().next();
+    final AnnounceableFileTorrent torrent = mySeeder.getTorrentsSeeder().getClient().getAnnounceableFileTorrent(announceableTorrent.getHexInfoHash());
+    Torrent metadata = Torrent.load(new File(torrent.getDotTorrentFilePath()));
+    assertEquals(file.getAbsolutePath(), torrent.getDownloadDirPath() + File.separatorChar + metadata.getFilenames().get(0));
   }
 
   @NotNull
@@ -120,15 +125,17 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     };
   }
 
-  public void test_stop_seed_when_delete() throws IOException {
+  public void test_stop_seed_when_delete() throws IOException, NoSuchAlgorithmException {
     File file = createTempFile(1024*1025);
 
     myCacheListener.onAfterAddOrUpdate(file);
 
     waitForSeededTorrents(1);
 
-    final SharedTorrent torrent = mySeeder.getSharedTorrents().iterator().next();
-    assertEquals(file.getAbsolutePath(), torrent.getParentFile().getAbsolutePath() + File.separatorChar + torrent.getFilenames().get(0));
+    final AnnounceableTorrent announceableTorrent = mySeeder.getTorrentsSeeder().getClient().getAnnounceableTorrents().iterator().next();
+    final AnnounceableFileTorrent torrent = mySeeder.getTorrentsSeeder().getClient().getAnnounceableFileTorrent(announceableTorrent.getHexInfoHash());
+    Torrent metadata = Torrent.load(new File(torrent.getDotTorrentFilePath()));
+    assertEquals(file.getAbsolutePath(), torrent.getDownloadDirPath() + File.separatorChar + metadata.getFilenames().get(0));
     myCacheListener.onBeforeDelete(file);
     assertEquals(0, mySeeder.getNumberOfSeededTorrents());
   }

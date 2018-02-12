@@ -16,7 +16,8 @@
 
 package jetbrains.buildServer.torrent;
 
-import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.common.AnnounceableFileTorrent;
+import com.turn.ttorrent.common.AnnounceableTorrent;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
@@ -71,7 +72,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
     final ArtifactsWatcher artifactsWatcher = m.mock(ArtifactsWatcher.class);
 
     AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(agentConfiguration, trackerConfiguration);
-    TorrentFilesFactory tff = new TorrentFilesFactory(agentConfiguration, trackerConfiguration, new FakeAgentIdleTasks(), seeder);
+    TorrentFilesFactoryImpl tff = new TorrentFilesFactoryImpl(agentConfiguration, trackerConfiguration, new FakeAgentIdleTasks(), seeder);
 
     myTorrentsDownloadStatistic = new TorrentsDownloadStatistic();
     myTorrentsManager = new AgentTorrentsManager(dispatcher,
@@ -122,9 +123,11 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
       };
       List<String> seededHashes = new ArrayList<String>();
       List<File> seededFiles = new ArrayList<File>();
-      for (SharedTorrent st : myTorrentsManager.getTorrentsSeeder().getSharedTorrents()) {
+      for (AnnounceableTorrent st : myTorrentsManager.getTorrentsSeeder().getClient().getAnnounceableTorrents()) {
         seededHashes.add(st.getHexInfoHash());
-        seededFiles.add(new File(st.getParentFile(), st.getName()));
+        AnnounceableFileTorrent torrent = myTorrentsManager.getTorrentsSeeder().getClient().getAnnounceableFileTorrent(st.getHexInfoHash());
+        Torrent metadata = Torrent.load(new File(torrent.getDotTorrentFilePath()));
+        seededFiles.add(new File(torrent.getDownloadDirPath(), metadata.getName()));
       }
       assertSameElements(torrentHashes, seededHashes);
       assertSameElements(createdFiles, seededFiles);
