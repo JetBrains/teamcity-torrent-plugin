@@ -4,6 +4,7 @@
       <class name="jetbrains.buildServer.torrent.ServerTorrentsSeederTest"/>
       <class name="jetbrains.buildServer.torrent.TorrentTrackerConfiguratorTest"/>
       <class name="jetbrains.buildServer.torrent.UnusedTorrentFilesRemoverImplTest"/>
+      <class name="jetbrains.buildServer.torrent.TorrentTrackerManagerTest"/>
     </classes>
   </test>
 </suite>
