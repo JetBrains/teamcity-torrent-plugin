@@ -52,6 +52,7 @@ public class TrackerController extends BaseController {
     try {
       if (myTrackerManager.isTrackerUsesDedicatedPort() || !myTrackerManager.isTrackerRunning()) {
         response.setStatus(HttpServletResponse.SC_NOT_FOUND); // return 404, if tracker uses dedicated port or not started
+        return null;
       }
       final String uri = request.getRequestURL().append("?").append(request.getQueryString()).toString();
       if ("POST".equalsIgnoreCase(request.getMethod())) {
