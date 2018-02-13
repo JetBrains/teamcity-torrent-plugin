@@ -49,18 +49,23 @@ public class TrackerController extends BaseController {
   @Nullable
   @Override
   protected ModelAndView doHandle(@NotNull HttpServletRequest request, @NotNull final HttpServletResponse response) throws Exception {
-    if (myTrackerManager.isTrackerUsesDedicatedPort() || !myTrackerManager.isTrackerRunning()){
-      response.setStatus(HttpServletResponse.SC_NOT_FOUND); // return 404, if tracker uses dedicated port or not started
-    }
-    final String uri = request.getRequestURL().append("?").append(request.getQueryString()).toString();
-    if ("POST".equalsIgnoreCase(request.getMethod())) {
-      final String body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-      myMultiAnnounceRequestProcessor.process(body, uri, request.getRemoteAddr(), getRequestHandler(response));
-    } else {
-      if (request.getQueryString() == null) {
-        return null;
+    try {
+      if (myTrackerManager.isTrackerUsesDedicatedPort() || !myTrackerManager.isTrackerRunning()) {
+        response.setStatus(HttpServletResponse.SC_NOT_FOUND); // return 404, if tracker uses dedicated port or not started
       }
-      myTrackerManager.getTrackerService().process(uri, request.getRemoteAddr(), getRequestHandler(response));
+      final String uri = request.getRequestURL().append("?").append(request.getQueryString()).toString();
+      if ("POST".equalsIgnoreCase(request.getMethod())) {
+        final String body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+        myMultiAnnounceRequestProcessor.process(body, uri, request.getRemoteAddr(), getRequestHandler(response));
+      } else {
+        if (request.getQueryString() == null) {
+          return null;
+        }
+        myTrackerManager.getTrackerService().process(uri, request.getRemoteAddr(), getRequestHandler(response));
+      }
+    } catch (Throwable e) {
+      Loggers.SERVER.warnAndDebugDetails("error in processing torrent announce. Request: " + request, e);
+      response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
     return null;
   }
