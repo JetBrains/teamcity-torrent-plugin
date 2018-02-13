@@ -56,7 +56,7 @@ public class TrackerController extends BaseController {
       }
       final String uri = request.getRequestURL().append("?").append(request.getQueryString()).toString();
       if ("POST".equalsIgnoreCase(request.getMethod())) {
-        final String body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+        final String body = request.getReader().lines().collect(Collectors.joining("\n"));
         myMultiAnnounceRequestProcessor.process(body, uri, request.getRemoteAddr(), getRequestHandler(response));
       } else {
         if (request.getQueryString() == null) {
