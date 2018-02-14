@@ -20,6 +20,7 @@ import com.turn.ttorrent.common.PeerUID;
 import com.turn.ttorrent.tracker.AddressChecker;
 import com.turn.ttorrent.tracker.TrackedPeer;
 import com.turn.ttorrent.tracker.TrackedTorrent;
+import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
 import jetbrains.buildServer.serverSide.BuildServerListener;
@@ -37,9 +38,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.testng.Assert.assertEquals;
-
-public class TorrentTrackerManagerTest {
+public class TorrentTrackerManagerTest extends BaseTestCase {
 
   private ExecutorService myExecutorService;
   private TorrentTrackerManager myTorrentTrackerManager;
@@ -58,7 +57,7 @@ public class TorrentTrackerManagerTest {
       allowing(rootUrlHolder).getRootUrl(); will(returnValue("http://localhost:8111"));
     }});
     myTorrentTrackerManager = new TorrentTrackerManager(
-            new TorrentConfigurator(new ServerPaths("/tmp"), rootUrlHolder, rpcHandlerManager),
+            new TorrentConfigurator(new ServerPaths(createTempDir().getAbsolutePath()), rootUrlHolder, rpcHandlerManager),
             executorServices,
             new EventDispatcher<BuildServerListener>(BuildServerListener.class) {
             },
