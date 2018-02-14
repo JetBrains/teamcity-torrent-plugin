@@ -16,6 +16,8 @@
 
 package jetbrains.buildServer.torrent.web;
 
+import com.turn.ttorrent.common.protocol.TrackerMessage;
+import com.turn.ttorrent.common.protocol.http.HTTPAnnounceRequestMessage;
 import com.turn.ttorrent.tracker.AddressChecker;
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
@@ -26,6 +28,7 @@ import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.torrent.TorrentConfigurator;
 import jetbrains.buildServer.torrent.TorrentTrackerManager;
 import jetbrains.buildServer.util.EventDispatcher;
+import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.testng.annotations.Test;
@@ -73,19 +76,13 @@ public class TrackerControllerTest extends BaseControllerTestCase<TrackerControl
 
   public void multiAnnounceTest() throws Exception {
     final URL url = new URL("http://localhost" + TrackerController.PATH);
-    final String urlTemplate = url.toString() +
-            "?info_hash={hash}" +
-            "&peer_id=ABCDEFGHIJKLMNOPQRST" +
-            "&port=6881" +
-            "&downloaded=1234" +
-            "&left=0" +
-            "&event=started" +
-            "&ip=127.0.0.1";
 
     List<String> announceURLs = new ArrayList<>();
     final int torrentsCount = 5;
     for (int i = 0; i < torrentsCount; i++) {
-      announceURLs.add(getUrlFromTemplate(urlTemplate, "1" + i));
+      HTTPAnnounceRequestMessage requestMessage = getRequestMessage("infohash" + i);
+      final URL announceURL = requestMessage.buildAnnounceURL(url);
+      announceURLs.add(announceURL.toString());
     }
 
     String requestString = String.join("\n", announceURLs);
@@ -96,8 +93,21 @@ public class TrackerControllerTest extends BaseControllerTestCase<TrackerControl
     assertEquals(myTorrentTrackerManager.getTorrents().size(), torrentsCount);
   }
 
-  private String getUrlFromTemplate(String template, String hash) {
-    return template.replace("{hash}", hash);
+  @NotNull
+  private HTTPAnnounceRequestMessage getRequestMessage(String hash) throws IOException, TrackerMessage.MessageValidationException {
+    final byte[] peerId = {1, 2, 3, 4};
+    return HTTPAnnounceRequestMessage.craft(
+            hash.getBytes(),
+            peerId,
+            6881,
+            0,
+            1234,
+            0,
+            true,
+            false,
+            TrackerMessage.AnnounceRequestMessage.RequestEvent.STARTED,
+            "127.0.0.1",
+            TrackerMessage.AnnounceRequestMessage.DEFAULT_NUM_WANT
+    );
   }
-
 }
