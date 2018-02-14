@@ -85,12 +85,62 @@ public class TrackerControllerTest extends BaseControllerTestCase<TrackerControl
       announceURLs.add(announceURL.toString());
     }
 
+    joinLinesAndSendPost(announceURLs);
+
+    assertEquals(200, myResponse.getStatus());
+    assertEquals(torrentsCount, myTorrentTrackerManager.getTorrents().size());
+  }
+
+  public void testMultiAnnounceWithOneTorrent() throws Exception {
+    final URL url = new URL("http://localhost" + TrackerController.PATH);
+
+    List<String> announceURLs = new ArrayList<>();
+    HTTPAnnounceRequestMessage requestMessage = getRequestMessage("infohash");
+    final URL announceURL = requestMessage.buildAnnounceURL(url);
+    announceURLs.add(announceURL.toString());
+
+    joinLinesAndSendPost(announceURLs);
+
+    assertEquals(200, myResponse.getStatus());
+    assertEquals(1, myTorrentTrackerManager.getTorrents().size());
+  }
+
+  public void testMultiAnnounceWithOneRepeatedTorrent() throws Exception {
+    final URL url = new URL("http://localhost" + TrackerController.PATH);
+
+    List<String> announceURLs = new ArrayList<>();
+    final int torrentsCount = 3;
+    for (int i = 0; i < torrentsCount; i++) {
+      HTTPAnnounceRequestMessage requestMessage = getRequestMessage("infohash");
+      final URL announceURL = requestMessage.buildAnnounceURL(url);
+      announceURLs.add(announceURL.toString());
+    }
+
+    joinLinesAndSendPost(announceURLs);
+
+    assertEquals(200, myResponse.getStatus());
+    assertEquals(1, myTorrentTrackerManager.getTorrents().size());
+  }
+
+  public void testEmptyMultiAnnounce() throws Exception {
+
+    List<String> announceURLs = new ArrayList<>();
+    final int torrentsCount = 3;
+    for (int i = 0; i < torrentsCount; i++) {
+      announceURLs.add("");
+    }
+
+    joinLinesAndSendPost(announceURLs);
+
+    assertEquals(400, myResponse.getStatus());
+    assertEquals(0, myTorrentTrackerManager.getTorrents().size());
+  }
+
+  private void joinLinesAndSendPost(Iterable<String> announceURLs) throws Exception {
     String requestString = String.join("\n", announceURLs);
 
     this.myRequest.setInputStream(new ByteArrayInputStream(requestString.getBytes(StandardCharsets.UTF_8)));
     doPost();
-    assertEquals(200, myResponse.getStatus());
-    assertEquals(myTorrentTrackerManager.getTorrents().size(), torrentsCount);
   }
 
   @NotNull
