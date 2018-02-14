@@ -1,13 +1,12 @@
 package jetbrains.buildServer.torrent.web;
 
-import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.tracker.MultiAnnounceRequestProcessor;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.TrackerRequestProcessor;
-import jetbrains.buildServer.log.Loggers;
-import jetbrains.buildServer.torrent.TorrentTrackerManager;
 import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
+import jetbrains.buildServer.log.Loggers;
+import jetbrains.buildServer.torrent.TorrentTrackerManager;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,12 +23,10 @@ import java.util.stream.Collectors;
 
 /**
  * @author Sergey.Pak
- *         Date: 8/12/13
- *         Time: 4:49 PM
+ * Date: 8/12/13
+ * Time: 4:49 PM
  */
 public class TrackerController extends BaseController {
-
-  private final static Logger LOG = Logger.getInstance(TrackerController.class.getName());
 
   public static final String PATH = "/trackerAnnounce.html";
 
@@ -80,7 +77,9 @@ public class TrackerController extends BaseController {
         try {
           final WritableByteChannel channel = Channels.newChannel(response.getOutputStream());
           channel.write(responseData);
-        } catch (IOException e) {}
+        } catch (IOException e) {
+          Loggers.SERVER.warnAndDebugDetails("unable to write response " + response + " for announce request", e);
+        }
       }
 
       public ConcurrentMap<String, TrackedTorrent> getTorrentsMap() {
@@ -88,5 +87,4 @@ public class TrackerController extends BaseController {
       }
     };
   }
-
 }
