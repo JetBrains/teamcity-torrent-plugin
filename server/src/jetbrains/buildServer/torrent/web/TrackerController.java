@@ -54,14 +54,15 @@ public class TrackerController extends BaseController {
         response.setStatus(HttpServletResponse.SC_NOT_FOUND); // return 404, if tracker uses dedicated port or not started
         return null;
       }
-      final String uri = request.getRequestURL().append("?").append(request.getQueryString()).toString();
       if ("POST".equalsIgnoreCase(request.getMethod())) {
         final String body = request.getReader().lines().collect(Collectors.joining("\n"));
-        myMultiAnnounceRequestProcessor.process(body, uri, request.getRemoteAddr(), getRequestHandler(response));
+        myMultiAnnounceRequestProcessor.process(body, request.getRequestURL().toString(), request.getRemoteAddr(), getRequestHandler(response));
       } else {
-        if (request.getQueryString() == null) {
+        final String queryString = request.getQueryString();
+        if (queryString == null) {
           return null;
         }
+        final String uri = request.getRequestURL().append("?").append(queryString).toString();
         myTrackerManager.getTrackerService().process(uri, request.getRemoteAddr(), getRequestHandler(response));
       }
     } catch (Throwable e) {
