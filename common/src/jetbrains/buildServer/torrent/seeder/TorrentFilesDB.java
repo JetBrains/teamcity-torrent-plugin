@@ -189,6 +189,8 @@ public class TorrentFilesDB {
       InputStreamReader isReader = new InputStreamReader(new FileInputStream(myTorrentsDbFile), ENCODING);
       reader = new BufferedReader(isReader);
       String line;
+      int counter = 0;
+      LOG.info("try to load torrents from " + myTorrentsDbFile.getAbsolutePath());
       while ((line = reader.readLine()) != null) {
         List<String> paths = StringUtil.split(line, SEPARATOR);
         if (paths.size() != 2) continue;
@@ -196,10 +198,13 @@ public class TorrentFilesDB {
         File srcFile = myPathConverter.convertToFile(paths.get(0));
         File torrentFile = myPathConverter.convertToFile(paths.get(1));
 
+        counter++;
         addFileAndTorrent(srcFile, torrentFile);
       }
+      LOG.info("Loaded " + counter + " torrents");
     } catch (FileNotFoundException e) {
       // no database on disk
+      LOG.info("torrents.db file is not found in " + myTorrentsDbFile.getParent());
     } finally {
       FileUtil.close(reader);
     }

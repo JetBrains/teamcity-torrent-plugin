@@ -1,13 +1,12 @@
 package jetbrains.buildServer.torrent.web;
 
-import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.tracker.MultiAnnounceRequestProcessor;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.TrackerRequestProcessor;
-import jetbrains.buildServer.log.Loggers;
-import jetbrains.buildServer.torrent.TorrentTrackerManager;
 import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
+import jetbrains.buildServer.log.Loggers;
+import jetbrains.buildServer.torrent.TorrentTrackerManager;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,12 +23,10 @@ import java.util.stream.Collectors;
 
 /**
  * @author Sergey.Pak
- *         Date: 8/12/13
- *         Time: 4:49 PM
+ * Date: 8/12/13
+ * Time: 4:49 PM
  */
 public class TrackerController extends BaseController {
-
-  private final static Logger LOG = Logger.getInstance(TrackerController.class.getName());
 
   public static final String PATH = "/trackerAnnounce.html";
 
@@ -54,14 +51,15 @@ public class TrackerController extends BaseController {
         response.setStatus(HttpServletResponse.SC_NOT_FOUND); // return 404, if tracker uses dedicated port or not started
         return null;
       }
-      final String uri = request.getRequestURL().append("?").append(request.getQueryString()).toString();
       if ("POST".equalsIgnoreCase(request.getMethod())) {
         final String body = request.getReader().lines().collect(Collectors.joining("\n"));
-        myMultiAnnounceRequestProcessor.process(body, uri, request.getRemoteAddr(), getRequestHandler(response));
+        myMultiAnnounceRequestProcessor.process(body, request.getRequestURL().toString(), request.getRemoteAddr(), getRequestHandler(response));
       } else {
-        if (request.getQueryString() == null) {
+        final String queryString = request.getQueryString();
+        if (queryString == null) {
           return null;
         }
+        final String uri = request.getRequestURL().append("?").append(queryString).toString();
         myTrackerManager.getTrackerService().process(uri, request.getRemoteAddr(), getRequestHandler(response));
       }
     } catch (Throwable e) {
@@ -79,13 +77,10 @@ public class TrackerController extends BaseController {
         try {
           final WritableByteChannel channel = Channels.newChannel(response.getOutputStream());
           channel.write(responseData);
-        } catch (IOException e) {}
-      }
-
-      public ConcurrentMap<String, TrackedTorrent> getTorrentsMap() {
-        return myTrackerManager.getTorrents();
+        } catch (IOException e) {
+          Loggers.SERVER.warnAndDebugDetails("unable to write response " + response + " for announce request", e);
+        }
       }
     };
   }
-
 }
