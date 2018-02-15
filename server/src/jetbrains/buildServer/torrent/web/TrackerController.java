@@ -81,10 +81,6 @@ public class TrackerController extends BaseController {
           Loggers.SERVER.warnAndDebugDetails("unable to write response " + response + " for announce request", e);
         }
       }
-
-      public ConcurrentMap<String, TrackedTorrent> getTorrentsMap() {
-        return myTrackerManager.getTorrents();
-      }
     };
   }
 }

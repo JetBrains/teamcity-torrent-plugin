@@ -21,6 +21,7 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -159,10 +160,6 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
       public void serveResponse(int code, String description, ByteBuffer responseData) {
         response.set(responseData.array());
       }
-
-      public ConcurrentMap<String, TrackedTorrent> getTorrentsMap() {
-        return myTrackerManager.getTorrents();
-      }
     };
 
     myTrackerManager.getTrackerService().process(uriCompleted, "http://localhost:8111/", requestHandler);
@@ -171,7 +168,6 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
     final AtomicInteger complete = new AtomicInteger(100);
     final AtomicInteger peersSize = new AtomicInteger(100);
     final String torrentHash = "3132333435363738393031323334353637383930";
-    final ConcurrentHashMap<String, TrackedTorrent> torrents = (ConcurrentHashMap<String, TrackedTorrent>) myTrackerManager.getTorrents();
     new WaitFor(15*1000){
       @Override
       protected boolean condition() {
@@ -181,7 +177,7 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
           complete.set(parse.getComplete());
           peersSize.set(parse.getPeers().size());
 
-          final TrackedTorrent trackedTorrent = torrents.get(torrentHash);
+          final TrackedTorrent trackedTorrent = myTrackerManager.getTorrents().get(torrentHash);
           return parse.getComplete() == 1 && trackedTorrent.getPeers().size()==1;
         } catch (IOException e) {
           e.printStackTrace();
@@ -191,17 +187,17 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
         return false;
       }
     };
-    final TrackedTorrent trackedTorrent = torrents.get(torrentHash);
+    final TrackedTorrent trackedTorrent = myTrackerManager.getTorrents().get(torrentHash);
     for (PeerUID peerUID : trackedTorrent.getPeers().keySet()) {
       if (peerUID.getTorrentHash().equals("4142434445464748494A4B4C4D4E4F5051525354")) fail();
     }
     new WaitFor(15*1000){
       @Override
       protected boolean condition() {
-        return !torrents.containsKey(torrentHash);
+        return !myTrackerManager.getTorrents().containsKey(torrentHash);
       }
     };
-    assertNotContains(torrents.keySet(), torrentHash);
+    assertNotContains(myTrackerManager.getTorrents().keySet(), torrentHash);
   }
 
   public void test_max_number_of_seeded_torrents() {

@@ -2,15 +2,12 @@ package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.common.PeerUID;
-import com.turn.ttorrent.tracker.AddressChecker;
-import com.turn.ttorrent.tracker.TrackedTorrent;
-import com.turn.ttorrent.tracker.Tracker;
-import com.turn.ttorrent.tracker.TrackerRequestProcessor;
+import com.turn.ttorrent.tracker.*;
 import jetbrains.buildServer.NetworkUtil;
-import jetbrains.buildServer.serverSide.executors.ExecutorServices;
-import jetbrains.buildServer.torrent.web.TrackerController;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.BuildServerListener;
+import jetbrains.buildServer.serverSide.executors.ExecutorServices;
+import jetbrains.buildServer.torrent.web.TrackerController;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,8 +16,11 @@ import java.beans.PropertyChangeListener;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class TorrentTrackerManager {
@@ -28,7 +28,7 @@ public class TorrentTrackerManager {
   private final static Logger LOG = Logger.getInstance(TorrentTrackerManager.class.getName());
 
   private final TrackerRequestProcessor myTrackerService;
-  private final ConcurrentMap<String, TrackedTorrent> myTorrents;
+  private final TorrentsRepository myTorrentsRepository;
   private Tracker myTracker;
   private boolean myTrackerRunning;
   private final TorrentConfigurator myConfigurator;
@@ -43,9 +43,10 @@ public class TorrentTrackerManager {
     myConfigurator = configurator;
     myExecutorService = executorServices.getNormalExecutorService();
 
-    myTrackerService = new TrackerRequestProcessor(addressChecker);
+    final int locksCount = 20;
+    myTorrentsRepository = new TorrentsRepository(locksCount);
+    myTrackerService = new TrackerRequestProcessor(myTorrentsRepository, addressChecker);
     myTrackerService.setAcceptForeignTorrents(true);
-    myTorrents = new ConcurrentHashMap<String, TrackedTorrent>();
     dispatcher.addListener(new BuildServerAdapter(){
       @Override
       public void serverShutdown() {
@@ -109,7 +110,7 @@ public class TorrentTrackerManager {
   public void startTracker(){
     if (isTrackerRunning()) return;
 
-    myTorrents.clear();
+    myTorrentsRepository.clear();
 
     // if we don't use individual port, we need nothing. Tracker's controller is already initialized.
     if (myConfigurator.isTrackerDedicatedPort()){
@@ -120,12 +121,7 @@ public class TorrentTrackerManager {
     myCleanupTaskFuture = myExecutorService.scheduleWithFixedDelay(new Runnable() {
       public void run() {
         try {
-          for (TrackedTorrent torrent : myTorrents.values()) {
-            torrent.collectUnfreshPeers(myConfigurator.getTrackerTorrentExpireTimeoutSec());
-            if (torrent.getPeers().size() == 0) {
-              myTorrents.remove(torrent.getHexInfoHash());
-            }
-          }
+          myTorrentsRepository.cleanup(myConfigurator.getTrackerTorrentExpireTimeoutSec());
         } catch (Exception ex) {
           LOG.warn(ex.toString());
         }
@@ -142,7 +138,7 @@ public class TorrentTrackerManager {
 
     try {
       String announceAddress = String.format("http://%s:%d/announce", trackerAddress, freePort);
-      myTracker = new Tracker(freePort, announceAddress, myTrackerService, myTorrents);
+      myTracker = new Tracker(freePort, announceAddress, myTrackerService, myTorrentsRepository);
       myTracker.setAcceptForeignTorrents(true);
       myTracker.start(false);
       LOG.info("Torrent tracker started on url: " + myTracker.getAnnounceUrl());
@@ -171,8 +167,12 @@ public class TorrentTrackerManager {
     return myConfigurator.isTrackerDedicatedPort();
   }
 
-  public ConcurrentMap<String, TrackedTorrent> getTorrents() {
-    return myTorrents;
+  public Map<String, TrackedTorrent> getTorrents() {
+    return myTorrentsRepository.getTorrents();
+  }
+
+  TorrentsRepository getTorrentsRepository() {
+     return myTorrentsRepository;
   }
 
   public TrackerRequestProcessor getTrackerService() {
@@ -188,7 +188,7 @@ public class TorrentTrackerManager {
       return 0;
     }
     Set<InetSocketAddress> uniquePeers = new HashSet<>();
-    for (TrackedTorrent tt : myTorrents.values()) {
+    for (TrackedTorrent tt : myTorrentsRepository.getTorrents().values()) {
       uniquePeers.addAll(tt.getPeers().keySet().stream().map(PeerUID::getAddress).collect(Collectors.toList()));
     }
     return uniquePeers.size();
@@ -198,7 +198,7 @@ public class TorrentTrackerManager {
     if (!myTrackerRunning){
       return 0;
     }
-    return myTorrents.size();
+    return myTorrentsRepository.getTorrents().size();
   }
 
   public URI getAnnounceUri() {

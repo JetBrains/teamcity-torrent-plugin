@@ -84,8 +84,8 @@ public class TorrentTrackerManagerTest extends BaseTestCase {
             new TrackedPeer(firstTorrent, ip, port, ByteBuffer.allocate(10)));
     firstTorrent.getPeers().put(new PeerUID(new InetSocketAddress(ip, port), "2"),
             new TrackedPeer(secondTorrent, ip, port, ByteBuffer.allocate(10)));
-    myTorrentTrackerManager.getTorrents().putIfAbsent("1", firstTorrent);
-    myTorrentTrackerManager.getTorrents().putIfAbsent("2", secondTorrent);
+    myTorrentTrackerManager.getTorrentsRepository().putIfAbsent("1", firstTorrent);
+    myTorrentTrackerManager.getTorrentsRepository().putIfAbsent("2", secondTorrent);
 
     assertEquals(2, myTorrentTrackerManager.getTorrents().size());
     assertEquals(1, myTorrentTrackerManager.getConnectedClientsNum());
