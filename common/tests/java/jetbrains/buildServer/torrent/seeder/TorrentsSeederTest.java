@@ -31,8 +31,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Test
 public class TorrentsSeederTest extends BaseTestCase {
@@ -46,11 +46,14 @@ public class TorrentsSeederTest extends BaseTestCase {
     super.setUp();
     myTracker = new Tracker(6969);
     myTracker.start(false);
-    myExecutorService = Executors.newScheduledThreadPool(1);
     Mockery m = new Mockery();
+    myExecutorService = m.mock(ScheduledExecutorService.class);
     final TorrentConfiguration torrentConfiguration = m.mock(TorrentConfiguration.class);
     m.checking(new Expectations(){{
       allowing(torrentConfiguration).getWorkerPoolSize(); will(returnValue(10));
+      allowing(myExecutorService).submit(with(any(Runnable.class)));
+      allowing(myExecutorService).scheduleWithFixedDelay(with(any(Runnable.class)), with(any(Long.class)), with(any(Long.class)), with(any(TimeUnit.class)));
+      allowing(myExecutorService).shutdownNow();
     }});
 
     myDirectorySeeder = new TorrentsSeeder(
