@@ -1,11 +1,17 @@
 <component name="libraryTable">
   <library name="ttorrent-1.2">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/torrent/build/ttorrent-1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/torrent/ttorrent-client/build/ttorrent-client-1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/torrent/common/build/ttorrent-common-1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/torrent/network/build/ttorrent-network-1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/torrent/ttorrent-tracker/build/ttorrent-tracker-1.2.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
-      <root url="file://$PROJECT_DIR$/torrent/src/main/java" />
+      <root url="file://$PROJECT_DIR$/torrent/ttorrent-client/src/main/java" />
+      <root url="file://$PROJECT_DIR$/torrent/common/src/main/java" />
+      <root url="file://$PROJECT_DIR$/torrent/network/src/main/java" />
+      <root url="file://$PROJECT_DIR$/torrent/ttorrent-tracker/src/main/java" />
     </SOURCES>
   </library>
 </component>

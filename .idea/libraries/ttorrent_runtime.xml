@@ -6,7 +6,7 @@
       <root url="jar://$PROJECT_DIR$/torrent/build/lib/simple-4.1.21.jar!/" />
       <root url="jar://$PROJECT_DIR$/torrent/build/lib/commons-codec-1.4.jar!/" />
       <root url="jar://$PROJECT_DIR$/torrent/build/lib/bsh-2.0b4.jar!/" />
-      <root url="jar://$PROJECT_DIR$/torrent/build/lib/jcommander-1.12.jar!/" />
+      <root url="jar://$PROJECT_DIR$/torrent/ttorrent-client/build/lib/ttorrent-bencoding-1.2.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
