@@ -51,8 +51,12 @@ public class TorrentSettingsAdminPage extends AdminPage {
         if (request.getParameter("save") != null) {
           boolean seedingEnabled = request.getParameter("seedingEnabled")!=null;
           boolean downloadEnabled = request.getParameter("downloadEnabled")!=null;
+          boolean agentSeedingEnabled = request.getParameter("agentSeedingEnabled")!=null;
+          boolean agentDownloadEnabled = request.getParameter("agentDownloadEnabled")!=null;
           myTorrentConfigurator.setSeedingEnabled(seedingEnabled);
           myTorrentConfigurator.setDownloadEnabled(downloadEnabled);
+          myTorrentConfigurator.setAgentDownloadEnabled(agentDownloadEnabled);
+          myTorrentConfigurator.setAgentSeedingEnabled(agentSeedingEnabled);
           myTorrentConfigurator.persistConfiguration();
         }
         return new ModelAndView(new RedirectView(request.getContextPath() + "/admin/admin.html?item=" + TAB_ID));

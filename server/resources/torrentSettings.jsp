@@ -52,10 +52,21 @@
       <th>Agent settings:</th>
       <td>
         <div>
-          To enable downloading/seeding artifacts from the agent set the following configuration parameters in a project or a build configuration
+          <forms:checkbox name="agentSeedingEnabled" checked="${torrentConfigurator.agentSeedingEnabled}"/>
+          <label for="agentSeedingEnabled">Enable artifacts seeding by agents</label>
+        </div>
+        <div>
+          <forms:checkbox name="agentDownloadEnabled" checked="${torrentConfigurator.agentDownloadingEnabled}"/>
+          <label for="agentDownloadEnabled">Allow agents to download artifacts via BitTorrent protocol</label>
+        </div>
+      </td>
+      <td>
+        <div>
+          To enable/disable downloading/seeding artifacts from the agent for some projects
+          set the following configuration parameters in a project or a build configuration as true or false respectively
           <ul style="margin-top:0; padding-left: 1em;">
-            <li><strong>${downloadEnabledKey}=true</strong></li>
-            <li><strong>${seedingEnabledKey}=true</strong></li>
+            <li><strong>${downloadEnabledKey}</strong></li>
+            <li><strong>${seedingEnabledKey}</strong></li>
           </ul>
         </div>
       </td>
