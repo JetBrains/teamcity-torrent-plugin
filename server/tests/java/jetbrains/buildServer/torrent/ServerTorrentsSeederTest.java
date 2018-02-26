@@ -17,7 +17,6 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.util.WaitFor;
-import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.common.AnnounceableTorrent;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.TempFiles;
@@ -61,7 +60,7 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
     System.setProperty(TorrentConfiguration.ANNOUNCE_URL, "http://localhost:6969/announce");
     System.setProperty(TorrentConfiguration.FILE_SIZE_THRESHOLD, "1");
     System.setProperty(TorrentConfiguration.TRACKER_ENABLED, "true");
-    System.setProperty(TorrentConfiguration.DOWNLOAD_ENABLED, "true");
+    System.setProperty(TorrentConfiguration.USER_DOWNLOAD_ENABLED, "true");
     myConfigurator.getConfigurationWatcher().checkForModifications();
     myDispatcher.getMulticaster().serverStartup();
 

@@ -127,8 +127,8 @@ public class ServerTorrentsDirectorySeeder {
           case TorrentConfiguration.ANNOUNCE_URL:
             setAnnounceURI(URI.create(String.valueOf(evt.getNewValue())));
             break;
-          case TorrentConfiguration.DOWNLOAD_ENABLED:
-          case SeedSettings.SEEDING_ENABLED:
+          case TorrentConfiguration.USER_DOWNLOAD_ENABLED:
+          case SeedSettings.SERVER_SEEDING_ENABLED:
             boolean enabled = (Boolean) evt.getNewValue();
             if (enabled) {
               startSeeder();

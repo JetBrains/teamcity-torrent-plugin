@@ -72,7 +72,7 @@ public class TorrentSettingsAdminPage extends AdminPage {
     final double speedBytesPerSecond = myTorrentSeeder.getPeers().stream().mapToDouble(it -> it.getULRate().get()).sum();
     final DecimalFormat decimalFormat = new DecimalFormat("#.###");
     model.put("totalSpeedMegabytesPerSecond", decimalFormat.format(speedBytesPerSecond / (1024 * 1024)));
-    model.put("seedingEnabledKey", SeedSettings.SEEDING_ENABLED);
+    model.put("seedingEnabledKey", SeedSettings.SERVER_SEEDING_ENABLED);
   }
 
   @NotNull
