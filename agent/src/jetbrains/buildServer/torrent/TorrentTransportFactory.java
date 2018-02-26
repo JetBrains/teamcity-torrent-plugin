@@ -121,9 +121,10 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     return myLeechSettings.isDownloadEnabled();
   }
 
-  protected static class TorrentTransport extends HttpTransport implements URLContentRetriever {
+  protected static class TorrentTransport implements URLContentRetriever {
 
     private final HttpClient myHttpClient;
+    private final HttpTransport myDelegate;
     private final TeamcityTorrentClient myClient;
     private final TorrentsSeeder mySeeder;
     private final BuildProgressLogger myBuildLogger;
@@ -144,7 +145,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
                                @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic,
                                @NotNull final LeechSettings leechSettings,
                                @NotNull final TorrentFilesFactory torrentFilesFactory) {
-      super(httpClient, serverUrl);
+      myDelegate = new HttpTransport(httpClient, serverUrl);
       mySeeder = seeder;
       myLeechSettings = leechSettings;
       myClient = mySeeder.getClient();
@@ -155,6 +156,12 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       myTorrentsForArtifacts = new HashMap<String, String>();
       myCurrentDownload = new AtomicReference<Thread>();
       myInterrupted = new AtomicBoolean(false);
+    }
+
+    @Nullable
+    @Override
+    public String getDigest(@NotNull String url) throws IOException {
+      return myDelegate.getDigest(url);
     }
 
     @Nullable
