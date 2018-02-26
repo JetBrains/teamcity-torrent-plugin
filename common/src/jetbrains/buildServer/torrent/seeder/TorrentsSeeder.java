@@ -44,7 +44,7 @@ public class TorrentsSeeder {
 
   public static final String TORRENTS_DIT_PATH = ".teamcity/torrents";
 
-  public static final int CHECK_TORRENTS_INTERVAL = TeamCityProperties.getInteger("teamcity.torrents.checkTorrentsIntervalSec", 5*60);
+  public static final int CHECK_TORRENTS_INTERVAL = TeamCityProperties.getInteger("teamcity.torrents.checkTorrentsIntervalSec", 5 * 60);
 
   public static final String PLUGIN_EXECUTOR_NAME = "Torrent plugin worker";
 
@@ -91,11 +91,11 @@ public class TorrentsSeeder {
     myRemoveExpiredTorrentFiles = removeExpiredTorrentFiles;
   }
 
-  public boolean isSeedingByPath(@NotNull File srcFile){
+  public boolean isSeedingByPath(@NotNull File srcFile) {
     return myClient.isSeedingByPath(srcFile);
   }
 
-  public boolean isSeeding(@NotNull File torrentFile){
+  public boolean isSeeding(@NotNull File torrentFile) {
     return myClient.isSeeding(torrentFile);
   }
 
@@ -116,24 +116,34 @@ public class TorrentsSeeder {
                     final int announceInterval) throws IOException {
     if (!myStopped) return; // already started
 
-    myClient.start(address, defaultTrackerURI, announceInterval);
-
     myStopped = false;
 
-    myExecutor.submit(new Runnable() {
-      public void run() {
-        checkForBrokenFiles();
-        for (Map.Entry<File, File> entry: myTorrentFilesDB.getFileAndTorrentMap().entrySet()) {
-          seedTorrent(entry.getKey(), entry.getValue());
+    try {
+      myClient.start(address, defaultTrackerURI, announceInterval);
+    } catch (RejectedExecutionException e) {
+      LOG.warnAndDebugDetails("Failed to start bittorrent client", e);
+    }
+    try {
+      myExecutor.submit(new Runnable() {
+        public void run() {
+          checkForBrokenFiles();
+          for (Map.Entry<File, File> entry : myTorrentFilesDB.getFileAndTorrentMap().entrySet()) {
+            seedTorrent(entry.getKey(), entry.getValue());
+          }
         }
-      }
-    });
-
-    myBrokenFilesCheckerFuture = myExecutor.scheduleWithFixedDelay(new Runnable() {
-      public void run() {
-        checkForBrokenFiles();
-      }
-    }, CHECK_TORRENTS_INTERVAL, CHECK_TORRENTS_INTERVAL, TimeUnit.SECONDS);
+      });
+    } catch (RejectedExecutionException e) {
+      LOG.warnAndDebugDetails("Failed to execute seed stored torrents task", e);
+    }
+    try {
+      myBrokenFilesCheckerFuture = myExecutor.scheduleWithFixedDelay(new Runnable() {
+        public void run() {
+          checkForBrokenFiles();
+        }
+      }, CHECK_TORRENTS_INTERVAL, CHECK_TORRENTS_INTERVAL, TimeUnit.SECONDS);
+    } catch (RejectedExecutionException e) {
+      LOG.warnAndDebugDetails("Failed to schedule broken files check task", e);
+    }
   }
 
   void checkForBrokenFiles() {
@@ -191,7 +201,7 @@ public class TorrentsSeeder {
     return myClient.getNumberOfSeededTorrents();
   }
 
-  public void setAnnounceInterval(final int announceInterval){
+  public void setAnnounceInterval(final int announceInterval) {
     myClient.setAnnounceInterval(announceInterval);
   }
 
@@ -226,7 +236,7 @@ public class TorrentsSeeder {
   }
 
   @NotNull
-  public Collection<SharedTorrent> getSharedTorrents(){
+  public Collection<SharedTorrent> getSharedTorrents() {
     return myClient.getSharedTorrents();
   }
 
