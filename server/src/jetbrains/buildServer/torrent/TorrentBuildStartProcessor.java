@@ -22,11 +22,12 @@ import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
 import org.jetbrains.annotations.NotNull;
 
-public class BuildStartListener implements BuildStartContextProcessor {
+public class TorrentBuildStartProcessor implements BuildStartContextProcessor {
 
+  @NotNull
   private final TorrentConfigurator myConfigurator;
 
-  public BuildStartListener(TorrentConfigurator configurator) {
+  public TorrentBuildStartProcessor(@NotNull TorrentConfigurator configurator) {
     myConfigurator = configurator;
   }
 
