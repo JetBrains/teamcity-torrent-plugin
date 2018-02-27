@@ -55,7 +55,7 @@ public class TorrentsSeeder {
   private final TorrentFilesDB myTorrentFilesDB;
   private final ScheduledExecutorService myExecutor;
   private volatile boolean myRemoveExpiredTorrentFiles;
-  private volatile boolean myStopped = true;
+  private volatile boolean myWorking = false;
   private volatile int myMaxTorrentsToSeed; // no limit by default
   @Nullable
   private volatile ScheduledFuture<?> myBrokenFilesCheckerFuture;
@@ -111,12 +111,12 @@ public class TorrentsSeeder {
     myTorrentFilesDB.removeSrcFile(srcFile);
   }
 
-  public void start(@NotNull InetAddress[] address,
-                    @Nullable final URI defaultTrackerURI,
-                    final int announceInterval) throws IOException {
-    if (!myStopped) return; // already started
+  public synchronized void start(@NotNull InetAddress[] address,
+                                 @Nullable final URI defaultTrackerURI,
+                                 final int announceInterval) throws IOException {
+    if (myWorking) return; // already started
 
-    myStopped = false;
+    myWorking = true;
 
     try {
       myClient.start(address, defaultTrackerURI, announceInterval);
@@ -173,9 +173,9 @@ public class TorrentsSeeder {
     }
   }
 
-  public void stop() {
-    if (myStopped) return;
-    myStopped = true;
+  public synchronized void stop() {
+    if (!myWorking) return;
+    myWorking = false;
     myClient.stop();
     try {
       myTorrentFilesDB.flush();
@@ -194,7 +194,7 @@ public class TorrentsSeeder {
   }
 
   public boolean isStopped() {
-    return myStopped;
+    return !myWorking;
   }
 
   public int getNumberOfSeededTorrents() {
