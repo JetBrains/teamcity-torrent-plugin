@@ -6,6 +6,8 @@ import jetbrains.buildServer.ArtifactsConstants;
 import jetbrains.buildServer.agent.BuildAgentConfigurationEx;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.agent.CurrentBuildTracker;
+import jetbrains.buildServer.artifacts.FileProgress;
+import jetbrains.buildServer.artifacts.ProgressTrackingURLContentRetriever;
 import jetbrains.buildServer.artifacts.TransportFactoryExtension;
 import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.artifacts.impl.HttpTransport;
@@ -41,8 +43,8 @@ import static jetbrains.buildServer.torrent.Constants.TEAMCITY_IVY;
 
 /**
  * @author Sergey.Pak
- *         Date: 7/31/13
- *         Time: 2:52 PM
+ * Date: 7/31/13
+ * Time: 2:52 PM
  */
 public class TorrentTransportFactory implements TransportFactoryExtension {
 
@@ -121,7 +123,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     return myLeechSettings.isDownloadEnabled();
   }
 
-  protected static class TorrentTransport implements URLContentRetriever {
+  protected static class TorrentTransport implements URLContentRetriever, ProgressTrackingURLContentRetriever {
 
     private final HttpClient myHttpClient;
     private final HttpTransport myDelegate;
@@ -165,11 +167,12 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     @Nullable
-    public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
-      ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(urlString);
-      if (urlString.endsWith(TEAMCITY_IVY)) {
+    @Override
+    public String downloadUrlTo(@NotNull String url, @NotNull File target, @NotNull FileProgress fileDownloadProgress) throws IOException {
+      ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(url);
+      if (url.endsWith(TEAMCITY_IVY)) {
         // downloading teamcity-ivy.xml and parsing it:
-        return parseArtifactsList(urlString, target);
+        return parseArtifactsList(url, target);
       }
 
       Torrent torrent = downloadTorrent(parsedArtifactUrl);
@@ -186,7 +189,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       torrent = null;
 
       try {
-        Loggers.AGENT.info(String.format("trying to download %s via bittorrent", urlString));
+        Loggers.AGENT.info(String.format("trying to download %s via bittorrent", url));
         myBuildLogger.progressStarted("Downloading " + target.getName() + " via BitTorrent protocol.");
 
         final int minSeedersForDownload = myLeechSettings.getMinSeedersForDownload();
@@ -224,18 +227,28 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         myTorrentsDownloadStatistic.fileDownloaded(took, fileSize);
 
         // return standard digest
-        return getDigest(urlString);
+        return getDigest(url);
       } catch (InterruptedException e) {
-        throw new IOException("Torrent download has been interrupted " + urlString, e);
+        throw new IOException("Torrent download has been interrupted " + url, e);
       } catch (RuntimeException ex) {
-        log2Build(String.format("Unable to download artifact %s: %s", urlString, ex.getMessage()));
+        log2Build(String.format("Unable to download artifact %s: %s", url, ex.getMessage()));
         throw ex;
       } catch (Exception ex) {
-        log2Build(String.format("Unable to download artifact %s: %s", urlString, ex.getMessage()));
+        log2Build(String.format("Unable to download artifact %s: %s", url, ex.getMessage()));
         throw new IOException(ex);
       } finally {
         myBuildLogger.progressFinished();
       }
+    }
+
+    @Override
+    public String getId() {
+      return "Torrent transport";
+    }
+
+    @Nullable
+    public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
+      return downloadUrlTo(urlString, target, new FileProgress.Adapter());
     }
 
     public void interrupt() {
