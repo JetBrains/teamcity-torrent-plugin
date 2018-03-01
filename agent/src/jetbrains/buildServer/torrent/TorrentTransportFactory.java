@@ -1,6 +1,7 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.util.io.StreamUtil;
+import com.turn.ttorrent.client.DownloadProgressListener;
 import com.turn.ttorrent.common.Torrent;
 import jetbrains.buildServer.ArtifactsConstants;
 import jetbrains.buildServer.agent.BuildAgentConfigurationEx;
@@ -168,7 +169,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     @Nullable
     @Override
-    public String downloadUrlTo(@NotNull String url, @NotNull File target, @NotNull FileProgress fileDownloadProgress) throws IOException {
+    public String downloadUrlTo(@NotNull String url, @NotNull File target, @NotNull final FileProgress fileDownloadProgress) throws IOException {
       ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(url);
       if (url.endsWith(TEAMCITY_IVY)) {
         // downloading teamcity-ivy.xml and parsing it:
@@ -186,6 +187,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       String name = torrent.getName();
       List<String> fileNames = torrent.getFilenames();
       long size = torrent.getSize();
+      fileDownloadProgress.setExpectedLength(size);
       torrent = null;
 
       try {
@@ -201,7 +203,13 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         Loggers.AGENT.debug("start download file " + target.getName());
 
         Thread th = myClient.downloadAndShareOrFailAsync(
-                torrentFile, fileNames, hexInfoHash, target, target.getParentFile(), myLeechSettings.getMaxPieceDownloadTime(), minSeedersForDownload, myInterrupted, timeoutForConnectToPeersMs, exceptionHolder);
+                torrentFile, fileNames, hexInfoHash, target, target.getParentFile(), myLeechSettings.getMaxPieceDownloadTime(), minSeedersForDownload, myInterrupted, timeoutForConnectToPeersMs, exceptionHolder,
+                new DownloadProgressListener() {
+                  @Override
+                  public void pieceLoaded(int pieceIndex, int pieceSize) {
+                    fileDownloadProgress.transferred(pieceSize);
+                  }
+                });
         myCurrentDownload.set(Thread.currentThread());
         th.join();
         myCurrentDownload.set(null);
