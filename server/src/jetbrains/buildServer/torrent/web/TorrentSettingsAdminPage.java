@@ -71,12 +71,10 @@ public class TorrentSettingsAdminPage extends AdminPage {
     model.put("announcedTorrentsNum", myTorrentTrackerManager.getAnnouncedTorrentsNum());
     model.put("connectedClientsNum", myTorrentTrackerManager.getConnectedClientsNum());
     model.put("seededTorrentsNum", myTorrentSeeder.getNumberOfSeededTorrents());
-    model.put("downloadEnabledKey", LeechSettings.DOWNLOAD_ENABLED);
     model.put("activePeersCount", myTorrentSeeder.getPeers().size());
     final double speedBytesPerSecond = myTorrentSeeder.getPeers().stream().mapToDouble(it -> it.getULRate().get()).sum();
     final DecimalFormat decimalFormat = new DecimalFormat("#.###");
     model.put("totalSpeedMegabytesPerSecond", decimalFormat.format(speedBytesPerSecond / (1024 * 1024)));
-    model.put("seedingEnabledKey", SeedSettings.SERVER_SEEDING_ENABLED);
   }
 
   @NotNull

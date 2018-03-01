@@ -3,8 +3,6 @@
 <jsp:useBean id="announcedTorrentsNum" type="java.lang.Integer" scope="request"/>
 <jsp:useBean id="connectedClientsNum" type="java.lang.Integer" scope="request"/>
 <jsp:useBean id="seededTorrentsNum" type="java.lang.Integer" scope="request"/>
-<jsp:useBean id="downloadEnabledKey" type="java.lang.String" scope="request"/>
-<jsp:useBean id="seedingEnabledKey" type="java.lang.String" scope="request"/>
 <jsp:useBean id="activePeersCount" type="java.lang.Integer" scope="request"/>
 <jsp:useBean id="totalSpeedMegabytesPerSecond" type="java.lang.String" scope="request"/>
 <form method="post" action="<c:url value='/admin/torrentSettings.html'/>">
@@ -58,16 +56,6 @@
         <div>
           <forms:checkbox name="agentDownloadEnabled" checked="${torrentConfigurator.agentDownloadingEnabled}"/>
           <label for="agentDownloadEnabled">Allow agents to download artifacts via BitTorrent protocol</label>
-        </div>
-      </td>
-      <td>
-        <div>
-          To enable/disable downloading/seeding artifacts from the agent for some projects
-          set the following configuration parameters in a project or a build configuration as true or false respectively
-          <ul style="margin-top:0; padding-left: 1em;">
-            <li><strong>${downloadEnabledKey}</strong></li>
-            <li><strong>${seedingEnabledKey}</strong></li>
-          </ul>
         </div>
       </td>
     </tr>

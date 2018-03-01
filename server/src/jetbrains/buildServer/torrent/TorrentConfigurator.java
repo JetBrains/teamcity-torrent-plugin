@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
 
   private final static int DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS = 2000;
+  public final static String SEEDING_BY_AGENT_ENABLED_STORE_KEY = "teamcity.torrent.agent.seeding.enabled";
 
   private final ServerPaths myServerPaths;
   @NotNull
@@ -194,9 +195,9 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
   }
 
   public void setAgentSeedingEnabled(boolean enabled) {
-    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, SEEDING_ENABLED, DEFAULT_SEEDING_ENABLED);
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, SEEDING_BY_AGENT_ENABLED_STORE_KEY, DEFAULT_SEEDING_ENABLED);
     if (oldValue != enabled) {
-      myConfiguration.setProperty(SEEDING_ENABLED, String.valueOf(enabled));
+      myConfiguration.setProperty(SEEDING_BY_AGENT_ENABLED_STORE_KEY, String.valueOf(enabled));
     }
   }
 
@@ -209,10 +210,10 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
   }
 
   public void setSeedingEnabled(boolean enabled) {
-    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, SERVER_SEEDING_ENABLED, DEFAULT_SEEDING_ENABLED);
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, SEEDING_ENABLED, DEFAULT_SEEDING_ENABLED);
     if (oldValue != enabled) {
-      myConfiguration.setProperty(SERVER_SEEDING_ENABLED, String.valueOf(enabled));
-      propertyChanged(SERVER_SEEDING_ENABLED, oldValue, enabled);
+      myConfiguration.setProperty(SEEDING_ENABLED, String.valueOf(enabled));
+      propertyChanged(SEEDING_ENABLED, oldValue, enabled);
     }
   }
 
@@ -304,11 +305,11 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
 
   @Override
   public boolean isSeedingEnabled() {
-    return TorrentUtil.getBooleanValue(myConfiguration, SERVER_SEEDING_ENABLED, DEFAULT_SEEDING_ENABLED);
+    return TorrentUtil.getBooleanValue(myConfiguration, SEEDING_ENABLED, DEFAULT_SEEDING_ENABLED);
   }
 
   public boolean isAgentSeedingEnabled() {
-    return TorrentUtil.getBooleanValue(myConfiguration, SEEDING_ENABLED, DEFAULT_SEEDING_ENABLED);
+    return TorrentUtil.getBooleanValue(myConfiguration, SEEDING_BY_AGENT_ENABLED_STORE_KEY, DEFAULT_SEEDING_ENABLED);
   }
 
   public boolean isAgentDownloadingEnabled() {
