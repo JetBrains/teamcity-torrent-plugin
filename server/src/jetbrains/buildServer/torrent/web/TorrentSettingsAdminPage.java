@@ -51,8 +51,12 @@ public class TorrentSettingsAdminPage extends AdminPage {
         if (request.getParameter("save") != null) {
           boolean seedingEnabled = request.getParameter("seedingEnabled")!=null;
           boolean downloadEnabled = request.getParameter("downloadEnabled")!=null;
+          boolean agentSeedingEnabled = request.getParameter("agentSeedingEnabled")!=null;
+          boolean agentDownloadEnabled = request.getParameter("agentDownloadEnabled")!=null;
           myTorrentConfigurator.setSeedingEnabled(seedingEnabled);
           myTorrentConfigurator.setDownloadEnabled(downloadEnabled);
+          myTorrentConfigurator.setAgentDownloadEnabled(agentDownloadEnabled);
+          myTorrentConfigurator.setAgentSeedingEnabled(agentSeedingEnabled);
           myTorrentConfigurator.persistConfiguration();
         }
         return new ModelAndView(new RedirectView(request.getContextPath() + "/admin/admin.html?item=" + TAB_ID));
@@ -72,7 +76,7 @@ public class TorrentSettingsAdminPage extends AdminPage {
     final double speedBytesPerSecond = myTorrentSeeder.getPeers().stream().mapToDouble(it -> it.getULRate().get()).sum();
     final DecimalFormat decimalFormat = new DecimalFormat("#.###");
     model.put("totalSpeedMegabytesPerSecond", decimalFormat.format(speedBytesPerSecond / (1024 * 1024)));
-    model.put("seedingEnabledKey", SeedSettings.SEEDING_ENABLED);
+    model.put("seedingEnabledKey", SeedSettings.SERVER_SEEDING_ENABLED);
   }
 
   @NotNull

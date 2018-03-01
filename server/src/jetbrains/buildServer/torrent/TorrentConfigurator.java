@@ -26,6 +26,7 @@ import jetbrains.buildServer.configuration.ChangeProvider;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
+import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.FileUtil;
@@ -102,7 +103,7 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
   private void initConfigFile(File configFile) {
     try {
       Properties props = new Properties();
-      props.setProperty(DOWNLOAD_ENABLED, "false");
+      props.setProperty(USER_DOWNLOAD_ENABLED, "false");
       configFile.getParentFile().mkdirs();
       PropertiesUtil.storeProperties(props, configFile, "");
     } catch (IOException e) {
@@ -185,24 +186,38 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
     }
   }
 
-  public void setDownloadEnabled(boolean enabled) {
-    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, DOWNLOAD_ENABLED, DEFAULT_DOWNLOAD_ENABLED);
+  public void setAgentDownloadEnabled(boolean enabled) {
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, LeechSettings.DOWNLOAD_ENABLED, LeechSettings.DEFAULT_DOWNLOAD_ENABLED);
     if (oldValue != enabled) {
-      myConfiguration.setProperty(DOWNLOAD_ENABLED, String.valueOf(enabled));
-      propertyChanged(DOWNLOAD_ENABLED, oldValue, enabled);
+      myConfiguration.setProperty(LeechSettings.DOWNLOAD_ENABLED, String.valueOf(enabled));
+    }
+  }
+
+  public void setAgentSeedingEnabled(boolean enabled) {
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, SEEDING_ENABLED, DEFAULT_SEEDING_ENABLED);
+    if (oldValue != enabled) {
+      myConfiguration.setProperty(SEEDING_ENABLED, String.valueOf(enabled));
+    }
+  }
+
+  public void setDownloadEnabled(boolean enabled) {
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, USER_DOWNLOAD_ENABLED, DEFAULT_DOWNLOAD_ENABLED);
+    if (oldValue != enabled) {
+      myConfiguration.setProperty(USER_DOWNLOAD_ENABLED, String.valueOf(enabled));
+      propertyChanged(USER_DOWNLOAD_ENABLED, oldValue, enabled);
     }
   }
 
   public void setSeedingEnabled(boolean enabled) {
-    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, SEEDING_ENABLED, DEFAULT_SEEDING_ENABLED);
+    boolean oldValue = TorrentUtil.getBooleanValue(myConfiguration, SERVER_SEEDING_ENABLED, DEFAULT_SEEDING_ENABLED);
     if (oldValue != enabled) {
-      myConfiguration.setProperty(SEEDING_ENABLED, String.valueOf(enabled));
-      propertyChanged(SEEDING_ENABLED, oldValue, enabled);
+      myConfiguration.setProperty(SERVER_SEEDING_ENABLED, String.valueOf(enabled));
+      propertyChanged(SERVER_SEEDING_ENABLED, oldValue, enabled);
     }
   }
 
   public boolean isDownloadEnabled() {
-    return TorrentUtil.getBooleanValue(myConfiguration, DOWNLOAD_ENABLED, DEFAULT_DOWNLOAD_ENABLED);
+    return TorrentUtil.getBooleanValue(myConfiguration, USER_DOWNLOAD_ENABLED, DEFAULT_DOWNLOAD_ENABLED);
   }
 
   @Override
@@ -276,8 +291,8 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
     try {
       fileReader = new FileReader(configFile);
       properties.load(fileReader);
-      if (properties.get(DOWNLOAD_ENABLED) == null) {
-        properties.put(DOWNLOAD_ENABLED, Boolean.FALSE.toString());
+      if (properties.get(USER_DOWNLOAD_ENABLED) == null) {
+        properties.put(USER_DOWNLOAD_ENABLED, Boolean.FALSE.toString());
       }
       myConfiguration = properties;
     } catch (IOException e) {
@@ -289,7 +304,15 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
 
   @Override
   public boolean isSeedingEnabled() {
+    return TorrentUtil.getBooleanValue(myConfiguration, SERVER_SEEDING_ENABLED, DEFAULT_SEEDING_ENABLED);
+  }
+
+  public boolean isAgentSeedingEnabled() {
     return TorrentUtil.getBooleanValue(myConfiguration, SEEDING_ENABLED, DEFAULT_SEEDING_ENABLED);
+  }
+
+  public boolean isAgentDownloadingEnabled() {
+    return TorrentUtil.getBooleanValue(myConfiguration, LeechSettings.DOWNLOAD_ENABLED, LeechSettings.DEFAULT_DOWNLOAD_ENABLED);
   }
 
   @Override

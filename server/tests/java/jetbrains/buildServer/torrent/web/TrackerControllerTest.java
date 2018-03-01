@@ -16,6 +16,7 @@
 
 package jetbrains.buildServer.torrent.web;
 
+import com.turn.ttorrent.common.protocol.AnnounceRequestMessage;
 import com.turn.ttorrent.common.protocol.TrackerMessage;
 import com.turn.ttorrent.common.protocol.http.HTTPAnnounceRequestMessage;
 import com.turn.ttorrent.tracker.AddressChecker;
@@ -155,9 +156,9 @@ public class TrackerControllerTest extends BaseControllerTestCase<TrackerControl
             0,
             true,
             false,
-            TrackerMessage.AnnounceRequestMessage.RequestEvent.STARTED,
+            AnnounceRequestMessage.RequestEvent.STARTED,
             "127.0.0.1",
-            TrackerMessage.AnnounceRequestMessage.DEFAULT_NUM_WANT
+            AnnounceRequestMessage.DEFAULT_NUM_WANT
     );
   }
 }

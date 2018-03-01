@@ -15,7 +15,7 @@ public interface TorrentConfiguration {
   String PREFIX_ADDRESS = "teamcity.torrent.network.prefixAddress";
   String FILE_SIZE_THRESHOLD = "teamcity.torrent.seeder.minFileSize";
   String DEFAULT_FILE_SIZE_THRESHOLD = "10mb";
-  String DOWNLOAD_ENABLED = "teamcity.torrent.download.enabled";
+  String USER_DOWNLOAD_ENABLED = "teamcity.torrent.download.enabled";
   boolean DEFAULT_DOWNLOAD_ENABLED = false;
   String ANNOUNCE_INTERVAL = "torrent.announce.interval.sec";
   int DEFAULT_ANNOUNCE_INTERVAL = 60;
