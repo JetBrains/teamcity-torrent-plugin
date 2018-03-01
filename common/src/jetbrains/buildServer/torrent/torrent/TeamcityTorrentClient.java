@@ -171,11 +171,7 @@ public class TeamcityTorrentClient {
       public void run() {
         try {
           downloadAndShareOrFail(torrentFile, fileNames, hexInfoHash, destFile, destDir, downloadTimeoutSec, minSeedersCount, maxTimeoutForConnect, isInterrupted, listener);
-        } catch (IOException e) {
-          occuredException.set(e);
-        } catch (NoSuchAlgorithmException e) {
-          occuredException.set(e);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
           occuredException.set(e);
         }
       }
