@@ -52,7 +52,7 @@ public class TorrentSettingsAdminPage extends AdminPage {
     final String pagePath = "/admin/torrentSettings.html";
     authInterceptor.addPathBasedPermissionsChecker(pagePath, (holder, request) -> {
       if (!holder.isPermissionGrantedGlobally(Permission.CHANGE_SERVER_SETTINGS)) {
-        throw new AccessDeniedException(holder, "You do not have permissions to access torrent settings page");
+        throw new AccessDeniedException(holder, "You do not have enough permissions to access the torrent settings page");
       }
     });
     register();
