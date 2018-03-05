@@ -4,13 +4,15 @@
  */
 package jetbrains.buildServer.torrent.web;
 
+import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.controllers.admin.AdminPage;
+import jetbrains.buildServer.serverSide.auth.AccessDeniedException;
+import jetbrains.buildServer.serverSide.auth.Permission;
+import jetbrains.buildServer.serverSide.auth.SecurityContext;
 import jetbrains.buildServer.torrent.ServerTorrentsDirectorySeeder;
 import jetbrains.buildServer.torrent.TorrentConfigurator;
 import jetbrains.buildServer.torrent.TorrentTrackerManager;
-import jetbrains.buildServer.torrent.settings.LeechSettings;
-import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.web.openapi.PagePlaces;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
@@ -32,27 +34,37 @@ public class TorrentSettingsAdminPage extends AdminPage {
   private final TorrentTrackerManager myTorrentTrackerManager;
   private final TorrentConfigurator myTorrentConfigurator;
   private final ServerTorrentsDirectorySeeder myTorrentSeeder;
+  private final SecurityContext mySecurityContext;
 
   public TorrentSettingsAdminPage(@NotNull PagePlaces pagePlaces,
-                                     @NotNull WebControllerManager controllerManager,
-                                     @NotNull PluginDescriptor descriptor,
-                                     @NotNull TorrentTrackerManager torrentTrackerManager,
-                                     @NotNull TorrentConfigurator torrentConfigurator,
-                                     @NotNull ServerTorrentsDirectorySeeder torrentSeeder) {
+                                  @NotNull WebControllerManager controllerManager,
+                                  @NotNull PluginDescriptor descriptor,
+                                  @NotNull SecurityContext securityContext,
+                                  @NotNull AuthorizationInterceptor authInterceptor,
+                                  @NotNull TorrentTrackerManager torrentTrackerManager,
+                                  @NotNull TorrentConfigurator torrentConfigurator,
+                                  @NotNull ServerTorrentsDirectorySeeder torrentSeeder) {
     super(pagePlaces, TAB_ID, descriptor.getPluginResourcesPath("torrentSettings.jsp"), "Torrent Settings");
     myTorrentTrackerManager = torrentTrackerManager;
     myTorrentConfigurator = torrentConfigurator;
+    mySecurityContext = securityContext;
     myTorrentSeeder = torrentSeeder;
+    final String pagePath = "/admin/torrentSettings.html";
+    authInterceptor.addPathBasedPermissionsChecker(pagePath, (holder, request) -> {
+      if (!holder.isPermissionGrantedGlobally(Permission.CHANGE_SERVER_SETTINGS)) {
+        throw new AccessDeniedException(holder, "You do not have permissions to access torrent settings page");
+      }
+    });
     register();
 
-    controllerManager.registerController("/admin/torrentSettings.html", new BaseController() {
+    controllerManager.registerController(pagePath, new BaseController() {
       @Override
       protected ModelAndView doHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) throws Exception {
         if (request.getParameter("save") != null) {
-          boolean seedingEnabled = request.getParameter("seedingEnabled")!=null;
-          boolean downloadEnabled = request.getParameter("downloadEnabled")!=null;
-          boolean agentSeedingEnabled = request.getParameter("agentSeedingEnabled")!=null;
-          boolean agentDownloadEnabled = request.getParameter("agentDownloadEnabled")!=null;
+          boolean seedingEnabled = request.getParameter("seedingEnabled") != null;
+          boolean downloadEnabled = request.getParameter("downloadEnabled") != null;
+          boolean agentSeedingEnabled = request.getParameter("agentSeedingEnabled") != null;
+          boolean agentDownloadEnabled = request.getParameter("agentDownloadEnabled") != null;
           myTorrentConfigurator.setSeedingEnabled(seedingEnabled);
           myTorrentConfigurator.setDownloadEnabled(downloadEnabled);
           myTorrentConfigurator.setAgentDownloadEnabled(agentDownloadEnabled);
@@ -62,6 +74,11 @@ public class TorrentSettingsAdminPage extends AdminPage {
         return new ModelAndView(new RedirectView(request.getContextPath() + "/admin/admin.html?item=" + TAB_ID));
       }
     });
+  }
+
+  @Override
+  public boolean isAvailable(@NotNull HttpServletRequest request) {
+    return mySecurityContext.getAuthorityHolder().isPermissionGrantedGlobally(Permission.CHANGE_SERVER_SETTINGS);
   }
 
   @Override
