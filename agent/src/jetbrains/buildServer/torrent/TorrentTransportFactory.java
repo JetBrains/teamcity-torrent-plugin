@@ -203,7 +203,14 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         Loggers.AGENT.debug("start download file " + target.getName());
 
         Thread th = myClient.downloadAndShareOrFailAsync(
-                torrentFile, fileNames, hexInfoHash, target, target.getParentFile(), myLeechSettings.getMaxPieceDownloadTime(), minSeedersForDownload, myInterrupted, timeoutForConnectToPeersMs, exceptionHolder,
+                torrentFile, fileNames,
+                hexInfoHash,
+                target,
+                target.getParentFile(),
+                myLeechSettings.getMaxPieceDownloadTime(),
+                minSeedersForDownload,
+                myInterrupted,
+                timeoutForConnectToPeersMs, exceptionHolder,
                 new DownloadProgressListener() {
                   @Override
                   public void pieceLoaded(int pieceIndex, int pieceSize) {
