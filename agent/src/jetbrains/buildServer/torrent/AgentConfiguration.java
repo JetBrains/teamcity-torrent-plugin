@@ -38,7 +38,7 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
     myBuildAgentConfiguration = buildAgentConfiguration;
     dispatcher.addListener(new AgentLifeCycleAdapter() {
       @Override
-      public void afterAgentConfigurationLoaded(@NotNull BuildAgent agent) {
+      public void agentStarted(@NotNull BuildAgent agent) {
         String serverUrl = agent.getConfiguration().getServerUrl();
         if (StringUtil.isNotEmpty(serverUrl)) {
           myXmlRpcTarget = XmlRpcFactory.getInstance().create(serverUrl, "TeamCity Agent", 30000, false);
