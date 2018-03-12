@@ -1,5 +1,6 @@
 package jetbrains.buildServer.torrent;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.StreamUtil;
 import com.turn.ttorrent.client.DownloadProgressListener;
 import com.turn.ttorrent.common.Torrent;
@@ -50,6 +51,7 @@ import static jetbrains.buildServer.torrent.Constants.TEAMCITY_IVY;
 public class TorrentTransportFactory implements TransportFactoryExtension {
 
   public static final String TEAMCITY_TORRENTS = ArtifactsConstants.TEAMCITY_ARTIFACTS_DIR + "/torrents/";
+  private final static Logger LOG = Logger.getInstance("jetbrains.TorrentPlugin");
 
   public static final String TEAMCITY_ARTIFACTS_TRANSPORT = "teamcity.artifacts.transport";
 
@@ -170,15 +172,23 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     @Nullable
     @Override
     public String downloadUrlTo(@NotNull String url, @NotNull File target, @NotNull final FileProgress fileDownloadProgress) throws IOException {
-      ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(url);
       if (url.endsWith(TEAMCITY_IVY)) {
         // downloading teamcity-ivy.xml and parsing it:
         return parseArtifactsList(url, target);
       }
+      ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(url);
+
+      long start = System.currentTimeMillis();
 
       Torrent torrent = downloadTorrent(parsedArtifactUrl);
       if (torrent == null) {
         return null;
+      }
+
+      long maxTimeForDownloadTorrentMs = 1000;
+      final long downloadTime = System.currentTimeMillis() - start;
+      if (downloadTime > maxTimeForDownloadTorrentMs) {
+        LOG.info("torrent " + parsedArtifactUrl + " was downloaded in " + downloadTime + " ms");
       }
 
       File torrentFile = myTorrentFilesFactory.getTorrentFile();
@@ -191,7 +201,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       torrent = null;
 
       try {
-        Loggers.AGENT.info(String.format("trying to download %s via bittorrent", url));
+        LOG.info(String.format("trying to download %s via bittorrent", url));
         myBuildLogger.progressStarted("Downloading " + target.getName() + " via BitTorrent protocol.");
 
         final int minSeedersForDownload = myLeechSettings.getMinSeedersForDownload();
