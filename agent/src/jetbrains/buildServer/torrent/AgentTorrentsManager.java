@@ -113,7 +113,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
       LOG.warnAndDebugDetails("error start seeder on agent started", e);
     }
 
-    LogManager.getLogger("com.turn.ttorrent", new LoggerFactory() {
+    LogManager.getLogger("jetbrains.torrent", new LoggerFactory() {
       @Override
       public org.apache.log4j.Logger makeNewLoggerInstance(String s) {
         return org.apache.log4j.Logger.getLogger(Loggers.AGENT_CATEGORY);
