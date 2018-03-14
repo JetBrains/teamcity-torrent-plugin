@@ -18,12 +18,14 @@ package jetbrains.buildServer.torrent;
 
 import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.common.TorrentCreator;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
+import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
@@ -229,9 +231,9 @@ public class TorrentTransportTest extends BaseTestCase {
 
       mySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
 
-      final Torrent torrent = Torrent.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
+      final Torrent torrent = TorrentCreator.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
       final File torrentFile = new File(torrentsDir, fileName + ".torrent");
-      torrent.save(torrentFile);
+      TorrentUtil.saveTorrentToFile(torrent, torrentFile);
       myDownloadMap.put("/.teamcity/torrents/" + fileName + ".torrent", torrentFile);
       for (Client client : clientList) {
         client.start(InetAddress.getLocalHost());
@@ -289,9 +291,9 @@ public class TorrentTransportTest extends BaseTestCase {
 
       mySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
 
-      final Torrent torrent = Torrent.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
+      final Torrent torrent = TorrentCreator.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
       final File torrentFile = new File(torrentsDir, fileName + ".torrent");
-      torrent.save(torrentFile);
+      TorrentUtil.saveTorrentToFile(torrent, torrentFile);
       myDownloadMap.put("/.teamcity/torrents/" + fileName + ".torrent", torrentFile);
       for (Client client : clientList) {
         client.start(InetAddress.getLocalHost());

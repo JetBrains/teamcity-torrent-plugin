@@ -3,6 +3,9 @@ package jetbrains.buildServer.torrent.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.common.TorrentCreator;
+import com.turn.ttorrent.common.TorrentMultiFileMetadata;
+import com.turn.ttorrent.common.TorrentSerializer;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.messages.DefaultMessagesInfo;
@@ -12,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
@@ -40,7 +44,7 @@ public class TorrentUtil {
   }
 
   private static void setHashingThreadsCount() {
-    Torrent.setHashingThreadsCount(2); // limit number of threads generating hashes for a file
+    TorrentCreator.setHashingThreadsCount(2); // limit number of threads generating hashes for a file
   }
 
   public static boolean isConnectionManagerInitialized(@NotNull Client client) {
@@ -81,6 +85,22 @@ public class TorrentUtil {
   }
 
   /**
+   * serialize torrent metadata and save it to file
+   * @param metadata specified metadata
+   * @param torrentFile file for writing
+   * @throws IOException if any io error occurs
+   */
+  public static void saveTorrentToFile(@NotNull TorrentMultiFileMetadata metadata, @NotNull File torrentFile) throws IOException{
+    FileOutputStream fos = null;
+    try {
+      fos = new FileOutputStream(torrentFile);
+      fos.write(new TorrentSerializer().serialize(metadata));
+    } finally {
+      if (fos != null) fos.close();
+    }
+  }
+
+  /**
    * Creates the torrent file for the specified <code>srcFile</code> and announce URI.
    */
   @Nullable
@@ -88,8 +108,8 @@ public class TorrentUtil {
     setHashingThreadsCount();
 
     try {
-      Torrent t = Torrent.create(srcFile, announceURI, "TeamCity");
-      t.save(torrentFile);
+      Torrent t = TorrentCreator.create(srcFile, announceURI, "TeamCity");
+      saveTorrentToFile(t, torrentFile);
       return t;
     } catch (Exception e) {
       LOG.warnAndDebugDetails(String.format("Unable to create torrent file from %s: %s", srcFile.getPath(), e.toString()), e);

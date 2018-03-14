@@ -17,9 +17,12 @@
 package jetbrains.buildServer.torrent.seeder;
 
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.common.TorrentCreator;
+import com.turn.ttorrent.common.TorrentSerializer;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.torrent.TorrentConfiguration;
+import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.FileUtil;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
@@ -28,6 +31,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
@@ -96,8 +100,8 @@ public class TorrentsSeederTest extends BaseTestCase {
 
   private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, NoSuchAlgorithmException, IOException {
     File torrentFile = new File(torrentDir, srcFile.getName() + ".torrent");
-    final Torrent torrent = Torrent.create(srcFile, myTracker.getAnnounceURI(), "Test");
-    torrent.save(torrentFile);
+    final Torrent torrent = TorrentCreator.create(srcFile, myTracker.getAnnounceURI(), "Test");
+    TorrentUtil.saveTorrentToFile(torrent, torrentFile);
     return torrentFile;
   }
 

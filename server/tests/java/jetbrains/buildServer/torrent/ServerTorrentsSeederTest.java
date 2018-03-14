@@ -19,10 +19,13 @@ package jetbrains.buildServer.torrent;
 import com.intellij.util.WaitFor;
 import com.turn.ttorrent.common.AnnounceableTorrent;
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.common.TorrentCreator;
+import com.turn.ttorrent.common.TorrentSerializer;
 import jetbrains.buildServer.TempFiles;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifact;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
+import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
@@ -79,8 +82,8 @@ public class ServerTorrentsSeederTest extends ServerTorrentsSeederTestCase {
 
       File torrentFile = new File(torrentsDir, srcFile.getName() + ".torrent");
       assertFalse(torrentFile.exists());
-      Torrent torrentMetaInfo = Torrent.create(srcFile, URI.create(""), "");
-      torrentMetaInfo.save(torrentFile);
+      Torrent torrentMetaInfo = TorrentCreator.create(srcFile, URI.create(""), "");
+      TorrentUtil.saveTorrentToFile(torrentMetaInfo, torrentFile);
 
       BuildArtifact buildArtifact = new DummyBuildArtifactAdapter() {
         @Override

@@ -19,6 +19,7 @@ package jetbrains.buildServer.torrent;
 import com.turn.ttorrent.common.AnnounceableFileTorrent;
 import com.turn.ttorrent.common.AnnounceableTorrent;
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.common.TorrentCreator;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
@@ -29,6 +30,7 @@ import jetbrains.buildServer.agent.impl.CurrentBuildTrackerImpl;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
+import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.WaitFor;
@@ -104,10 +106,10 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
         final File artifactFile = createTempFile(65535);
         createdFiles.add(artifactFile);
         File torrentDir = createTempDir();
-        final Torrent torrent = Torrent.create(artifactFile, tracker.getAnnounceURI(), "tc-plugin-test");
+        final Torrent torrent = TorrentCreator.create(artifactFile, tracker.getAnnounceURI(), "tc-plugin-test");
         final File torrentFile = new File(torrentDir, artifactFile.getName() + ".torrent");
         torrentHashes.add(torrent.getHexInfoHash());
-        torrent.save(torrentFile);
+        TorrentUtil.saveTorrentToFile(torrent, torrentFile);
 
         myTorrentsManager.getTorrentsSeeder().registerSrcAndTorrentFile(artifactFile, torrentFile, false);
       }

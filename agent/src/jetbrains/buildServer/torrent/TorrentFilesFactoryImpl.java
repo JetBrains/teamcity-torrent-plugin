@@ -18,9 +18,11 @@ package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.common.TorrentCreator;
 import jetbrains.buildServer.agent.AgentIdleTasks;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.agent.InterruptState;
+import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -84,8 +86,8 @@ public class TorrentFilesFactoryImpl implements TorrentFilesFactory {
 
     try {
       File torrentFile = getTorrentFile();
-      Torrent torrent = Torrent.create(srcFile, URI.create(announceUrl), "TeamCity Torrent Plugin");
-      torrent.save(torrentFile);
+      Torrent torrent = TorrentCreator.create(srcFile, URI.create(announceUrl), "TeamCity Torrent Plugin");
+      TorrentUtil.saveTorrentToFile(torrent, torrentFile);
       return torrentFile;
     } catch (Exception e) {
       LOG.warnAndDebugDetails("Failed to create torrent for source file: " + srcFile.getAbsolutePath(), e);

@@ -192,7 +192,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       }
 
       File torrentFile = myTorrentFilesFactory.getTorrentFile();
-      torrent.save(torrentFile);
+      TorrentUtil.saveTorrentToFile(torrent, torrentFile);
       String hexInfoHash = torrent.getHexInfoHash();
       String name = torrent.getName();
       List<String> fileNames = torrent.getFilenames();
