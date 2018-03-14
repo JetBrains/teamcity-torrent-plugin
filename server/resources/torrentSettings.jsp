@@ -16,8 +16,8 @@
         <th>Torrent tracker information:</th>
         <td>
           <ul style="margin-top:0; padding-left: 1em;">
-            <li>announced torrents: <strong>${announcedTorrentsNum}</strong></li>
-            <li>connected clients: <strong>${connectedClientsNum}</strong></li>
+            <li>Announced torrents: <strong>${announcedTorrentsNum}</strong></li>
+            <li>Connected clients: <strong>${connectedClientsNum}</strong></li>
           </ul>
         </td>
       </tr>
@@ -26,9 +26,9 @@
       <th>Server seeding information:</th>
       <td>
         <ul style="margin-top:0; padding-left: 1em;">
-          <li>downloading clients: <strong>${activePeersCount}</strong></li>
-          <li>Total uploading speed (MB/s): <strong>${totalSpeedMegabytesPerSecond}</strong></li>
-          <li>number of currently seeded torrents: <strong>${seededTorrentsNum}
+          <li>Downloading clients: <strong>${activePeersCount}</strong></li>
+          <li>Total downloading speed (MB/s): <strong>${totalSpeedMegabytesPerSecond}</strong></li>
+          <li>Number of currently seeded torrents: <strong>${seededTorrentsNum}
             (of ${torrentConfigurator.maxNumberOfSeededTorrents})</strong></li>
         </ul>
       </td>
