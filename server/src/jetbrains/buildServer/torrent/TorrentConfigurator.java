@@ -82,7 +82,7 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
         setMaxConnectionsCount(TeamCityProperties.getInteger(MAX_INCOMING_CONNECTIONS, DEFAULT_MAX_CONNECTIONS));
         setTrackerTorrentExpireTimeoutSec(TeamCityProperties.getInteger(TRACKER_TORRENT_EXPIRE_TIMEOUT, DEFAULT_TRACKER_TORRENT_EXPIRE_TIMEOUT));
         setAnnounceIntervalSec(TeamCityProperties.getInteger(ANNOUNCE_INTERVAL, DEFAULT_ANNOUNCE_INTERVAL));
-        setAnnounceUrl(TeamCityProperties.getProperty(ANNOUNCE_URL));
+        setAnnounceUrl(TeamCityProperties.getProperty(ANNOUNCE_URL, myAnnounceUrl == null ? "" : myAnnounceUrl));
         final int defaultBufferSize = SystemInfo.isWindows ? DEFAULT_BUFFER_SIZE_WINDOWS : -1;
         setReceiveBufferSize(TeamCityProperties.getInteger(RECEIVE_BUFFER_SIZE, defaultBufferSize));
         setSendBufferSize(TeamCityProperties.getInteger(SEND_BUFFER_SIZE, defaultBufferSize));
