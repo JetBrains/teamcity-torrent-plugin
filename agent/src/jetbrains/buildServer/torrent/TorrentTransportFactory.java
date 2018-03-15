@@ -126,7 +126,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     return myLeechSettings.isDownloadEnabled();
   }
 
-  protected static class TorrentTransport implements URLContentRetriever, ProgressTrackingURLContentRetriever {
+  protected static class TorrentTransport implements URLContentRetriever {
 
     private final HttpClient myHttpClient;
     private final HttpTransport myDelegate;
@@ -170,8 +170,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     }
 
     @Nullable
-    @Override
-    public String downloadUrlTo(@NotNull String url, @NotNull File target, @NotNull final FileProgress fileDownloadProgress) throws IOException {
+    public String downloadUrlTo(@NotNull String url, @NotNull File target) throws IOException {
       if (url.endsWith(TEAMCITY_IVY)) {
         // downloading teamcity-ivy.xml and parsing it:
         return parseArtifactsList(url, target);
@@ -197,7 +196,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       String name = torrent.getName();
       List<String> fileNames = torrent.getFilenames();
       long size = torrent.getSize();
-      fileDownloadProgress.setExpectedLength(size);
       torrent = null;
 
       try {
@@ -224,7 +222,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
                 new DownloadProgressListener() {
                   @Override
                   public void pieceLoaded(int pieceIndex, int pieceSize) {
-                    fileDownloadProgress.transferred(pieceSize);
                   }
                 });
         myCurrentDownload.set(Thread.currentThread());
@@ -264,16 +261,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       } finally {
         myBuildLogger.progressFinished();
       }
-    }
-
-    @Override
-    public String getId() {
-      return "Torrent transport";
-    }
-
-    @Nullable
-    public String downloadUrlTo(@NotNull final String urlString, @NotNull final File target) throws IOException {
-      return downloadUrlTo(urlString, target, new FileProgress.Adapter());
     }
 
     public void interrupt() {
