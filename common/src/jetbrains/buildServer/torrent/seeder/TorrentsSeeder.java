@@ -45,6 +45,7 @@ public class TorrentsSeeder {
   public static final String TORRENTS_DIT_PATH = ".teamcity/torrents";
 
   public static final int CHECK_TORRENTS_INTERVAL = TeamCityProperties.getInteger("teamcity.torrents.checkTorrentsIntervalSec", 5 * 60);
+  private static final int FLUSH_DB_INTERVAL = TeamCityProperties.getInteger("teamcity.torrents.flushDBIntervalSec", 3 * 60);
 
   public static final String PLUGIN_EXECUTOR_NAME = "Torrent plugin worker";
 
@@ -59,6 +60,8 @@ public class TorrentsSeeder {
   private volatile int myMaxTorrentsToSeed; // no limit by default
   @Nullable
   private volatile ScheduledFuture<?> myBrokenFilesCheckerFuture;
+  @Nullable
+  private volatile ScheduledFuture<?> myDBFlushFuture;
 
   public TorrentsSeeder(@NotNull File torrentStorage,
                         int maxTorrentsToSeed,
@@ -103,7 +106,6 @@ public class TorrentsSeeder {
     myTorrentFilesDB.addFileAndTorrent(srcFile, torrentFile);
     if (startSeeding) {
       seedTorrent(srcFile, torrentFile);
-      flushTorrentsDB();
     }
   }
 
@@ -144,11 +146,19 @@ public class TorrentsSeeder {
     } catch (RejectedExecutionException e) {
       LOG.warnAndDebugDetails("Failed to schedule broken files check task", e);
     }
+    try {
+      myDBFlushFuture = myExecutor.scheduleWithFixedDelay(new Runnable() {
+        public void run() {
+          flushTorrentsDB();
+        }
+      }, FLUSH_DB_INTERVAL, FLUSH_DB_INTERVAL, TimeUnit.SECONDS);
+    } catch (RejectedExecutionException e) {
+      LOG.warnAndDebugDetails("Failed to schedule db flush task", e);
+    }
   }
 
   void checkForBrokenFiles() {
     myTorrentFilesDB.cleanupBrokenFiles();
-    flushTorrentsDB();
   }
 
   private void flushTorrentsDB() {
@@ -189,6 +199,10 @@ public class TorrentsSeeder {
     final ScheduledFuture<?> localFuture = myBrokenFilesCheckerFuture;
     if (localFuture != null) {
       localFuture.cancel(true);
+    }
+    final ScheduledFuture<?> dbFlushFuture = myDBFlushFuture;
+    if (dbFlushFuture != null) {
+      dbFlushFuture.cancel(true);
     }
     ThreadUtil.shutdownGracefully(myWorkerExecutor, "bittorrent client worker executor");
   }
