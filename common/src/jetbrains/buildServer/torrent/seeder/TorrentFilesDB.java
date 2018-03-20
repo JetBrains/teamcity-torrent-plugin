@@ -36,6 +36,7 @@ public class TorrentFilesDB {
   private final File myTorrentsDbFile;
   private final PathConverter myPathConverter;
   private final CacheListener myCacheListener;
+  private volatile boolean myIsDBChanged = false;
 
   public TorrentFilesDB(@NotNull File torrentsDbPath, int maxTorrents, @Nullable PathConverter pathConverter, @Nullable CacheListener cacheListener) {
     myTorrentsDbFile = torrentsDbPath;
@@ -67,6 +68,7 @@ public class TorrentFilesDB {
     String srcPath = myPathConverter.convertToPath(srcFile);
     String torrentPath = myPathConverter.convertToPath(torrentFile);
     synchronized (myFile2TorrentMap) {
+      myIsDBChanged = true;
       myFile2TorrentMap.get().put(new FileInfo(srcPath), new FileInfo(torrentPath));
     }
   }
@@ -97,6 +99,9 @@ public class TorrentFilesDB {
 
     synchronized (myFile2TorrentMap) {
       final Map<FileInfo, FileInfo> cache = myFile2TorrentMap.get();
+      if (!toRemove.isEmpty()) {
+        myIsDBChanged = true;
+      }
       cache.keySet().removeAll(toRemove.keySet());
     }
 
@@ -124,8 +129,11 @@ public class TorrentFilesDB {
     return res;
   }
 
-  // flushes torrents database on disk
+  // flushes torrents database on disk if in memory db has changes
   public void flush() throws IOException {
+
+    if (!myIsDBChanged) return;
+
     File parentFile = myTorrentsDbFile.getParentFile();
     if (!parentFile.isDirectory() && !parentFile.mkdirs()) {
       throw new IOException("Failed to create directory for torrent database file: " + myTorrentsDbFile.getAbsolutePath());
@@ -151,6 +159,7 @@ public class TorrentFilesDB {
           writer.print(torrentPath);
           writer.println();
         }
+        myIsDBChanged = false;
       }
     } finally {
       FileUtil.close(writer);
@@ -215,6 +224,9 @@ public class TorrentFilesDB {
     FileInfo removedTorrent;
     synchronized (myFile2TorrentMap) {
       removedTorrent = myFile2TorrentMap.get().remove(new FileInfo(path));
+      if (removedTorrent != null) {
+        myIsDBChanged = true;
+      }
     }
 
     if (removedTorrent != null) {
