@@ -140,7 +140,11 @@ public class TorrentsSeeder {
     try {
       myBrokenFilesCheckerFuture = myExecutor.scheduleWithFixedDelay(new Runnable() {
         public void run() {
-          checkForBrokenFiles();
+          try {
+            checkForBrokenFiles();
+          } catch (Throwable e) {
+            LOG.warnAndDebugDetails("Unhandled exception in check brokenf files task", e);
+          }
         }
       }, CHECK_TORRENTS_INTERVAL, CHECK_TORRENTS_INTERVAL, TimeUnit.SECONDS);
     } catch (RejectedExecutionException e) {
@@ -149,7 +153,11 @@ public class TorrentsSeeder {
     try {
       myDBFlushFuture = myExecutor.scheduleWithFixedDelay(new Runnable() {
         public void run() {
-          flushTorrentsDB();
+          try {
+            flushTorrentsDB();
+          } catch (Throwable e) {
+            LOG.warnAndDebugDetails("Unhandled exception in flush torrents db task", e);
+          }
         }
       }, FLUSH_DB_INTERVAL, FLUSH_DB_INTERVAL, TimeUnit.SECONDS);
     } catch (RejectedExecutionException e) {
