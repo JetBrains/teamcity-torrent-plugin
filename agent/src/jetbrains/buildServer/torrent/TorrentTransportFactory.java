@@ -36,6 +36,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.*;
+import java.net.URLDecoder;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -175,7 +176,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         // downloading teamcity-ivy.xml and parsing it:
         return parseArtifactsList(url, target);
       }
-      ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(url);
+      final String decodedUrl = URLDecoder.decode(url, "UTF-8");
+      ParsedArtifactPath parsedArtifactUrl = new ParsedArtifactPath(decodedUrl);
 
       long start = System.currentTimeMillis();
 
