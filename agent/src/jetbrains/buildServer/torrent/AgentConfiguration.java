@@ -91,6 +91,11 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
   }
 
   @Override
+  public int getPieceHashingPoolSize() {
+    return TeamCityProperties.getInteger(VALIDATOR_POOL_SIZE, DEFAULT_VALIDATOR_POOL_SIZE);
+  }
+
+  @Override
   public boolean isDownloadEnabled() {
     String value = getPropertyFromBuildOrDefault(LeechSettings.DOWNLOAD_ENABLED, String.valueOf(LeechSettings.DEFAULT_DOWNLOAD_ENABLED));
     return Boolean.parseBoolean(value);

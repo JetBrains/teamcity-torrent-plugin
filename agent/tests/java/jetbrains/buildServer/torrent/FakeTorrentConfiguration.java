@@ -66,6 +66,11 @@ public class FakeTorrentConfiguration implements TorrentConfiguration {
     return 10;
   }
 
+  @Override
+  public int getPieceHashingPoolSize() {
+    return 4;
+  }
+
   @Override public int getMaxConnectionsCount() {
     return 10;
   }

@@ -48,11 +48,14 @@ public class TorrentsSeeder {
   private static final int FLUSH_DB_INTERVAL = TeamCityProperties.getInteger("teamcity.torrents.flushDBIntervalSec", 3 * 60);
 
   public static final String PLUGIN_EXECUTOR_NAME = "Torrent plugin worker";
+  public static final String PIECE_VALIDATOR_EXECUTOR_NAME = "Torrent plugin pieces validator";
 
   @NotNull
   private final TeamcityTorrentClient myClient;
   @NotNull
   private final TeamCityThreadPoolExecutor myWorkerExecutor;
+  @NotNull
+  private final TeamCityThreadPoolExecutor myValidatorExecutor;
   private final TorrentFilesDB myTorrentFilesDB;
   private final ScheduledExecutorService myExecutor;
   private volatile boolean myRemoveExpiredTorrentFiles;
@@ -83,7 +86,13 @@ public class TorrentsSeeder {
             new LinkedBlockingQueue<Runnable>(2000),
             new NamedThreadFactory(PLUGIN_EXECUTOR_NAME));
     myWorkerExecutor.allowCoreThreadTimeOut(true);
-    myClient = new TeamcityTorrentClient(myWorkerExecutor);
+    int pieceHashingPoolSize = torrentConfiguration.getPieceHashingPoolSize();
+    myValidatorExecutor = new TeamCityThreadPoolExecutor(pieceHashingPoolSize, pieceHashingPoolSize,
+            60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<Runnable>(2000),
+            new NamedThreadFactory(PIECE_VALIDATOR_EXECUTOR_NAME));
+    myValidatorExecutor.allowCoreThreadTimeOut(true);
+    myClient = new TeamcityTorrentClient(myWorkerExecutor, myValidatorExecutor);
     myExecutor = executor;
   }
 
@@ -213,6 +222,7 @@ public class TorrentsSeeder {
       dbFlushFuture.cancel(true);
     }
     ThreadUtil.shutdownGracefully(myWorkerExecutor, "bittorrent client worker executor");
+    ThreadUtil.shutdownGracefully(myValidatorExecutor, "bittorrent pieces validator executor");
   }
 
   public boolean isStopped() {

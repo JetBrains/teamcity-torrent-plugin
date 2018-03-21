@@ -55,6 +55,7 @@ public class TorrentsSeederTest extends BaseTestCase {
     final TorrentConfiguration torrentConfiguration = m.mock(TorrentConfiguration.class);
     m.checking(new Expectations(){{
       allowing(torrentConfiguration).getWorkerPoolSize(); will(returnValue(10));
+      allowing(torrentConfiguration).getPieceHashingPoolSize(); will(returnValue(4));
       allowing(myExecutorService).submit(with(any(Runnable.class)));
       allowing(myExecutorService).scheduleWithFixedDelay(with(any(Runnable.class)), with(any(Long.class)), with(any(Long.class)), with(any(TimeUnit.class)));
       allowing(myExecutorService).shutdownNow();

@@ -253,10 +253,12 @@ public class TorrentTransportTest extends BaseTestCase {
 
   private Client createClientWithClosingExecutorServiceOnStop() {
     final ExecutorService es = Executors.newFixedThreadPool(2);
-    return new Client(es) {
+    final ExecutorService validatorES = Executors.newFixedThreadPool(2);
+    return new Client(es, validatorES) {
       @Override public void stop(int timeout, TimeUnit timeUnit) {
         super.stop(timeout, timeUnit);
         es.shutdown();
+        validatorES.shutdown();
       }
     };
   }
@@ -304,7 +306,7 @@ public class TorrentTransportTest extends BaseTestCase {
         @Override
         public void run() {
           try {
-            sleep(400);
+            sleep(200);
             myTorrentTransport.interrupt();
           } catch (InterruptedException e) {
             fail("Must not fail here: " + e);
