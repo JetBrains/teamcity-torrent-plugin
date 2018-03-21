@@ -33,8 +33,8 @@ public class TeamcityTorrentClient {
   @NotNull
   private final Client myClient;
 
-  public TeamcityTorrentClient(ExecutorService es) {
-    myClient = new Client(es);
+  public TeamcityTorrentClient(ExecutorService es, ExecutorService validatorES) {
+    myClient = new Client(es, validatorES);
   }
 
   public void start(@NotNull InetAddress[] inetAddresses, @Nullable final URI defaultTrackerURI, final int announceInterval) throws IOException {

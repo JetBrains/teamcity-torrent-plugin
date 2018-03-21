@@ -31,13 +31,15 @@ public class TorrentUtilTest {
 
   public void isConnectionManagerInitializedTest() throws Exception {
     ExecutorService es = Executors.newFixedThreadPool(2);
-    Client client = new Client(es);
+    ExecutorService validatorES = Executors.newFixedThreadPool(2);
+    Client client = new Client(es, validatorES);
     assertFalse(TorrentUtil.isConnectionManagerInitialized(client));
     client.start(InetAddress.getLocalHost());
     assertTrue(TorrentUtil.isConnectionManagerInitialized(client));
     client.stop();
     assertTrue(TorrentUtil.isConnectionManagerInitialized(client));
     es.shutdown();
+    validatorES.shutdown();
   }
 
 }

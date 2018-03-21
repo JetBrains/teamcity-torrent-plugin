@@ -32,6 +32,8 @@ public interface TorrentConfiguration {
   String RECEIVE_BUFFER_SIZE = "teamcity.torrent.network.receiveBufferSize";
   String WORKER_POOL_SIZE = "teamcity.torrent.network.poolSize";
   int DEFAULT_WORKER_POOL_SIZE = 10;
+  String VALIDATOR_POOL_SIZE = "teamcity.torrent.validation.poolSize";
+  int DEFAULT_VALIDATOR_POOL_SIZE = 4;
   int DEFAULT_BUFFER_SIZE_WINDOWS = 1024*1024;
   // this is fake option to multicast announce url changes;
   String ANNOUNCE_URL = "announce.url";
@@ -65,6 +67,12 @@ public interface TorrentConfiguration {
    * @return see above
    */
   int getWorkerPoolSize();
+
+  /**
+   * Returns max pool size for pieces hashing executor
+   * @return see above
+   */
+  int getPieceHashingPoolSize();
 
   /**
    * Returns socket connection timeout in seconds.

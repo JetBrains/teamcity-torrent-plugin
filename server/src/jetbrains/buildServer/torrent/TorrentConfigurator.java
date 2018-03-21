@@ -163,6 +163,11 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
     }
   }
 
+  @Override
+  public int getPieceHashingPoolSize() {
+    return TeamCityProperties.getInteger(VALIDATOR_POOL_SIZE, DEFAULT_VALIDATOR_POOL_SIZE);
+  }
+
   private void setMaxConnectionsCount(int maxConnectionsCount) {
     int oldValue = TorrentUtil.getIntegerValue(myConfiguration, MAX_INCOMING_CONNECTIONS, DEFAULT_MAX_CONNECTIONS);
     if (oldValue != maxConnectionsCount) {
