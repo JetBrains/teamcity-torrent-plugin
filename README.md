@@ -12,9 +12,7 @@
 ## 1. Downloading binaries
  
  The latest build of the plugin is available on / can be downloaded from the public TeamCity server:
-  * [for TeamCity 2018.1+](
-http://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_TorrentPlugin_TorrentPluginTeamcity20181Compatible/.lastPinned/torrent-plugin.zip)
-  * [for TeamCity 2017.x]( http://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_TorrentPlugin_TorrentPluginTeamcity20172Compatible/.lastPinned/torrent-plugin.zip)  
+ * [for TeamCity 2017.x]( http://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_TorrentPlugin_TorrentPluginTeamcity20172Compatible/.lastPinned/torrent-plugin.zip)  
 
  ## 2. Building sources
 
@@ -38,5 +36,7 @@ http://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_Tor
 
 * server and agent bind on the first available port in the 6881-6889 interval, so these ports should be reachable.
 * Torrent files are created only for large artifact (by default more then 10mb), which means small files cannot be downloaded via BitTorrent.
- 
- 
+* Plugin supports the following configuration parameters (can be specified on the project or build configuration level):
+  * teamcity.torrent.peer.download.enabled (true by default): this parameter controls usage of BitTorrent protocol for artifacts downloading on agents
+  * teamcity.torrent.peer.seeding.enabled (true by default): this parameter controls seeding of artifacts from agents via  BitTorrent protocol
+  * teamcity.torrent.seeder.minFileSize (10M by default): this parameter controls artifacts size threshold; smaller artifacts won't be downloaded via BitTorrent protocol
