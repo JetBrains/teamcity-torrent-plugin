@@ -28,15 +28,15 @@
 
 ## 4. Setting up the plugin
 
- Once you restart the server, a new link, Torrent Settings, will appear in the Administration area. The plugin is disabled by default. You can enable it on this page.
- If the plugin works correctly and you checked both options on the Torrent settings page, then once a large enough artifact is published, you should see the torrent icon near the name of the artifact.
- Clicking this icon should download .torrent file, which you can open it with your favorite torrent client. 
+Once you restart the server, a new link, Torrent Settings, will appear in the Administration area. The plugin is disabled by default. You can enable it on this page.
+If the plugin works correctly and you checked both options for the server and agents on the Torrent settings page, then, once a large enough artifact is published, you should see the torrent icon near the name of the artifact.
+Clicking this icon should download the .torrent file, which you can open using your favorite torrent client. 
  
 ## 5. Tech notes
 
-* server and agent bind on the first available port in the 6881-6889 interval, so these ports should be reachable.
+* the server and agent bind on the first available port in the 6881-6889 interval, so these ports should be reachable.
 * Torrent files are created only for large artifact (by default more then 10mb), which means small files cannot be downloaded via BitTorrent.
-* Plugin supports the following configuration parameters (can be specified on the project or build configuration level):
-  * teamcity.torrent.peer.download.enabled (true by default): this parameter controls usage of BitTorrent protocol for artifacts downloading on agents
-  * teamcity.torrent.peer.seeding.enabled (true by default): this parameter controls seeding of artifacts from agents via  BitTorrent protocol
-  * teamcity.torrent.seeder.minFileSize (10M by default): this parameter controls artifacts size threshold; smaller artifacts won't be downloaded via BitTorrent protocol
+* The plugin supports the following configuration parameters allowing you to control the plugin behavior at the project or build configuration level:
+  * teamcity.torrent.peer.download.enabled (true by default): this parameter controls the usage of the BitTorrent protocol for artifacts downloading on agents
+  * teamcity.torrent.peer.seeding.enabled (true by default): this parameter controls seeding of artifacts from agents via the BitTorrent protocol
+  * teamcity.torrent.seeder.minFileSize (10M by default): this parameter controls artifacts size threshold; smaller artifacts won't be downloaded via the BitTorrent protocol
