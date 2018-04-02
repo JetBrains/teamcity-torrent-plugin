@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
@@ -49,6 +50,9 @@ public class TeamcityTorrentClient {
     try {
       myClient.addTorrent(torrentFile.getAbsolutePath(), srcFile.getParent(), true, false);
       return true;
+    } catch (FileNotFoundException e) {
+      LOG.debug("File " + srcFile.getName() + " is not found, ", e);
+      return false;
     } catch (Exception e) {
       LOG.warn("Failed to seed file: " + srcFile.getName(), e);
       return false;
