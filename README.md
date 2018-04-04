@@ -12,7 +12,7 @@
 ## 1. Downloading binaries
  
  The latest build of the plugin is available on / can be downloaded from the public TeamCity server:
- * [for TeamCity 2017.x]( http://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_TorrentPlugin_TorrentPluginTeamcity20172Compatible/.lastPinned/torrent-plugin.zip)  
+ * [for TeamCity 2017.x]( http://teamcity.jetbrains.com/repository/download/TeamCityPluginsByJetBrains_TorrentPlugin_TorrentPluginTeamcity20172Compatible/.lastPinned/bittorrent-support.zip)  
 
  ## 2. Building sources
 

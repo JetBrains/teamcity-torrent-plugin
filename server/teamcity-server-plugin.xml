@@ -4,6 +4,7 @@
   <info>
     <name>bittorrent-support</name>
     <display-name>BitTorrent Support</display-name>
+    <description>Enables BitTorrent protocol support for downloading artifacts by build agents and users</description>
     <version>@Plugin_Version@</version> <!-- will be replaced from script -->
     <vendor>
       <name>@Plugin_Vendor@</name>  <!-- will be replaced from script -->
