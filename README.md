@@ -34,7 +34,7 @@ Clicking this icon should download the .torrent file, which you can open using y
  
 ## 5. Tech notes
 
-* the server and agent bind on the first available port in the 6881-6889 interval, so these ports should be reachable.
+* For the plugin to work correctly, TCP ports in the 6881-6889 interval should be open on the TeamCity server and agents.
 * Torrent files are created only for large artifact (by default more then 10mb), which means small files cannot be downloaded via BitTorrent.
 * The plugin supports the following configuration parameters allowing you to control the plugin behavior at the project or build configuration level:
   * teamcity.torrent.peer.download.enabled (true by default): this parameter controls the usage of the BitTorrent protocol for artifacts downloading on agents
