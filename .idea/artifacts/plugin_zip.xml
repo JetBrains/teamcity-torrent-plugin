@@ -8,7 +8,7 @@
       </options>
     </properties>
     <root id="root">
-      <element id="archive" name="torrent-plugin.zip">
+      <element id="archive" name="bittorrent-support.zip">
         <element id="artifact" artifact-name="plugin" />
       </element>
     </root>
