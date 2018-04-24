@@ -6,7 +6,7 @@ import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.*;
-import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
+import jetbrains.buildServer.agent.impl.artifacts.ArtifactsWatcherEx;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.impl.DirectoryCacheProviderImpl;
@@ -74,7 +74,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     }});
 
     final TorrentConfiguration configuration = new FakeTorrentConfiguration();
-    final ArtifactsWatcher artifactsWatcher = m.mock(ArtifactsWatcher.class);
+    final ArtifactsWatcherEx artifactsWatcher = m.mock(ArtifactsWatcherEx.class);
 
     mySeeder = new AgentTorrentsSeeder(myAgentConfiguration, configuration);
     TorrentFilesFactoryImpl torrentsFactory = new TorrentFilesFactoryImpl(myAgentConfiguration, configuration, new FakeAgentIdleTasks(), mySeeder);
@@ -91,7 +91,7 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
             leechSettings,
             myAgentConfiguration, seedingSettings);
 
-    myCacheListener = new TorrentArtifactCacheListener(mySeeder.getTorrentsSeeder(), buildTracker, configuration, manager, torrentsFactory, artifactsWatcher, myAgentConfiguration);
+    myCacheListener = new TorrentArtifactCacheListener(mySeeder.getTorrentsSeeder(), buildTracker, configuration, manager, torrentsFactory, myAgentConfiguration);
 
     myCacheListener.onCacheInitialized(new DirectoryCacheProviderImpl(getTorrentsDirectory(), new SimpleDigestCalculator()));
     manager.checkReady();

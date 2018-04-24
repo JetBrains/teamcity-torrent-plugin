@@ -2,7 +2,6 @@ package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
 import jetbrains.buildServer.agent.*;
-import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.RevisionRules;
@@ -31,7 +30,6 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   private ArtifactCacheProvider myArtifactCacheProvider;
   private final TorrentConfiguration myConfiguration;
   private final AgentTorrentsManager myTorrentsManager;
-  private final ArtifactsWatcher myArtifactsWatcher;
   private final BuildAgentConfiguration myAgentConfiguration;
 
   public TorrentArtifactCacheListener(@NotNull final TorrentsSeeder torrentsSeeder,
@@ -39,14 +37,12 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
                                       @NotNull final TorrentConfiguration configuration,
                                       @NotNull final AgentTorrentsManager torrentsManager,
                                       @NotNull final TorrentFilesFactoryImpl torrentFilesFactory,
-                                      @NotNull final ArtifactsWatcher artifactsWatcher,
                                       @NotNull final BuildAgentConfiguration agentConfiguration) {
     myTorrentsSeeder = torrentsSeeder;
     myBuildTracker = currentBuildTracker;
     myConfiguration = configuration;
     myTorrentsManager = torrentsManager;
     myTorrentFilesFactory = torrentFilesFactory;
-    myArtifactsWatcher = artifactsWatcher;
     myAgentConfiguration = agentConfiguration;
   }
 
@@ -135,7 +131,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
 
     String torrentArtifactPath = createArtifactPath(torrentFileCopy, Constants.TORRENTS_DIR_ON_SERVER + artifactDirs);
 
-    myArtifactsWatcher.addNewArtifactsPath(torrentArtifactPath);
+    myTorrentsManager.saveTorrentForPublish(torrentArtifactPath);
   }
 
   private boolean isChildFile(File dir, File file) {

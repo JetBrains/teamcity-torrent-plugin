@@ -2,7 +2,7 @@ package jetbrains.buildServer.torrent;
 
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.*;
-import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
+import jetbrains.buildServer.agent.impl.artifacts.ArtifactsWatcherEx;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.impl.DirectoryCacheProviderImpl;
@@ -30,10 +30,11 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
   private TorrentArtifactCacheListener myCacheListener;
   private BuildAgentConfiguration myAgentConfiguration;
   private Mockery myM;
-  private ArtifactsWatcher myArtifactsWatcher;
+  private ArtifactsWatcherEx myArtifactsWatcher;
   private CurrentBuildTracker myBuildTracker;
   private ArtifactCacheProvider myCacheProvider;
   private File myAgentDirectory;
+  private AgentTorrentsManager myManager;
 
   @BeforeMethod
   @Override
@@ -74,13 +75,13 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
     }});
 
     final TorrentConfiguration configuration = new FakeTorrentConfiguration();
-    myArtifactsWatcher = myM.mock(ArtifactsWatcher.class);
+    myArtifactsWatcher = myM.mock(ArtifactsWatcherEx.class);
 
     AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(myAgentConfiguration, configuration);
     TorrentFilesFactoryImpl torrentsFactory = new TorrentFilesFactoryImpl(myAgentConfiguration, configuration, new FakeAgentIdleTasks(), seeder);
 
     final EventDispatcher<AgentLifeCycleListener> eventDispatcher = EventDispatcher.create(AgentLifeCycleListener.class);
-    AgentTorrentsManager manager = new AgentTorrentsManager(eventDispatcher,
+    myManager = new AgentTorrentsManager(eventDispatcher,
             myCacheProvider,
             myBuildTracker,
             configuration,
@@ -91,16 +92,16 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
             leechSettings,
             myAgentConfiguration, seedingSettings);
 
-    myCacheListener = new TorrentArtifactCacheListener(seeder.getTorrentsSeeder(), myBuildTracker, configuration, manager, torrentsFactory, myArtifactsWatcher, myAgentConfiguration);
+    myCacheListener = new TorrentArtifactCacheListener(seeder.getTorrentsSeeder(), myBuildTracker, configuration, myManager, torrentsFactory, myAgentConfiguration);
 
     myCacheListener.onCacheInitialized(new DirectoryCacheProviderImpl(new File(myAgentDirectory, "cache"), new SimpleDigestCalculator()));
-    manager.checkReady();
+    myManager.checkReady();
   }
 
   public void creatingTorrentCopiesAndSendAsArtifactsTest() throws Exception {
 
     myM.checking(new Expectations() {{
-      one(myArtifactsWatcher).addNewArtifactsPath(with(Matchers.endsWith("test.txt.torrent=>.teamcity/torrents/.")));
+      one(myArtifactsWatcher).addInternalArtifactsPath(with(Matchers.endsWith("test.txt.torrent=>.teamcity/torrents/.")));
     }});
     final File cacheDir = new File(myAgentDirectory, "cache");
     File buildStaticDir = new File(cacheDir, "localhost_6969" + File.separator + "bs" + File.separator + Constants.CACHE_STATIC_DIRS);
@@ -111,6 +112,7 @@ public class TorrentArtifactCacheListenerSecondTest extends BaseTestCase {
     FileUtils.writeByteArrayToFile(artifact, new byte[15000000]);
     myCacheListener.onAfterAddOrUpdate(artifact);
     File[] tempFiles = myBuildTracker.getCurrentBuild().getBuildTempDirectory().listFiles();
+    myManager.afterAtrifactsPublished(myBuildTracker.getCurrentBuild(), BuildFinishedStatus.FINISHED_SUCCESS);
     assertNotNull(tempFiles);
     File[] torrentCopies = tempFiles[0].listFiles();
     assertNotNull(torrentCopies);

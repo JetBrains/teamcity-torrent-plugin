@@ -25,8 +25,8 @@ import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.BuildAgent;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
-import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
 import jetbrains.buildServer.agent.impl.CurrentBuildTrackerImpl;
+import jetbrains.buildServer.agent.impl.artifacts.ArtifactsWatcherEx;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
@@ -71,7 +71,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
       allowing(leechSettings).isDownloadEnabled(); will(returnValue(true));
       allowing(seedingSettings).isSeedingEnabled(); will(returnValue(true));
     }});
-    final ArtifactsWatcher artifactsWatcher = m.mock(ArtifactsWatcher.class);
+    final ArtifactsWatcherEx artifactsWatcher = m.mock(ArtifactsWatcherEx.class);
 
     AgentTorrentsSeeder seeder = new AgentTorrentsSeeder(agentConfiguration, trackerConfiguration);
     TorrentFilesFactoryImpl tff = new TorrentFilesFactoryImpl(agentConfiguration, trackerConfiguration, new FakeAgentIdleTasks(), seeder);

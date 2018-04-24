@@ -4,7 +4,7 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.SystemInfo;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.agent.*;
-import jetbrains.buildServer.agent.artifacts.ArtifactsWatcher;
+import jetbrains.buildServer.agent.impl.artifacts.ArtifactsWatcherEx;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.messages.serviceMessages.BuildStatisticValue;
@@ -15,6 +15,7 @@ import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import jetbrains.buildServer.util.EventDispatcher;
+import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.util.filters.Filter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.spi.LoggerFactory;
@@ -24,6 +25,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * User: Victory.Bedrosova
@@ -44,6 +47,10 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   private final AgentTorrentsSeeder myTorrentsSeeder;
   private final LeechSettings myLeechSettings;
   private final SeedSettings mySeedingSettings;
+  @NotNull
+  private final ArtifactsWatcherEx myArtifactsWatcher;
+  @NotNull
+  private final Collection<String> torrensForPublishing;
 
   public AgentTorrentsManager(@NotNull final EventDispatcher<AgentLifeCycleListener> eventDispatcher,
                               @NotNull final ArtifactCacheProvider artifactsCacheProvider,
@@ -51,7 +58,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
                               @NotNull final TorrentConfiguration trackerManager,
                               @NotNull final AgentTorrentsSeeder torrentsSeeder,
                               @NotNull final TorrentFilesFactoryImpl torrentFilesFactory,
-                              @NotNull final ArtifactsWatcher artifactsWatcher,
+                              @NotNull final ArtifactsWatcherEx artifactsWatcher,
                               @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic,
                               @NotNull final LeechSettings leechSettings,
                               @NotNull final BuildAgentConfiguration agentConfiguration,
@@ -61,6 +68,8 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     eventDispatcher.addListener(this);
     myTrackerManager = trackerManager;
     myTorrentsSeeder = torrentsSeeder;
+    torrensForPublishing = new ArrayList<String>();
+    myArtifactsWatcher = artifactsWatcher;
     myTorrentsDownloadStatistic = torrentsDownloadStatistic;
     artifactsCacheProvider.addListener(new TorrentArtifactCacheListener(
             torrentsSeeder.getTorrentsSeeder(),
@@ -68,7 +77,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
             trackerManager,
             this,
             torrentFilesFactory,
-            artifactsWatcher,
             agentConfiguration));
   }
 
@@ -126,8 +134,25 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
   }
 
   @Override
+  public void afterAtrifactsPublished(@NotNull AgentRunningBuild runningBuild, @NotNull BuildFinishedStatus status) {
+    final String torrentPaths;
+    synchronized (torrensForPublishing) {
+      torrentPaths = StringUtil.join(",", torrensForPublishing);
+      torrensForPublishing.clear();
+    }
+    myArtifactsWatcher.addInternalArtifactsPath(torrentPaths);
+  }
+
+  @Override
   public void buildStarted(@NotNull AgentRunningBuild runningBuild) {
     checkReady();
+    synchronized (torrensForPublishing) {
+      //collection must be empty on start build
+      if (!torrensForPublishing.isEmpty()) {
+        LOG.info("collection of torrents for publishing is not empty: " + torrensForPublishing + ". Collection is clearing");
+        torrensForPublishing.clear();
+      }
+    }
     myTorrentsDownloadStatistic.reset();
     checkThatTempTorrentDirectoryNotExist(runningBuild.getBuildTempDirectory());
   }
@@ -195,5 +220,11 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
 
   public boolean isTransportEnabled() {
     return myTransportEnabled;
+  }
+
+  void saveTorrentForPublish(@NotNull final String torrentFilePath) {
+    synchronized (torrensForPublishing) {
+      torrensForPublishing.add(torrentFilePath);
+    }
   }
 }
