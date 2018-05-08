@@ -28,7 +28,7 @@ public class TorrentsDownloadStatisticTest {
   private TorrentsDownloadStatistic myTorrentsDownloadStatistic;
 
   @BeforeMethod
-  public void setUp() throws Exception {
+  public void setUp() {
     myTorrentsDownloadStatistic = new TorrentsDownloadStatistic();
   }
 
@@ -36,23 +36,21 @@ public class TorrentsDownloadStatisticTest {
 
     assertEquals(myTorrentsDownloadStatistic.getFailedDownloadCount(), 0);
     assertEquals(myTorrentsDownloadStatistic.getSuccessfulDownloadCount(), 0);
-    assertEquals(myTorrentsDownloadStatistic.getAverageSpeedMbS(), 0, 0.001);
 
     myTorrentsDownloadStatistic.fileDownloadFailed();
     myTorrentsDownloadStatistic.fileDownloadFailed();
     myTorrentsDownloadStatistic.fileDownloadFailed();
 
-    myTorrentsDownloadStatistic.fileDownloaded(1000, 2000000);
-    myTorrentsDownloadStatistic.fileDownloaded(1000, 4000000);
+    myTorrentsDownloadStatistic.fileDownloaded();
+    myTorrentsDownloadStatistic.fileDownloaded();
 
     assertEquals(myTorrentsDownloadStatistic.getFailedDownloadCount(), 3);
     assertEquals(myTorrentsDownloadStatistic.getSuccessfulDownloadCount(), 2);
-    assertEquals(myTorrentsDownloadStatistic.getAverageSpeedMbS(), 2929.68/1024, 0.1);
 
   }
 
   @AfterMethod
-  public void tearDown() throws Exception {
+  public void tearDown() {
     myTorrentsDownloadStatistic.reset();
   }
 }

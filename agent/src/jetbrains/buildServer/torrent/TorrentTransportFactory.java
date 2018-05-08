@@ -251,7 +251,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         final long fileSize = target.length();
         log2Build(String.format("Download successful. Avg speed %d kb/s.", fileSize / took));
 
-        myTorrentsDownloadStatistic.fileDownloaded(took, fileSize);
+        myTorrentsDownloadStatistic.fileDownloaded();
 
         // return standard digest
         return getDigest(url);

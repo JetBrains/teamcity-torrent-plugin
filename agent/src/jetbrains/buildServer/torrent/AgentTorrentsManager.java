@@ -209,8 +209,6 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
             myTorrentsDownloadStatistic.getFailedDownloadCount()).asString());
     logger.message(new BuildStatisticValue(TorrentsDownloadStatistic.SUCCESS_DOWNLOAD_KEY,
             myTorrentsDownloadStatistic.getSuccessfulDownloadCount()).asString());
-    logger.message(new BuildStatisticValue(TorrentsDownloadStatistic.AVERAGE_SPEED_KEY,
-            myTorrentsDownloadStatistic.getAverageSpeedMbS()).asString());
   }
 
   @NotNull

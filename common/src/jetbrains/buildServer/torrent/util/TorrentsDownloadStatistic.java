@@ -23,34 +23,25 @@ public class TorrentsDownloadStatistic {
 
   public final static String SUCCESS_DOWNLOAD_KEY = "torrent.statistic.successCount";
   public final static String FAIL_DOWNLOAD_KEY = "torrent.statistic.failCount";
-  public final static String AVERAGE_SPEED_KEY = "torrent.statistic.speed";
 
 
   private final AtomicInteger mySuccessfulDownloadCount;
   private final AtomicInteger myFailedDownloadCount;
-  private final AtomicLong myTotalTimeMillis;
-  private final AtomicLong myTotalSize;
 
 
   public TorrentsDownloadStatistic() {
     this.mySuccessfulDownloadCount = new AtomicInteger(0);
     this.myFailedDownloadCount = new AtomicInteger(0);
-    this.myTotalSize = new AtomicLong(0);
-    this.myTotalTimeMillis = new AtomicLong(0);
   }
 
 
   public void reset() {
     mySuccessfulDownloadCount.set(0);
     myFailedDownloadCount.set(0);
-    myTotalSize.set(0);
-    myTotalTimeMillis.set(0);
   }
 
-  public void fileDownloaded(long time, long size) {
+  public void fileDownloaded() {
     mySuccessfulDownloadCount.incrementAndGet();
-    myTotalSize.addAndGet(size);
-    myTotalTimeMillis.addAndGet(time);
   }
 
   public void fileDownloadFailed() {
@@ -65,14 +56,4 @@ public class TorrentsDownloadStatistic {
     return myFailedDownloadCount.get();
   }
 
-  /**
-   * @return average speed of downloaded torrents (Megabytes/second). Return zero, if time is 0
-   */
-  public float getAverageSpeedMbS() {
-    if (myTotalTimeMillis.get() == 0) return 0;
-    float size = myTotalSize.get();
-    float time = myTotalTimeMillis.get();
-    float averageSpeed = size / time;//bytes/millisecond
-    return averageSpeed * 1000 / (1024 * 1024);
-  }
 }
