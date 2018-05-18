@@ -147,7 +147,7 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     File torrentFile = myTorrentFilesFactory.createTorrentFile(file);
     if (torrentFile == null) return null;
 
-    log2Build("Started seeding " + file.getAbsolutePath());
+    LOG.debug("Started seeding " + file.getAbsolutePath());
     myTorrentsManager.getTorrentsSeeder().registerSrcAndTorrentFile(file, torrentFile, true);
     return torrentFile;
   }
@@ -185,16 +185,6 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
   }
 
   public void onAfterDelete(@NotNull File file) {
-  }
-
-  private void log2Build(String msg) {
-    try {
-      AgentRunningBuild currentBuild = myBuildTracker.getCurrentBuild();
-      final BuildProgressLogger buildLogger = currentBuild.getBuildLogger();
-      TorrentUtil.log2Build(msg, buildLogger);
-    } catch (NoRunningBuildException e) {
-      // build finished?
-    }
   }
 
   private boolean isTorrentFile(@NotNull File file) {
