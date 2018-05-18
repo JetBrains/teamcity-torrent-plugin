@@ -208,7 +208,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
         final int minSeedersForDownload = myLeechSettings.getMinSeedersForDownload();
 
-        final long startTime = System.currentTimeMillis();
         final long timeoutForConnectToPeersMs = 5000;
 
         final AtomicReference<Exception> exceptionHolder = new AtomicReference<Exception>();
@@ -246,10 +245,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         }
 
         myClient.stopSeedingByPath(target);
-
-        final long took = System.currentTimeMillis() - startTime + 1; // to avoid division by zero
-        final long fileSize = target.length();
-        log2Build(String.format("Download successful. Avg speed %d kb/s.", fileSize / took));
 
         myTorrentsDownloadStatistic.fileDownloaded();
 
