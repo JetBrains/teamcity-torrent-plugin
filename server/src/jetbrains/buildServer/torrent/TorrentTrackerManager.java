@@ -6,6 +6,7 @@ import com.turn.ttorrent.tracker.*;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.BuildServerListener;
+import jetbrains.buildServer.serverSide.ServerResponsibility;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.torrent.web.TrackerController;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -33,15 +34,18 @@ public class TorrentTrackerManager {
   private boolean myTrackerRunning;
   private final TorrentConfigurator myConfigurator;
   private final ScheduledExecutorService myExecutorService;
+  @NotNull private final ServerResponsibility myServerResponsibility;
   private ScheduledFuture<?> myCleanupTaskFuture;
 
 
   public TorrentTrackerManager(@NotNull final TorrentConfigurator configurator,
                                @NotNull final ExecutorServices executorServices,
                                @NotNull final EventDispatcher<BuildServerListener> dispatcher,
-                               @NotNull final AddressChecker addressChecker) {
+                               @NotNull final AddressChecker addressChecker,
+                               @NotNull final ServerResponsibility serverResponsibility) {
     myConfigurator = configurator;
     myExecutorService = executorServices.getNormalExecutorService();
+    myServerResponsibility = serverResponsibility;
 
     final int locksCount = 20;
     myTorrentsRepository = new TorrentsRepository(locksCount);
@@ -109,6 +113,8 @@ public class TorrentTrackerManager {
 
   public void startTracker(){
     if (isTrackerRunning()) return;
+
+    if (!myServerResponsibility.canManageServerConfig()) return;
 
     myTorrentsRepository.clear();
 

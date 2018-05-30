@@ -7,6 +7,7 @@ import com.turn.ttorrent.common.protocol.http.HTTPTrackerMessage;
 import com.turn.ttorrent.tracker.AddressChecker;
 import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.TrackerRequestProcessor;
+import jetbrains.buildServer.serverSide.ServerResponsibility;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
@@ -40,8 +41,10 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
     super.setUp();
     Mockery m = new Mockery();
     final AddressChecker addressChecker = m.mock(AddressChecker.class);
+    final ServerResponsibility serverResponsibility = m.mock(ServerResponsibility.class);
     m.checking(new Expectations() {{
       allowing(addressChecker).isBadAddress(with(any(String.class))); will(returnValue(false));
+      allowing(serverResponsibility).canManageServerConfig(); will(returnValue(true));
     }});
     myTrackerManager = new TorrentTrackerManager(myConfigurator, new ExecutorServices() {
       @NotNull
@@ -53,7 +56,7 @@ public class TorrentTrackerConfiguratorTest extends ServerTorrentsSeederTestCase
       public ExecutorService getLowPriorityExecutorService() {
         return null;
       }
-    }, myDispatcher, addressChecker);
+    }, myDispatcher, addressChecker, serverResponsibility);
 
     myDispatcher.getMulticaster().serverStartup();
 

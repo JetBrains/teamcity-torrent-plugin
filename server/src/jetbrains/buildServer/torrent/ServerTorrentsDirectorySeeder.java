@@ -52,13 +52,14 @@ public class ServerTorrentsDirectorySeeder {
                                        @NotNull final ServerSettings serverSettings,
                                        @NotNull final TorrentConfigurator configurator,
                                        @NotNull final EventDispatcher<BuildServerListener> eventDispatcher,
-                                       @NotNull final ExecutorServices executorServices) {
+                                       @NotNull final ExecutorServices executorServices,
+                                       @NotNull final ServerResponsibility serverResponsibility) {
     setMaxNumberOfSeededTorrents(configurator.getMaxNumberOfSeededTorrents());
     myConfigurator = configurator;
     eventDispatcher.addListener(new BuildServerAdapter() {
       @Override
       public void serverStartup() {
-        final File torrentsStorage = new File(serverPaths.getPluginDataDirectory(), "torrents");
+        final File torrentsStorage = new File(serverPaths.getCachesDir(), "torrents");
         torrentsStorage.mkdirs();
         myTorrentsSeeder = new TorrentsSeeder(torrentsStorage, configurator.getMaxNumberOfSeededTorrents(), new ParentDirConverter() {
           @NotNull
@@ -71,7 +72,7 @@ public class ServerTorrentsDirectorySeeder {
         // if torrent file expires, it will be removed from disk as well
         // this is needed to prevent agents from downloading this torrent file (because most likely no one is going to seed this torrent in the future)
         // and to stop showing torrent icons for users
-        myTorrentsSeeder.setRemoveExpiredTorrentFiles(true);
+        myTorrentsSeeder.setRemoveExpiredTorrentFiles(serverResponsibility.canManageBuilds());
 
         startSeeder();
       }
@@ -82,11 +83,20 @@ public class ServerTorrentsDirectorySeeder {
         final File torrentsDir = getTorrentFilesBaseDir(artifactsDirectory);
         torrentsDir.mkdirs();
         Path torrentsPath = torrentsDir.toPath();
+        final UnusedTorrentFilesRemover torrentFilesRemover;
+
+        boolean readWriteNode = serverResponsibility.canManageBuilds();
+        if (readWriteNode) {
+          torrentFilesRemover = new UnusedTorrentFilesRemoverImpl(Files::delete, Files::walkFileTree);
+        } else {
+          torrentFilesRemover = (artifacts, path)->{};
+        }
+
         announceBuildArtifacts(torrentsPath,
                 build.getArtifacts(BuildArtifactsViewMode.VIEW_INTERNAL_ONLY),
                 new ArtifactsCollectorImpl(),
                 new ArtifactProcessorImpl(torrentsPath, artifactsDirectory.toPath(), myTorrentsSeeder, myConfigurator),
-                new UnusedTorrentFilesRemoverImpl(Files::delete, Files::walkFileTree));
+                torrentFilesRemover);
       }
 
       public void serverShutdown() {

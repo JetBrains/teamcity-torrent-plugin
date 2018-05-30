@@ -25,6 +25,7 @@ import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
 import jetbrains.buildServer.serverSide.BuildServerListener;
 import jetbrains.buildServer.serverSide.ServerPaths;
+import jetbrains.buildServer.serverSide.ServerResponsibility;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jmock.Expectations;
@@ -49,19 +50,22 @@ public class TorrentTrackerManagerTest extends BaseTestCase {
     Mockery m = new Mockery();
     final XmlRpcHandlerManager rpcHandlerManager = m.mock(XmlRpcHandlerManager.class);
     final ExecutorServices executorServices = m.mock(ExecutorServices.class);
+    final ServerResponsibility serverResponsibility = m.mock(ServerResponsibility.class);
     myExecutorService = Executors.newScheduledThreadPool(4);
     final RootUrlHolder rootUrlHolder = m.mock(RootUrlHolder.class);
     m.checking(new Expectations() {{
       allowing(rpcHandlerManager).addHandler(with(any(String.class)), with(any(Object.class)));
       allowing(executorServices).getNormalExecutorService(); will(returnValue(myExecutorService));
       allowing(rootUrlHolder).getRootUrl(); will(returnValue("http://localhost:8111"));
+      allowing(serverResponsibility).canManageServerConfig(); will(returnValue(true));
     }});
     myTorrentTrackerManager = new TorrentTrackerManager(
             new TorrentConfigurator(new ServerPaths(createTempDir().getAbsolutePath()), rootUrlHolder, rpcHandlerManager),
             executorServices,
             new EventDispatcher<BuildServerListener>(BuildServerListener.class) {
             },
-            m.mock(AddressChecker.class)
+            m.mock(AddressChecker.class),
+            serverResponsibility
     );
 
   }

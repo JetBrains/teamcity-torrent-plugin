@@ -25,6 +25,7 @@ import jetbrains.buildServer.XmlRpcHandlerManager;
 import jetbrains.buildServer.controllers.AuthorizationInterceptor;
 import jetbrains.buildServer.controllers.BaseControllerTestCase;
 import jetbrains.buildServer.serverSide.ServerPaths;
+import jetbrains.buildServer.serverSide.ServerResponsibility;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.torrent.TorrentConfigurator;
 import jetbrains.buildServer.torrent.TorrentTrackerManager;
@@ -68,7 +69,8 @@ public class TrackerControllerTest extends BaseControllerTestCase<TrackerControl
             configurator,
             myFixture.getSingletonService(ExecutorServices.class),
             myFixture.getSingletonService(EventDispatcher.class),
-            addressChecker
+            addressChecker,
+            myFixture.getSingletonService(ServerResponsibility.class)
     );
 
     myTorrentTrackerManager.startTracker();

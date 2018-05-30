@@ -19,10 +19,7 @@ package jetbrains.buildServer.torrent;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
-import jetbrains.buildServer.serverSide.BuildServerListener;
-import jetbrains.buildServer.serverSide.BuildServerListenerEventDispatcher;
-import jetbrains.buildServer.serverSide.ServerPaths;
-import jetbrains.buildServer.serverSide.ServerSettings;
+import jetbrains.buildServer.serverSide.*;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
 import jetbrains.buildServer.serverSide.impl.auth.SecurityContextImpl;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -51,9 +48,11 @@ public class ServerTorrentsSeederTestCase extends BaseTestCase {
     final RootUrlHolder rootUrlHolder = m.mock(RootUrlHolder.class);
     final ExecutorServices executorServices = m.mock(ExecutorServices.class);
     myExecutorService = Executors.newScheduledThreadPool(1);
+    final ServerResponsibility serverResponsibility = m.mock(ServerResponsibility.class);
     m.checking(new Expectations(){{
       allowing(rootUrlHolder).getRootUrl(); will(returnValue("http://localhost:8111/"));
       allowing(executorServices).getNormalExecutorService(); will(returnValue(myExecutorService));
+      allowing(serverResponsibility).canManageBuilds(); will(returnValue(true));
     }});
 
     final ServerSettings serverSettings = m.mock(ServerSettings.class);
@@ -70,7 +69,12 @@ public class ServerTorrentsSeederTestCase extends BaseTestCase {
 
     myDispatcher = new BuildServerListenerEventDispatcher(new SecurityContextImpl());
 
-    myTorrentsSeeder = new ServerTorrentsDirectorySeeder(serverPaths, serverSettings, myConfigurator, myDispatcher, executorServices);
+    myTorrentsSeeder = new ServerTorrentsDirectorySeeder(serverPaths,
+            serverSettings,
+            myConfigurator,
+            myDispatcher,
+            executorServices,
+            serverResponsibility);
   }
 
   @AfterMethod
