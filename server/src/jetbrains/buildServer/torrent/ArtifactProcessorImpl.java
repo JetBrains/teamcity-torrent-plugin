@@ -38,10 +38,10 @@ public class ArtifactProcessorImpl implements ArtifactProcessor {
   @NotNull private final TorrentsSeeder myTorrentsSeeder;
   @NotNull private final TorrentConfigurator myConfigurator;
 
-  public ArtifactProcessorImpl(@NotNull Path torrentsDir,
-                               @NotNull Path artifactsDirectory,
-                               @NotNull TorrentsSeeder torrentsSeeder,
-                               @NotNull TorrentConfigurator configurator) {
+  ArtifactProcessorImpl(@NotNull Path torrentsDir,
+                        @NotNull Path artifactsDirectory,
+                        @NotNull TorrentsSeeder torrentsSeeder,
+                        @NotNull TorrentConfigurator configurator) {
     myTorrentsDir = torrentsDir;
     myTorrentsSeeder = torrentsSeeder;
     myConfigurator = configurator;
@@ -59,20 +59,18 @@ public class ArtifactProcessorImpl implements ArtifactProcessor {
         return;
       }
 
-      if (TorrentUtil.shouldCreateTorrentFor(artifact.getSize(), myConfigurator)) {
-        String artifactRelativePath = artifact.getRelativePath();
-        Path fullPath = myArtifactsDirectory.resolve(artifactRelativePath);
-        if (!Files.exists(fullPath)) {
-          LOG.debug(String.format("File '%s' doesn't exist. Won't create a torrent for it", fullPath.toString()));
-          return;
-        }
-        Path torrent = findTorrent(fullPath, artifactRelativePath);
-        if (!Files.exists(torrent)) {
-          LOG.debug(String.format("torrent file for artifact %s doesn't exist", artifactRelativePath));
-          return;
-        }
-        myTorrentsSeeder.registerSrcAndTorrentFile(fullPath.toFile(), torrent.toFile(), true);
+      String artifactRelativePath = artifact.getRelativePath();
+      Path fullPath = myArtifactsDirectory.resolve(artifactRelativePath);
+      if (!Files.exists(fullPath)) {
+        LOG.debug(String.format("File '%s' doesn't exist. Won't create a torrent for it", fullPath.toString()));
+        return;
       }
+      Path torrent = findTorrent(fullPath, artifactRelativePath);
+      if (!Files.exists(torrent)) {
+        LOG.debug(String.format("torrent file for artifact %s doesn't exist", artifactRelativePath));
+        return;
+      }
+      myTorrentsSeeder.registerSrcAndTorrentFile(fullPath.toFile(), torrent.toFile(), true);
     });
   }
 
