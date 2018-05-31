@@ -16,9 +16,10 @@
 
 package jetbrains.buildServer.torrent.seeder;
 
+import com.turn.ttorrent.client.SelectorFactoryImpl;
+import com.turn.ttorrent.client.announce.TrackerClientFactoryImpl;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.common.TorrentCreator;
-import com.turn.ttorrent.common.TorrentSerializer;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.torrent.TorrentConfiguration;
@@ -31,7 +32,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
@@ -62,8 +62,8 @@ public class TorrentsSeederTest extends BaseTestCase {
     }});
 
     myDirectorySeeder = new TorrentsSeeder(
-            createTempDir(), 100, null, myExecutorService, torrentConfiguration);
-    myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, myTracker.getAnnounceURI(), 3);
+            createTempDir(), 100, null, myExecutorService, torrentConfiguration, new TrackerClientFactoryImpl());
+    myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, myTracker.getAnnounceURI(), 3, new SelectorFactoryImpl());
   }
 
   public void start_seeding_file() throws IOException, NoSuchAlgorithmException, InterruptedException {

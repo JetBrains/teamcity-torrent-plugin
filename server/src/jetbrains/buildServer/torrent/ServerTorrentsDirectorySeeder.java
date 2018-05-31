@@ -6,8 +6,10 @@ package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.client.announce.TrackerClientFactory;
 import com.turn.ttorrent.client.peer.SharingPeer;
 import com.turn.ttorrent.common.AnnounceableTorrent;
+import com.turn.ttorrent.network.SelectorFactory;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.*;
@@ -47,15 +49,19 @@ public class ServerTorrentsDirectorySeeder {
   private final TorrentConfigurator myConfigurator;
   private URI myAnnounceURI;
   private int myMaxTorrentsToSeed;
+  private final SelectorFactory mySelectorFactory;
 
   public ServerTorrentsDirectorySeeder(@NotNull final ServerPaths serverPaths,
                                        @NotNull final ServerSettings serverSettings,
                                        @NotNull final TorrentConfigurator configurator,
                                        @NotNull final EventDispatcher<BuildServerListener> eventDispatcher,
                                        @NotNull final ExecutorServices executorServices,
+                                       @NotNull final SelectorFactory selectorFactory,
+                                       @NotNull final TrackerClientFactory trackerClientFactory,
                                        @NotNull final ServerResponsibility serverResponsibility) {
     setMaxNumberOfSeededTorrents(configurator.getMaxNumberOfSeededTorrents());
     myConfigurator = configurator;
+    mySelectorFactory = selectorFactory;
     eventDispatcher.addListener(new BuildServerAdapter() {
       @Override
       public void serverStartup() {
@@ -67,7 +73,7 @@ public class ServerTorrentsDirectorySeeder {
           public File getParentDir() {
             return serverSettings.getArtifactDirectories().get(0);
           }
-        }, executorServices.getNormalExecutorService(), configurator);
+        }, executorServices.getNormalExecutorService(), configurator, trackerClientFactory);
 
         // if torrent file expires, it will be removed from disk as well
         // this is needed to prevent agents from downloading this torrent file (because most likely no one is going to seed this torrent in the future)
@@ -166,7 +172,7 @@ public class ServerTorrentsDirectorySeeder {
         addresses = NetworkUtil.getSelfAddresses(null);
       }
 
-      myTorrentsSeeder.start(addresses, myAnnounceURI, TorrentConfiguration.DEFAULT_ANNOUNCE_INTERVAL);
+      myTorrentsSeeder.start(addresses, myAnnounceURI, TorrentConfiguration.DEFAULT_ANNOUNCE_INTERVAL, mySelectorFactory);
     } catch (Exception e) {
       Loggers.SERVER.warn("Failed to start torrent seeder", e);
     }

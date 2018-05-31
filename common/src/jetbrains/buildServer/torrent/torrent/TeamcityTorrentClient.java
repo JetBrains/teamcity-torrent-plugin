@@ -4,11 +4,13 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.Client;
 import com.turn.ttorrent.client.DownloadProgressListener;
 import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.client.announce.TrackerClientFactory;
 import com.turn.ttorrent.client.peer.SharingPeer;
 import com.turn.ttorrent.common.AnnounceableFileTorrent;
 import com.turn.ttorrent.common.AnnounceableTorrent;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.common.TorrentHash;
+import com.turn.ttorrent.network.SelectorFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,12 +36,15 @@ public class TeamcityTorrentClient {
   @NotNull
   private final Client myClient;
 
-  public TeamcityTorrentClient(ExecutorService es, ExecutorService validatorES) {
-    myClient = new Client(es, validatorES);
+  public TeamcityTorrentClient(ExecutorService es, ExecutorService validatorES, TrackerClientFactory trackerClientFactory) {
+    myClient = new Client(es, validatorES, trackerClientFactory);
   }
 
-  public void start(@NotNull InetAddress[] inetAddresses, @Nullable final URI defaultTrackerURI, final int announceInterval) throws IOException {
-    myClient.start(inetAddresses, announceInterval, defaultTrackerURI);
+  public void start(@NotNull InetAddress[] inetAddresses,
+                    @Nullable final URI defaultTrackerURI,
+                    final int announceInterval,
+                    @NotNull final SelectorFactory selectorFactory) throws IOException {
+    myClient.start(inetAddresses, announceInterval, defaultTrackerURI, selectorFactory);
   }
 
   public void stop() {

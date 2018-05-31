@@ -16,6 +16,8 @@
 
 package jetbrains.buildServer.torrent;
 
+import com.turn.ttorrent.client.SelectorFactoryImpl;
+import com.turn.ttorrent.client.announce.TrackerClientFactoryImpl;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
@@ -74,6 +76,8 @@ public class ServerTorrentsSeederTestCase extends BaseTestCase {
             myConfigurator,
             myDispatcher,
             executorServices,
+            new SelectorFactoryImpl(),
+            new TrackerClientFactoryImpl(),
             serverResponsibility);
   }
 

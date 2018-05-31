@@ -13,6 +13,8 @@
   <bean class="jetbrains.buildServer.torrent.ServerTorrentsDirectorySeeder"/>
   <bean class="jetbrains.buildServer.torrent.IpChecker"/>
   <bean class="jetbrains.buildServer.torrent.TorrentBuildStartProcessor"/>
+  <bean class="jetbrains.buildServer.torrent.ServerSelectorFactory"/>
+  <bean class="jetbrains.buildServer.torrent.ServerTrackerClientFactory"/>
 
   <bean class="jetbrains.buildServer.torrent.web.TorrentSettingsAdminPage"/>
   <bean class="jetbrains.buildServer.torrent.web.TorrentLinksExtension"/>

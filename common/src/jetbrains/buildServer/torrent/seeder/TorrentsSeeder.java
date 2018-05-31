@@ -19,6 +19,8 @@ package jetbrains.buildServer.torrent.seeder;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.FileUtil;
 import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.client.announce.TrackerClientFactory;
+import com.turn.ttorrent.network.SelectorFactory;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.TorrentConfiguration;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
@@ -70,7 +72,8 @@ public class TorrentsSeeder {
                         int maxTorrentsToSeed,
                         @Nullable PathConverter pathConverter,
                         ScheduledExecutorService executor,
-                        @NotNull final TorrentConfiguration torrentConfiguration) {
+                        @NotNull final TorrentConfiguration torrentConfiguration,
+                        @NotNull final TrackerClientFactory trackerClientFactory) {
     myMaxTorrentsToSeed = maxTorrentsToSeed;
     myTorrentFilesDB = new TorrentFilesDB(new File(torrentStorage, "torrents.db"), maxTorrentsToSeed, pathConverter, new TorrentFilesDB.CacheListener() {
       public void onRemove(@NotNull Map.Entry<File, File> removedEntry) {
@@ -92,7 +95,7 @@ public class TorrentsSeeder {
             new LinkedBlockingQueue<Runnable>(2000),
             new NamedThreadFactory(PIECE_VALIDATOR_EXECUTOR_NAME));
     myValidatorExecutor.allowCoreThreadTimeOut(true);
-    myClient = new TeamcityTorrentClient(myWorkerExecutor, myValidatorExecutor);
+    myClient = new TeamcityTorrentClient(myWorkerExecutor, myValidatorExecutor, trackerClientFactory);
     myExecutor = executor;
   }
 
@@ -124,13 +127,14 @@ public class TorrentsSeeder {
 
   public synchronized void start(@NotNull InetAddress[] address,
                                  @Nullable final URI defaultTrackerURI,
-                                 final int announceInterval) throws IOException {
+                                 final int announceInterval,
+                                 @NotNull final SelectorFactory selectorFactory) throws IOException {
     if (myWorking) return; // already started
 
     myWorking = true;
 
     try {
-      myClient.start(address, defaultTrackerURI, announceInterval);
+      myClient.start(address, defaultTrackerURI, announceInterval, selectorFactory);
     } catch (RejectedExecutionException e) {
       LOG.warnAndDebugDetails("Failed to start bittorrent client", e);
     }

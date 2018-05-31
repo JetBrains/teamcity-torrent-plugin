@@ -16,7 +16,9 @@
 
 package jetbrains.buildServer.torrent;
 
+import com.turn.ttorrent.client.SelectorFactoryImpl;
 import com.turn.ttorrent.client.SharedTorrent;
+import com.turn.ttorrent.client.announce.TrackerClientFactoryImpl;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.ParentDirConverter;
@@ -48,7 +50,7 @@ public class AgentTorrentsSeeder {
       public File getParentDir() {
         return agentConfiguration.getSystemDirectory();
       }
-    }, myExecutorService, torrentConfiguration);
+    }, myExecutorService, torrentConfiguration, new TrackerClientFactoryImpl());
   }
 
   public void setRemoveExpiredTorrentFiles(boolean removeExpiredTorrentFiles) {
@@ -76,7 +78,7 @@ public class AgentTorrentsSeeder {
   }
 
   public void start(@NotNull InetAddress[] address, @Nullable URI defaultTrackerURI, int announceInterval) throws IOException {
-    myTorrentsSeeder.start(address, defaultTrackerURI, announceInterval);
+    myTorrentsSeeder.start(address, defaultTrackerURI, announceInterval, new SelectorFactoryImpl());
   }
 
   public void stop() {
