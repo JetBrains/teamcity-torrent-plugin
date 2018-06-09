@@ -81,13 +81,20 @@ public class TeamcityTorrentClient {
   }
 
   public void stopSeeding(@NotNull File torrentFile) {
+    Torrent t = null;
     try {
-      Torrent t = loadTorrent(torrentFile);
-      myClient.removeTorrent(t);
-    } catch (IOException e) {
+      t = loadTorrent(torrentFile);
+    } catch (FileNotFoundException e) {
+      //torrent file can be deleted, ignore this exception
+    } catch(IOException e) {
       LOG.warn(e.toString());
     } catch (NoSuchAlgorithmException e) {
       LOG.warn(e.toString());
+    }
+    if (t == null) {
+      myClient.removeByTorrentFile(torrentFile);
+    } else {
+      myClient.removeTorrent(t);
     }
   }
   public void stopSeeding(@NotNull TorrentHash torrentHash) {
