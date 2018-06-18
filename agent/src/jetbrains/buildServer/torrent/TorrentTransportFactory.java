@@ -15,6 +15,7 @@ import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.artifacts.impl.HttpTransport;
 import jetbrains.buildServer.http.HttpUtil;
 import jetbrains.buildServer.log.Loggers;
+import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.torrent.seeder.TorrentsSeeder;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
@@ -204,7 +205,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
       try {
         LOG.info(String.format("trying to download %s via bittorrent", url));
-        myBuildLogger.progressStarted("Downloading " + target.getName() + " via BitTorrent protocol.");
+        final String message = "Downloading " + target.getName() + " via BitTorrent protocol.";
+        myBuildLogger.logMessage(DefaultMessagesInfo.createProgressMessage(message));
 
         final int minSeedersForDownload = myLeechSettings.getMinSeedersForDownload();
 
@@ -258,8 +260,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       } catch (Exception ex) {
         log2Build(String.format("Unable to download artifact %s: %s", url, ex.getMessage()));
         throw new IOException(ex);
-      } finally {
-        myBuildLogger.progressFinished();
       }
     }
 
