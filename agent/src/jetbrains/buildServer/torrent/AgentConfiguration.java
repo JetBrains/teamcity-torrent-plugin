@@ -8,6 +8,7 @@ import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.settings.SeedSettings;
 import jetbrains.buildServer.util.EventDispatcher;
 import jetbrains.buildServer.util.StringUtil;
+import jetbrains.buildServer.util.ssl.SSLTrustStoreProvider;
 import jetbrains.buildServer.xmlrpc.XmlRpcFactory;
 import jetbrains.buildServer.xmlrpc.XmlRpcTarget;
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +34,8 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
 
   public AgentConfiguration(@NotNull final EventDispatcher<AgentLifeCycleListener> dispatcher,
                             @NotNull final BuildAgentConfiguration buildAgentConfiguration,
-                            @NotNull CurrentBuildTracker currentBuildTracker) {
+                            @NotNull final CurrentBuildTracker currentBuildTracker,
+                            @NotNull final SSLTrustStoreProvider SSLTrustStoreProvider) {
     myCurrentBuildTracker = currentBuildTracker;
     myBuildAgentConfiguration = buildAgentConfiguration;
     dispatcher.addListener(new AgentLifeCycleAdapter() {
@@ -41,7 +43,12 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
       public void agentStarted(@NotNull BuildAgent agent) {
         String serverUrl = agent.getConfiguration().getServerUrl();
         if (StringUtil.isNotEmpty(serverUrl)) {
-          myXmlRpcTarget = XmlRpcFactory.getInstance().create(serverUrl, "TeamCity Agent", 30000, false);
+          myXmlRpcTarget = XmlRpcFactory.getInstance().create(
+                  serverUrl,
+                  "TeamCity Agent",
+                  30000,
+                  false,
+                  SSLTrustStoreProvider.getTrustStore());
         } else {
           Loggers.AGENT.error("Cannot create RPC instance for torrent plugin: server url is not specified");
         }
@@ -122,17 +129,20 @@ public class AgentConfiguration implements TorrentConfiguration, SeedSettings, L
     return getFromBuildOrDefault(LeechSettings.MAX_PIECE_DOWNLOAD_TIME, LeechSettings.DEFAULT_MAX_PIECE_DOWNLOAD_TIME);
   }
 
-  @Override public int getSocketTimeout() {
+  @Override
+  public int getSocketTimeout() {
     int defaultTimeout = (int) TimeUnit.MILLISECONDS.toSeconds(Constants.DEFAULT_SOCKET_CONNECTION_TIMEOUT_MILLIS);
     return call("getSocketTimeout", defaultTimeout);
   }
 
-  @Override public int getCleanupTimeout() {
+  @Override
+  public int getCleanupTimeout() {
     int defaultTimeout = (int) TimeUnit.MILLISECONDS.toSeconds(Constants.DEFAULT_CLEANUP_RUN_TIMEOUT_MILLIS);
     return call("getCleanupTimeout", defaultTimeout);
   }
 
-  @Override public int getMaxConnectionsCount() {
+  @Override
+  public int getMaxConnectionsCount() {
     return call("getMaxConnectionsCount", TorrentConfiguration.DEFAULT_MAX_CONNECTIONS);
   }
 
