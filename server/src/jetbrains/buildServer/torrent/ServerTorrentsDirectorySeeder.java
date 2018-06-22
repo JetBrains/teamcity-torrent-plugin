@@ -45,7 +45,7 @@ import java.util.Set;
 public class ServerTorrentsDirectorySeeder {
   private final static Logger LOG = Logger.getInstance(ServerTorrentsDirectorySeeder.class.getName());
 
-  private TorrentsSeeder myTorrentsSeeder;
+  private volatile TorrentsSeeder myTorrentsSeeder;
   private final TorrentConfigurator myConfigurator;
   private URI myAnnounceURI;
   private int myMaxTorrentsToSeed;
@@ -85,6 +85,13 @@ public class ServerTorrentsDirectorySeeder {
 
       @Override
       public void buildFinished(@NotNull SRunningBuild build) {
+
+        if (myTorrentsSeeder == null) {
+          LOG.warn("Torrent is not initialized at finish of build " +
+                  build + ". Artifacts from this build will not be seeded by server");
+          return;
+        }
+
         File artifactsDirectory = build.getArtifactsDirectory();
         final File torrentsDir = getTorrentFilesBaseDir(artifactsDirectory);
         torrentsDir.mkdirs();
