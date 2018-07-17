@@ -1,16 +1,15 @@
 package jetbrains.buildServer.torrent.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
-import com.turn.ttorrent.client.Client;
-import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.client.CommunicationManager;
 import com.turn.ttorrent.common.TorrentCreator;
-import com.turn.ttorrent.common.TorrentMultiFileMetadata;
+import com.turn.ttorrent.common.TorrentMetadata;
+import com.turn.ttorrent.common.TorrentParser;
 import com.turn.ttorrent.common.TorrentSerializer;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.messages.BuildMessage1;
 import jetbrains.buildServer.messages.DefaultMessagesInfo;
 import jetbrains.buildServer.torrent.TorrentConfiguration;
-import jetbrains.buildServer.util.ExceptionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,7 +17,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -31,25 +30,18 @@ public class TorrentUtil {
    * Loads torrent from torrent file
    */
   @NotNull
-  public static Torrent loadTorrent(@NotNull File torrentFile) throws IOException {
+  public static TorrentMetadata loadTorrent(@NotNull File torrentFile) throws IOException {
     setHashingThreadsCount();
-
-    try {
-      return Torrent.load(torrentFile);
-    } catch (NoSuchAlgorithmException e) {
-      ExceptionUtil.rethrowAsRuntimeException(e);
-    }
-
-    return null;
+    return new TorrentParser().parseFromFile(torrentFile);
   }
 
   private static void setHashingThreadsCount() {
     TorrentCreator.setHashingThreadsCount(2); // limit number of threads generating hashes for a file
   }
 
-  public static boolean isConnectionManagerInitialized(@NotNull Client client) {
+  public static boolean isConnectionManagerInitialized(@NotNull CommunicationManager communicationManager) {
     try {
-      client.getConnectionManager();
+      communicationManager.getConnectionManager();
       return true;
     } catch (IllegalStateException e) {
       return false;
@@ -71,8 +63,12 @@ public class TorrentUtil {
     File torrentFile = new File(torrentsStore, relativePath + TORRENT_FILE_SUFFIX);
     if (torrentFile.isFile()) {
       try {
-        Torrent t =  loadTorrent(torrentFile);
-        for (List<String> uris: t.getAnnounceList()) {
+        TorrentMetadata t =  loadTorrent(torrentFile);
+
+        List<List<String>> announceList = t.getAnnounceList() == null ?
+                Collections.singletonList(Collections.singletonList(t.getAnnounce())) :
+                t.getAnnounceList();
+        for (List<String> uris: announceList) {
           if (uris.contains(announceURI.toString())) return torrentFile;
         }
       } catch (IOException e) {
@@ -80,7 +76,7 @@ public class TorrentUtil {
       }
     }
 
-    final Torrent torrent = createTorrent(srcFile, torrentFile, announceURI);
+    final TorrentMetadata torrent = createTorrent(srcFile, torrentFile, announceURI);
     return torrent != null ? torrentFile : null;
   }
 
@@ -90,7 +86,7 @@ public class TorrentUtil {
    * @param torrentFile file for writing
    * @throws IOException if any io error occurs
    */
-  public static void saveTorrentToFile(@NotNull TorrentMultiFileMetadata metadata, @NotNull File torrentFile) throws IOException{
+  public static void saveTorrentToFile(@NotNull TorrentMetadata metadata, @NotNull File torrentFile) throws IOException{
     FileOutputStream fos = null;
     try {
       fos = new FileOutputStream(torrentFile);
@@ -104,11 +100,11 @@ public class TorrentUtil {
    * Creates the torrent file for the specified <code>srcFile</code> and announce URI.
    */
   @Nullable
-  public static Torrent createTorrent(@NotNull File srcFile, @NotNull File torrentFile, @NotNull URI announceURI) {
+  public static TorrentMetadata createTorrent(@NotNull File srcFile, @NotNull File torrentFile, @NotNull URI announceURI) {
     setHashingThreadsCount();
 
     try {
-      Torrent t = TorrentCreator.create(srcFile, announceURI, "TeamCity");
+      TorrentMetadata t = TorrentCreator.create(srcFile, announceURI, "TeamCity");
       saveTorrentToFile(t, torrentFile);
       return t;
     } catch (Exception e) {

@@ -106,10 +106,6 @@ public class TorrentsSeeder {
     myRemoveExpiredTorrentFiles = removeExpiredTorrentFiles;
   }
 
-  public boolean isSeedingByPath(@NotNull File srcFile) {
-    return myClient.isSeedingByPath(srcFile);
-  }
-
   public boolean isSeeding(@NotNull File torrentFile) {
     return myClient.isSeeding(torrentFile);
   }

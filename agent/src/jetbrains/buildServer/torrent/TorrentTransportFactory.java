@@ -2,8 +2,10 @@ package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.StreamUtil;
-import com.turn.ttorrent.client.DownloadProgressListener;
-import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.common.TorrentFile;
+import com.turn.ttorrent.common.TorrentMetadata;
+import com.turn.ttorrent.common.TorrentParser;
+import com.turn.ttorrent.common.TorrentUtils;
 import jetbrains.buildServer.ArtifactsConstants;
 import jetbrains.buildServer.agent.BuildAgentConfigurationEx;
 import jetbrains.buildServer.agent.BuildProgressLogger;
@@ -38,7 +40,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.*;
 import java.net.URLDecoder;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -183,7 +184,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
       long start = System.currentTimeMillis();
 
-      Torrent torrent = downloadTorrent(parsedArtifactUrl);
+      TorrentMetadata torrent = downloadTorrent(parsedArtifactUrl);
       if (torrent == null) {
         return null;
       }
@@ -197,9 +198,12 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       File torrentFile = myTorrentFilesFactory.getTorrentFile();
       TorrentUtil.saveTorrentToFile(torrent, torrentFile);
       String hexInfoHash = torrent.getHexInfoHash();
-      String name = torrent.getName();
-      List<String> fileNames = torrent.getFilenames();
-      long size = torrent.getSize();
+      String name = torrent.getDirectoryName();
+      List<String> fileNames = TorrentUtils.getTorrentFileNames(torrent);
+      long size = 0;
+      for (TorrentFile file : torrent.getFiles()) {
+        size += file.size;
+      }
       fileDownloadProgress.setExpectedLength(size);
       torrent = null;
 
@@ -210,26 +214,22 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
         final int minSeedersForDownload = myLeechSettings.getMinSeedersForDownload();
 
-        final long timeoutForConnectToPeersMs = 5000;
+        final int timeoutForConnectToPeersMs = 5000;
 
         final AtomicReference<Exception> exceptionHolder = new AtomicReference<Exception>();
         Loggers.AGENT.debug("start download file " + target.getName());
 
         Thread th = myClient.downloadAndShareOrFailAsync(
-                torrentFile, fileNames,
+                torrentFile,
+                fileNames,
                 hexInfoHash,
                 target,
                 target.getParentFile(),
+                fileDownloadProgress,
                 myLeechSettings.getMaxPieceDownloadTime(),
                 minSeedersForDownload,
-                myInterrupted,
-                timeoutForConnectToPeersMs, exceptionHolder,
-                new DownloadProgressListener() {
-                  @Override
-                  public void pieceLoaded(int pieceIndex, int pieceSize) {
-                    fileDownloadProgress.transferred(pieceSize);
-                  }
-                });
+                timeoutForConnectToPeersMs,
+                exceptionHolder);
         myCurrentDownload.set(Thread.currentThread());
         th.join();
         myCurrentDownload.set(null);
@@ -242,11 +242,9 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
         if (size != target.length()) {
           myTorrentsDownloadStatistic.fileDownloadFailed();
-          log2Build(String.format("Failed to download file completely via BitTorrent protocol. Expected file size: %s, actual file size: %s", String.valueOf(torrent.getSize()), String.valueOf(target.length())));
+          log2Build(String.format("Failed to download file completely via BitTorrent protocol. Expected file size: %s, actual file size: %s", String.valueOf(size), String.valueOf(target.length())));
           return null;
         }
-
-        myClient.stopSeedingByPath(target);
 
         myTorrentsDownloadStatistic.fileDownloaded();
 
@@ -329,16 +327,14 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       TorrentUtil.log2Build(msg, myBuildLogger);
     }
 
-    private Torrent downloadTorrent(@NotNull final ParsedArtifactPath parsedArtifactUrl) {
+    private TorrentMetadata downloadTorrent(@NotNull final ParsedArtifactPath parsedArtifactUrl) {
       final String torrentRelativePath = myTorrentsForArtifacts.get(parsedArtifactUrl.getArtifactPath());
       if (torrentRelativePath == null)
         return null;
 
       try {
         byte[] torrentData = download(parsedArtifactUrl.getTorrentUrl());
-        return new Torrent(torrentData, true);
-      } catch (NoSuchAlgorithmException e) {
-        Loggers.AGENT.warnAndDebugDetails("Failed to load downloaded torrent file, error: " + e.toString(), e);
+        return new TorrentParser().parse((torrentData));
       } catch (IOException e) {
         log2Build(String.format("Unable to download: %s", e.getMessage()));
       }

@@ -20,7 +20,7 @@ import com.turn.ttorrent.client.announce.AnnounceException;
 import com.turn.ttorrent.client.announce.HTTPTrackerClient;
 import com.turn.ttorrent.client.announce.TrackerClient;
 import com.turn.ttorrent.client.announce.TrackerClientFactory;
-import com.turn.ttorrent.common.AnnounceableTorrent;
+import com.turn.ttorrent.common.AnnounceableInformation;
 import com.turn.ttorrent.common.Peer;
 import com.turn.ttorrent.common.protocol.AnnounceRequestMessage;
 import jetbrains.buildServer.serverSide.ReadOnlyRestrictor;
@@ -58,12 +58,12 @@ public class ServerTrackerClientFactory implements TrackerClientFactory {
     }
 
     @Override
-    public void announce(AnnounceRequestMessage.RequestEvent event, boolean inhibitEvents, AnnounceableTorrent torrentInfo, List<Peer> adresses) throws AnnounceException {
+    public void announce(AnnounceRequestMessage.RequestEvent event, boolean inhibitEvents, AnnounceableInformation torrentInfo, List<Peer> adresses) throws AnnounceException {
       ReadOnlyRestrictor.doReadOnlyNetworkOperation(() -> super.announce(event, inhibitEvents, torrentInfo, adresses));
     }
 
     @Override
-    protected void multiAnnounce(AnnounceRequestMessage.RequestEvent event, boolean inhibitEvent, List<? extends AnnounceableTorrent> torrents, List<Peer> addresses) throws AnnounceException, ConnectException {
+    protected void multiAnnounce(AnnounceRequestMessage.RequestEvent event, boolean inhibitEvent, List<? extends AnnounceableInformation> torrents, List<Peer> addresses) throws AnnounceException, ConnectException {
       try {
         ReadOnlyRestrictor.doReadOnlyNetworkOperation(() -> ReadOnlyHttpClient.super.multiAnnounce(event, inhibitEvent, torrents, addresses));
       } catch (AnnounceException | ConnectException e) {

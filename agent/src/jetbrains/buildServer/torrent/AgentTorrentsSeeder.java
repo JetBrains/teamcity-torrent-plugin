@@ -57,10 +57,6 @@ public class AgentTorrentsSeeder {
     myTorrentsSeeder.setRemoveExpiredTorrentFiles(removeExpiredTorrentFiles);
   }
 
-  public boolean isSeedingByPath(@NotNull File srcFile) {
-    return myTorrentsSeeder.isSeedingByPath(srcFile);
-  }
-
   public TorrentsSeeder getTorrentsSeeder() {
     return myTorrentsSeeder;
   }

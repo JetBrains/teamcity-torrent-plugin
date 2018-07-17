@@ -16,10 +16,11 @@
 
 package jetbrains.buildServer.torrent.seeder;
 
+import com.turn.ttorrent.client.LoadedTorrent;
 import com.turn.ttorrent.client.SelectorFactoryImpl;
 import com.turn.ttorrent.client.announce.TrackerClientFactoryImpl;
-import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.common.TorrentCreator;
+import com.turn.ttorrent.common.TorrentMetadata;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.torrent.TorrentConfiguration;
@@ -34,7 +35,6 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -66,7 +66,7 @@ public class TorrentsSeederTest extends BaseTestCase {
     myDirectorySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, myTracker.getAnnounceURI(), 3, new SelectorFactoryImpl());
   }
 
-  public void start_seeding_file() throws IOException, NoSuchAlgorithmException, InterruptedException {
+  public void start_seeding_file() throws IOException, InterruptedException {
     final File srcFile = createTempFile(65535);
     final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
     myDirectorySeeder.registerSrcAndTorrentFile(srcFile, torrentFile, true);
@@ -74,7 +74,7 @@ public class TorrentsSeederTest extends BaseTestCase {
     assertTrue(myDirectorySeeder.isSeeding(torrentFile));
   }
 
-  public void stop_seeding() throws IOException, NoSuchAlgorithmException, InterruptedException {
+  public void stop_seeding() throws IOException, InterruptedException {
     final File srcFile = createTempFile(65535);
     final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
     myDirectorySeeder.registerSrcAndTorrentFile(srcFile, torrentFile, true);
@@ -86,22 +86,23 @@ public class TorrentsSeederTest extends BaseTestCase {
     assertFalse(myDirectorySeeder.isSeeding(torrentFile));
   }
 
-  public void stop_seeding_broken_file() throws IOException, NoSuchAlgorithmException, InterruptedException {
+  public void stop_seeding_broken_file() throws IOException, InterruptedException {
     final File srcFile = createTempFile(65535);
     final File torrentFile = createTorrentFromFile(srcFile, srcFile.getParentFile());
     myDirectorySeeder.registerSrcAndTorrentFile(srcFile, torrentFile, true);
 
     assertTrue(myDirectorySeeder.isSeeding(torrentFile));
 
+    LoadedTorrent next = myDirectorySeeder.getClient().getLoadedTorrents().iterator().next();
     FileUtil.delete(srcFile);
 
     myDirectorySeeder.checkForBrokenFiles();
     assertFalse(myDirectorySeeder.isSeeding(torrentFile));
   }
 
-  private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, NoSuchAlgorithmException, IOException {
+  private File createTorrentFromFile(File srcFile, File torrentDir) throws InterruptedException, IOException {
     File torrentFile = new File(torrentDir, srcFile.getName() + ".torrent");
-    final Torrent torrent = TorrentCreator.create(srcFile, myTracker.getAnnounceURI(), "Test");
+    final TorrentMetadata torrent = TorrentCreator.create(srcFile, myTracker.getAnnounceURI(), "Test");
     TorrentUtil.saveTorrentToFile(torrent, torrentFile);
     return torrentFile;
   }

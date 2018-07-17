@@ -16,7 +16,7 @@
 
 package jetbrains.buildServer.torrent.torrent;
 
-import com.turn.ttorrent.client.Client;
+import com.turn.ttorrent.client.CommunicationManager;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
@@ -32,12 +32,12 @@ public class TorrentUtilTest {
   public void isConnectionManagerInitializedTest() throws Exception {
     ExecutorService es = Executors.newFixedThreadPool(2);
     ExecutorService validatorES = Executors.newFixedThreadPool(2);
-    Client client = new Client(es, validatorES);
-    assertFalse(TorrentUtil.isConnectionManagerInitialized(client));
-    client.start(InetAddress.getLocalHost());
-    assertTrue(TorrentUtil.isConnectionManagerInitialized(client));
-    client.stop();
-    assertTrue(TorrentUtil.isConnectionManagerInitialized(client));
+    CommunicationManager communicationManager = new CommunicationManager(es, validatorES);
+    assertFalse(TorrentUtil.isConnectionManagerInitialized(communicationManager));
+    communicationManager.start(InetAddress.getLocalHost());
+    assertTrue(TorrentUtil.isConnectionManagerInitialized(communicationManager));
+    communicationManager.stop();
+    assertTrue(TorrentUtil.isConnectionManagerInitialized(communicationManager));
     es.shutdown();
     validatorES.shutdown();
   }

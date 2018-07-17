@@ -16,9 +16,9 @@
 
 package jetbrains.buildServer.torrent;
 
-import com.turn.ttorrent.client.Client;
-import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.client.CommunicationManager;
 import com.turn.ttorrent.common.TorrentCreator;
+import com.turn.ttorrent.common.TorrentMetadata;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentRunningBuild;
@@ -35,8 +35,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
-import org.jmock.api.Invocation;
-import org.jmock.lib.action.CustomAction;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -56,7 +54,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Sergey.Pak
@@ -222,41 +219,42 @@ public class TorrentTransportTest extends BaseTestCase {
     final File ivyFile = new File(myTempDir, Constants.TEAMCITY_IVY);
     myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
     Tracker tracker = new Tracker(6969);
-    List<Client> clientList = new ArrayList<Client>();
+    List<CommunicationManager> communicationManagers = new ArrayList<CommunicationManager>();
     for (int i = 0; i < myLeechSettings.getMinSeedersForDownload(); i++) {
-      clientList.add(createClientWithClosingExecutorServiceOnStop());
+      communicationManagers.add(createClientWithClosingExecutorServiceOnStop());
     }
     try {
       tracker.start(true);
 
       mySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
 
-      final Torrent torrent = TorrentCreator.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
+      final TorrentMetadata torrent = TorrentCreator.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
       final File torrentFile = new File(torrentsDir, fileName + ".torrent");
       TorrentUtil.saveTorrentToFile(torrent, torrentFile);
       myDownloadMap.put("/.teamcity/torrents/" + fileName + ".torrent", torrentFile);
-      for (Client client : clientList) {
-        client.start(InetAddress.getLocalHost());
-        client.addTorrent(torrentFile.getAbsolutePath(), storageDir.getAbsolutePath(), true, false);
+      for (CommunicationManager communicationManager : communicationManagers) {
+        communicationManager.start(InetAddress.getLocalHost());
+        communicationManager.addTorrent(torrentFile.getAbsolutePath(), storageDir.getAbsolutePath());
       }
       final File targetFile = new File(downloadDir, fileName);
       final String digest = myTorrentTransport.downloadUrlTo(SERVER_PATH + fileName, targetFile);
       assertNotNull(digest);
       assertTrue(FileUtils.contentEquals(artifactFile, targetFile));
     } finally {
-      for (Client client : clientList) {
-        client.stop();
+      for (CommunicationManager communicationManager : communicationManagers) {
+        communicationManager.stop();
       }
       tracker.stop();
     }
   }
 
-  private Client createClientWithClosingExecutorServiceOnStop() {
+  private CommunicationManager createClientWithClosingExecutorServiceOnStop() {
     final ExecutorService es = Executors.newFixedThreadPool(2);
     final ExecutorService validatorES = Executors.newFixedThreadPool(2);
-    return new Client(es, validatorES) {
-      @Override public void stop(int timeout, TimeUnit timeUnit) {
-        super.stop(timeout, timeUnit);
+    return new CommunicationManager(es, validatorES) {
+      @Override
+      public void stop() {
+        super.stop();
         es.shutdown();
         validatorES.shutdown();
       }
@@ -283,23 +281,23 @@ public class TorrentTransportTest extends BaseTestCase {
     final File ivyFile = new File(myTempDir, Constants.TEAMCITY_IVY);
     myTorrentTransport.downloadUrlTo(ivyUrl, ivyFile);
     Tracker tracker = new Tracker(6969);
-    List<Client> clientList = new ArrayList<Client>();
+    List<CommunicationManager> communicationManagers = new ArrayList<CommunicationManager>();
     for (int i = 0; i < myLeechSettings.getMinSeedersForDownload(); i++) {
       final ExecutorService es = Executors.newFixedThreadPool(2);
-      clientList.add(createClientWithClosingExecutorServiceOnStop());
+      communicationManagers.add(createClientWithClosingExecutorServiceOnStop());
     }
     try {
       tracker.start(true);
 
       mySeeder.start(new InetAddress[]{InetAddress.getLocalHost()}, tracker.getAnnounceURI(), 5);
 
-      final Torrent torrent = TorrentCreator.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
+      final TorrentMetadata torrent = TorrentCreator.create(artifactFile, tracker.getAnnounceURI(), "testplugin");
       final File torrentFile = new File(torrentsDir, fileName + ".torrent");
       TorrentUtil.saveTorrentToFile(torrent, torrentFile);
       myDownloadMap.put("/.teamcity/torrents/" + fileName + ".torrent", torrentFile);
-      for (Client client : clientList) {
-        client.start(InetAddress.getLocalHost());
-        client.addTorrent(torrentFile.getAbsolutePath(), storageDir.getAbsolutePath(), true, false);
+      for (CommunicationManager communicationManager : communicationManagers) {
+        communicationManager.start(InetAddress.getLocalHost());
+        communicationManager.addTorrent(torrentFile.getAbsolutePath(), storageDir.getAbsolutePath());
       }
       final File targetFile = new File(downloadDir, fileName);
       new Thread(){
@@ -322,8 +320,8 @@ public class TorrentTransportTest extends BaseTestCase {
       }
       assertFalse(targetFile.exists());
     } finally {
-      for (Client client : clientList) {
-        client.stop();
+      for (CommunicationManager communicationManager : communicationManagers) {
+        communicationManager.stop();
       }
       tracker.stop();
     }

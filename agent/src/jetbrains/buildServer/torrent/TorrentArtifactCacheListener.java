@@ -1,7 +1,11 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
-import jetbrains.buildServer.agent.*;
+import com.turn.ttorrent.common.TorrentCreator;
+import com.turn.ttorrent.common.TorrentMetadata;
+import jetbrains.buildServer.agent.BuildAgentConfiguration;
+import jetbrains.buildServer.agent.CurrentBuildTracker;
+import jetbrains.buildServer.agent.NoRunningBuildException;
 import jetbrains.buildServer.artifacts.ArtifactCacheProvider;
 import jetbrains.buildServer.artifacts.ArtifactsCacheListener;
 import jetbrains.buildServer.artifacts.RevisionRules;
@@ -15,6 +19,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * @author Sergey.Pak
@@ -67,12 +72,21 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
       LOG.debug("Torrent plugin disabled. Won't seed " + absolutePath);
       return;
     }
-    if (myTorrentsSeeder.isSeedingByPath(file)) {
-      LOG.debug("Already seeding " + absolutePath);
-      return;
-    }
     if (!TorrentUtil.shouldCreateTorrentFor(file.length(), myConfiguration)) {
       LOG.debug("Won't create torrent for " + absolutePath + ". Artifact is too small: " + file.length());
+      return;
+    }
+    String announceUrl = myConfiguration.getAnnounceUrl();
+    if (announceUrl == null) return;
+
+    TorrentMetadata metadata;
+    try {
+      metadata = TorrentCreator.create(file, URI.create(announceUrl), "TeamCity Torrent Plugin");
+    } catch (Exception e) {
+      return;
+    }
+    if (myTorrentsSeeder.getClient().isSeeding(metadata)) {
+      LOG.debug("Already seeding " + absolutePath);
       return;
     }
 

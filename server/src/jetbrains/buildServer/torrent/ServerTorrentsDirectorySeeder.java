@@ -5,10 +5,10 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.turn.ttorrent.client.LoadedTorrent;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.client.announce.TrackerClientFactory;
 import com.turn.ttorrent.client.peer.SharingPeer;
-import com.turn.ttorrent.common.AnnounceableTorrent;
 import com.turn.ttorrent.network.SelectorFactory;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.log.Loggers;
@@ -238,8 +238,8 @@ public class ServerTorrentsDirectorySeeder {
     return myTorrentsSeeder.getSharedTorrents();
   }
 
-  public List<AnnounceableTorrent> getAnnounceableTorrents() {
-    return myTorrentsSeeder.getClient().getAnnounceableTorrents();
+  public List<LoadedTorrent> getLoadedTorrents() {
+    return myTorrentsSeeder.getClient().getLoadedTorrents();
   }
 
   public Set<SharingPeer> getPeers() {

@@ -17,8 +17,8 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
-import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.common.TorrentCreator;
+import com.turn.ttorrent.common.TorrentMetadata;
 import jetbrains.buildServer.agent.AgentIdleTasks;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.agent.InterruptState;
@@ -86,7 +86,7 @@ public class TorrentFilesFactoryImpl implements TorrentFilesFactory {
 
     try {
       File torrentFile = getTorrentFile();
-      Torrent torrent = TorrentCreator.create(srcFile, URI.create(announceUrl), "TeamCity Torrent Plugin");
+      TorrentMetadata torrent = TorrentCreator.create(srcFile, URI.create(announceUrl), "TeamCity Torrent Plugin");
       TorrentUtil.saveTorrentToFile(torrent, torrentFile);
       return torrentFile;
     } catch (Exception e) {

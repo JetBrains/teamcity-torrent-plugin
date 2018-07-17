@@ -16,10 +16,9 @@
 
 package jetbrains.buildServer.torrent;
 
-import com.turn.ttorrent.common.AnnounceableFileTorrent;
-import com.turn.ttorrent.common.AnnounceableTorrent;
-import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.client.LoadedTorrent;
 import com.turn.ttorrent.common.TorrentCreator;
+import com.turn.ttorrent.common.TorrentMetadata;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
@@ -106,7 +105,7 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
         final File artifactFile = createTempFile(65535);
         createdFiles.add(artifactFile);
         File torrentDir = createTempDir();
-        final Torrent torrent = TorrentCreator.create(artifactFile, tracker.getAnnounceURI(), "tc-plugin-test");
+        final TorrentMetadata torrent = TorrentCreator.create(artifactFile, tracker.getAnnounceURI(), "tc-plugin-test");
         final File torrentFile = new File(torrentDir, artifactFile.getName() + ".torrent");
         torrentHashes.add(torrent.getHexInfoHash());
         TorrentUtil.saveTorrentToFile(torrent, torrentFile);
@@ -125,11 +124,13 @@ public class AgentTorrentsManagerTest extends BaseTestCase {
       };
       List<String> seededHashes = new ArrayList<String>();
       List<File> seededFiles = new ArrayList<File>();
-      for (AnnounceableTorrent st : myTorrentsManager.getTorrentsSeeder().getClient().getAnnounceableTorrents()) {
-        seededHashes.add(st.getHexInfoHash());
-        AnnounceableFileTorrent torrent = myTorrentsManager.getTorrentsSeeder().getClient().getAnnounceableFileTorrent(st.getHexInfoHash());
-        Torrent metadata = Torrent.load(new File(torrent.getDotTorrentFilePath()));
-        seededFiles.add(new File(torrent.getDownloadDirPath(), metadata.getName()));
+      List<LoadedTorrent> loadedTorrents = myTorrentsManager.getTorrentsSeeder().getClient().getLoadedTorrents();
+      for (int i = 0; i < loadedTorrents.size(); i++) {
+        LoadedTorrent st = loadedTorrents.get(i);
+        File artifact = createdFiles.get(i);
+        seededHashes.add(st.getTorrentHash().getHexInfoHash());
+        TorrentMetadata metadata = st.getMetadata();
+        seededFiles.add(new File(artifact.getParentFile(), metadata.getFiles().get(0).getRelativePathAsString()));
       }
       assertSameElements(torrentHashes, seededHashes);
       assertSameElements(createdFiles, seededFiles);

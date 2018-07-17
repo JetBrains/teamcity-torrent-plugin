@@ -1,8 +1,7 @@
 package jetbrains.buildServer.torrent;
 
-import com.turn.ttorrent.common.AnnounceableFileTorrent;
-import com.turn.ttorrent.common.AnnounceableTorrent;
-import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.client.LoadedTorrent;
+import com.turn.ttorrent.common.TorrentMetadata;
 import com.turn.ttorrent.tracker.Tracker;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.*;
@@ -105,10 +104,9 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
     waitForSeededTorrents(1);
 
     assertEquals(1, mySeeder.getNumberOfSeededTorrents());
-    final AnnounceableTorrent announceableTorrent = mySeeder.getTorrentsSeeder().getClient().getAnnounceableTorrents().iterator().next();
-    final AnnounceableFileTorrent torrent = mySeeder.getTorrentsSeeder().getClient().getAnnounceableFileTorrent(announceableTorrent.getHexInfoHash());
-    Torrent metadata = Torrent.load(new File(torrent.getDotTorrentFilePath()));
-    assertEquals(file.getAbsolutePath(), torrent.getDownloadDirPath() + File.separatorChar + metadata.getFilenames().get(0));
+    final LoadedTorrent loadedTorrent = mySeeder.getTorrentsSeeder().getClient().getLoadedTorrents().iterator().next();
+    TorrentMetadata metadata = loadedTorrent.getMetadata();
+    assertEquals(file.getAbsolutePath(), file.getParent() + File.separatorChar + metadata.getFiles().get(0).getRelativePathAsString());
   }
 
   @NotNull
@@ -132,10 +130,9 @@ public class TorrentArtifactCacheListenerTest extends BaseTestCase {
 
     waitForSeededTorrents(1);
 
-    final AnnounceableTorrent announceableTorrent = mySeeder.getTorrentsSeeder().getClient().getAnnounceableTorrents().iterator().next();
-    final AnnounceableFileTorrent torrent = mySeeder.getTorrentsSeeder().getClient().getAnnounceableFileTorrent(announceableTorrent.getHexInfoHash());
-    Torrent metadata = Torrent.load(new File(torrent.getDotTorrentFilePath()));
-    assertEquals(file.getAbsolutePath(), torrent.getDownloadDirPath() + File.separatorChar + metadata.getFilenames().get(0));
+    final LoadedTorrent loadedTorrentTorrent = mySeeder.getTorrentsSeeder().getClient().getLoadedTorrents().iterator().next();
+    TorrentMetadata metadata = loadedTorrentTorrent.getMetadata();
+    assertEquals(file.getAbsolutePath(), file.getParent() + File.separatorChar + metadata.getFiles().get(0).getRelativePathAsString());
     myCacheListener.onBeforeDelete(file);
     assertEquals(0, mySeeder.getNumberOfSeededTorrents());
   }
