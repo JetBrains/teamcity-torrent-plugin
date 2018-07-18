@@ -22,7 +22,7 @@ public interface LeechSettings {
   String MAX_PIECE_DOWNLOAD_TIME = "teamcity.torrent.peer.download.pieceTotalTimeout.seconds";
   String DOWNLOAD_ENABLED = "teamcity.torrent.peer.download.enabled";
   int DEFAULT_MIN_SEEDERS_FOR_DOWNLOAD = 2;
-  int DEFAULT_MAX_PIECE_DOWNLOAD_TIME = 15;
+  int DEFAULT_MAX_PIECE_DOWNLOAD_TIME = 7;
   boolean DEFAULT_DOWNLOAD_ENABLED = false;
 
   /**
