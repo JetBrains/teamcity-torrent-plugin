@@ -226,7 +226,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
                 target,
                 target.getParentFile(),
                 fileDownloadProgress,
-                myLeechSettings.getMaxPieceDownloadTime(),
+                myLeechSettings.getMaxPieceDownloadTime() * 1000,
                 minSeedersForDownload,
                 timeoutForConnectToPeersMs,
                 exceptionHolder);
