@@ -223,6 +223,7 @@ public class TeamcityTorrentClient {
     );
     TorrentDownloader torrentDownloader = new TorrentDownloader(
             torrentManager,
+            metadata,
             fileDownloadProgress,
             minSeedersCount,
             maxTimeoutForConnect,

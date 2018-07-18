@@ -20,6 +20,7 @@ import com.turn.ttorrent.client.PeerInformation;
 import com.turn.ttorrent.client.PieceInformation;
 import com.turn.ttorrent.client.TorrentListenerWrapper;
 import com.turn.ttorrent.client.TorrentManager;
+import com.turn.ttorrent.common.TorrentMetadata;
 import jetbrains.buildServer.artifacts.FileProgress;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,6 +35,13 @@ public class TorrentDownloader {
    */
   @NotNull
   private final TorrentManager myTorrentManager;
+
+  /**
+   * {@link TorrentMetadata} instance related with torrent
+   */
+  @NotNull
+  private final TorrentMetadata myTorrentMetadata;
+
   /**
    * minimum count of peers. If this peers were not found in specified timeout download will be failed
    */
@@ -57,11 +65,13 @@ public class TorrentDownloader {
   private final FileProgress myFileDownloadProgress;
 
   public TorrentDownloader(@NotNull final TorrentManager torrentManager,
+                           @NotNull final TorrentMetadata metadata,
                            @NotNull final FileProgress fileDownloadProgress,
                            int minPeersCount,
                            int timeoutForFindingPeers,
                            int idleTimeout) {
     myTorrentManager = torrentManager;
+    myTorrentMetadata = metadata;
     myFileDownloadProgress = fileDownloadProgress;
     myMinPeersCount = minPeersCount;
     myTimeoutForFindingPeers = timeoutForFindingPeers;
@@ -117,7 +127,12 @@ public class TorrentDownloader {
         int newDownloadedPieces = downloadedPiecesCount.get();
         if (newDownloadedPieces <= downloadedPieces) {
           //no pieces were downloaded
-          throw new DownloadException("No pieces were downloaded in " + myIdleTimeout + "ms");
+          throw new DownloadException(String.format(
+                  "No pieces were downloaded in %dms. Downloaded pieces %d/%d, connected peers %d",
+                  myIdleTimeout,
+                  downloadedPieces,
+                  myTorrentMetadata.getPiecesCount(),
+                  connectedPeers));
         }
         //continue waiting
       }
