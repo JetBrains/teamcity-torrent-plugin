@@ -202,7 +202,7 @@ public class TeamcityTorrentClient {
                                      @NotNull final FileProgress fileDownloadProgress,
                                      final int downloadTimeoutMs,
                                      final int minSeedersCount,
-                                     final int maxTimeoutForConnect) throws IOException, InterruptedException, DownloadException {
+                                     final int maxTimeoutForConnect) throws Exception {
     checkThatTorrentContainsFile(fileNames, destFile);
 
     destDir.mkdirs();
@@ -229,14 +229,21 @@ public class TeamcityTorrentClient {
             maxTimeoutForConnect,
             downloadTimeoutMs
     );
+    Exception exception = null;
     try {
       torrentDownloader.awaitDownload();
-    } catch (DownloadException e) {
-      fileCollectionStorage.delete();
-      throw e;
-    } finally {
+    } catch (Exception e) {
+      exception = e;
+    }
+    try {
       myCommunicationManager.removeTorrent(metadata.getHexInfoHash());
       pieceStorage.close();
+    } finally {
+      boolean downloadFailed = exception != null;
+      if (downloadFailed) {
+        fileCollectionStorage.delete();
+        throw exception;
+      }
     }
   }
 
