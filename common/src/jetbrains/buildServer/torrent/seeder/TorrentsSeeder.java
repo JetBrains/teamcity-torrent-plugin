@@ -18,6 +18,7 @@ package jetbrains.buildServer.torrent.seeder;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.FileUtil;
+import com.turn.ttorrent.client.LoadedTorrent;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.client.announce.TrackerClientFactory;
 import com.turn.ttorrent.network.SelectorFactory;
@@ -35,10 +36,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class TorrentsSeeder {
@@ -47,6 +45,7 @@ public class TorrentsSeeder {
   public static final String TORRENTS_DIT_PATH = ".teamcity/torrents";
 
   public static final int CHECK_TORRENTS_INTERVAL = TeamCityProperties.getInteger("teamcity.torrents.checkTorrentsIntervalSec", 5 * 60);
+  public static final int CLOSING_STORAGE_INTERVAL = TeamCityProperties.getInteger("teamcity.torrents.closingStorageIntervalSec", 5 * 60);
   private static final int FLUSH_DB_INTERVAL = TeamCityProperties.getInteger("teamcity.torrents.flushDBIntervalSec", 3 * 60);
 
   public static final String PLUGIN_EXECUTOR_NAME = "Torrent plugin worker";
@@ -65,6 +64,8 @@ public class TorrentsSeeder {
   private volatile int myMaxTorrentsToSeed; // no limit by default
   @Nullable
   private volatile ScheduledFuture<?> myBrokenFilesCheckerFuture;
+  @Nullable
+  private volatile ScheduledFuture<?> myClosingStorageFuture;
   @Nullable
   private volatile ScheduledFuture<?> myDBFlushFuture;
 
@@ -160,6 +161,19 @@ public class TorrentsSeeder {
       LOG.warnAndDebugDetails("Failed to schedule broken files check task", e);
     }
     try {
+      myClosingStorageFuture = myExecutor.scheduleWithFixedDelay(new Runnable() {
+        public void run() {
+          try {
+            closePiecesStorage();
+          } catch (Throwable e) {
+            LOG.warnAndDebugDetails("Unhandled exception in closing storage task", e);
+          }
+        }
+      }, CLOSING_STORAGE_INTERVAL, CLOSING_STORAGE_INTERVAL, TimeUnit.SECONDS);
+    } catch (RejectedExecutionException e) {
+      LOG.warnAndDebugDetails("Failed to schedule closing storage task", e);
+    }
+    try {
       myDBFlushFuture = myExecutor.scheduleWithFixedDelay(new Runnable() {
         public void run() {
           try {
@@ -171,6 +185,17 @@ public class TorrentsSeeder {
       }, FLUSH_DB_INTERVAL, FLUSH_DB_INTERVAL, TimeUnit.SECONDS);
     } catch (RejectedExecutionException e) {
       LOG.warnAndDebugDetails("Failed to schedule db flush task", e);
+    }
+  }
+
+  private void closePiecesStorage() {
+    List<LoadedTorrent> loadedTorrents = myClient.getLoadedTorrents();
+    for (LoadedTorrent loadedTorrent : loadedTorrents) {
+      try {
+        loadedTorrent.getPieceStorage().close();
+      } catch (IOException e) {
+        LOG.warnAndDebugDetails("Unable to close storage for torrent " + loadedTorrent, e);
+      }
     }
   }
 
@@ -211,16 +236,17 @@ public class TorrentsSeeder {
     }
   }
 
+  private void cancelFutureIfExist(@Nullable Future<?> future) {
+    if (future != null) {
+      future.cancel(true);
+    }
+  }
+
   public void dispose() {
     stop();
-    final ScheduledFuture<?> localFuture = myBrokenFilesCheckerFuture;
-    if (localFuture != null) {
-      localFuture.cancel(true);
-    }
-    final ScheduledFuture<?> dbFlushFuture = myDBFlushFuture;
-    if (dbFlushFuture != null) {
-      dbFlushFuture.cancel(true);
-    }
+    cancelFutureIfExist(myBrokenFilesCheckerFuture);
+    cancelFutureIfExist(myDBFlushFuture);
+    cancelFutureIfExist(myClosingStorageFuture);
     ThreadUtil.shutdownGracefully(myWorkerExecutor, "bittorrent client worker executor");
     ThreadUtil.shutdownGracefully(myValidatorExecutor, "bittorrent pieces validator executor");
   }
