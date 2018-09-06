@@ -116,6 +116,7 @@ public class ServerTorrentsDirectorySeeder {
         if (myTorrentsSeeder != null) {
           myTorrentsSeeder.dispose();
         }
+        myConfigurator.stopWatcher();
       }
 
     });

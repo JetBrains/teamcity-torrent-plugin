@@ -387,6 +387,11 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
     return myConfigurationWatcher;
   }
 
+  public void stopWatcher() {
+    myConfigurationWatcher.stop();
+    myConfigurationWatcher.clear();
+  }
+
   /**
    * @author Sergey.Pak
    * Date: 10/15/13
