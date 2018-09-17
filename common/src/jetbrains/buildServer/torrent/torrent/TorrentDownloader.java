@@ -16,6 +16,7 @@
 
 package jetbrains.buildServer.torrent.torrent;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.PeerInformation;
 import com.turn.ttorrent.client.PieceInformation;
 import com.turn.ttorrent.client.TorrentListenerWrapper;
@@ -29,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TorrentDownloader {
+
+  private final static Logger LOG = Logger.getInstance(TorrentDownloader.class.getName());
 
   /**
    * {@link TorrentManager} instance related with torrent, see {@link com.turn.ttorrent.client.CommunicationManager#addTorrent}
@@ -86,11 +89,13 @@ public class TorrentDownloader {
       @Override
       public void peerConnected(PeerInformation peerInformation) {
         connectedPeersCount.incrementAndGet();
+        LOG.debug("Connected new peer " + peerInformation);
       }
 
       @Override
       public void peerDisconnected(PeerInformation peerInformation) {
         connectedPeersCount.decrementAndGet();
+        LOG.debug("Peer " + peerInformation + " is disconnected");
       }
 
       @Override
