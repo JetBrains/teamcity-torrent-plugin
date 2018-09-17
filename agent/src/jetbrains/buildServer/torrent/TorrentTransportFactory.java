@@ -245,11 +245,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
           log2Build(String.format("Failed to download file completely via BitTorrent protocol. Expected file size: %s, actual file size: %s", String.valueOf(size), String.valueOf(target.length())));
           return null;
         }
-
-        myTorrentsDownloadStatistic.fileDownloaded();
-
-        // return standard digest
-        return getDigest(url);
       } catch (InterruptedException e) {
         throw new IOException("Torrent download has been interrupted " + url, e);
       } catch (RuntimeException ex) {
@@ -259,6 +254,16 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         log2Build(String.format("Unable to download artifact %s: %s", url, ex.getMessage()));
         throw new IOException(ex);
       }
+      // return standard digest
+      String digest;
+      try {
+        digest = getDigest(url);
+      } catch (IOException e) {
+        Loggers.AGENT.warnAndDebugDetails("Unable to execute digest request by URL " + url, e);
+        throw e;
+      }
+      myTorrentsDownloadStatistic.fileDownloaded();
+      return digest;
     }
 
     @Override
