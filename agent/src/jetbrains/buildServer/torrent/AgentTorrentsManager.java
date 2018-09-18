@@ -124,7 +124,7 @@ public class AgentTorrentsManager extends AgentLifeCycleAdapter {
     LogManager.getLogger("jetbrains.torrent", new LoggerFactory() {
       @Override
       public org.apache.log4j.Logger makeNewLoggerInstance(String s) {
-        return org.apache.log4j.Logger.getLogger(Loggers.AGENT_CATEGORY);
+        return org.apache.log4j.Logger.getLogger("jetbrains.buildServer.torrent");
       }
     });
   }
