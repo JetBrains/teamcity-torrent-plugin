@@ -31,12 +31,7 @@ public class TorrentUtil {
    */
   @NotNull
   public static TorrentMetadata loadTorrent(@NotNull File torrentFile) throws IOException {
-    setHashingThreadsCount();
     return new TorrentParser().parseFromFile(torrentFile);
-  }
-
-  private static void setHashingThreadsCount() {
-    TorrentCreator.setHashingThreadsCount(2); // limit number of threads generating hashes for a file
   }
 
   public static boolean isConnectionManagerInitialized(@NotNull CommunicationManager communicationManager) {
@@ -58,7 +53,6 @@ public class TorrentUtil {
                                         @NotNull final String relativePath,
                                         @NotNull final File torrentsStore,
                                         @NotNull final URI announceURI) {
-    setHashingThreadsCount();
 
     File torrentFile = new File(torrentsStore, relativePath + TORRENT_FILE_SUFFIX);
     if (torrentFile.isFile()) {
@@ -101,7 +95,6 @@ public class TorrentUtil {
    */
   @Nullable
   public static TorrentMetadata createTorrent(@NotNull File srcFile, @NotNull File torrentFile, @NotNull URI announceURI) {
-    setHashingThreadsCount();
 
     try {
       TorrentMetadata t = TorrentCreator.create(srcFile, announceURI, "TeamCity");
