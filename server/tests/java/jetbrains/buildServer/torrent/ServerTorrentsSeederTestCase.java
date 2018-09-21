@@ -21,9 +21,11 @@ import com.turn.ttorrent.client.announce.TrackerClientFactoryImpl;
 import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.RootUrlHolder;
 import jetbrains.buildServer.XmlRpcHandlerManager;
-import jetbrains.buildServer.serverSide.*;
+import jetbrains.buildServer.serverSide.BuildServerListener;
+import jetbrains.buildServer.serverSide.ServerPaths;
+import jetbrains.buildServer.serverSide.ServerResponsibility;
+import jetbrains.buildServer.serverSide.ServerSettings;
 import jetbrains.buildServer.serverSide.executors.ExecutorServices;
-import jetbrains.buildServer.serverSide.impl.auth.SecurityContextImpl;
 import jetbrains.buildServer.util.EventDispatcher;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
@@ -69,7 +71,7 @@ public class ServerTorrentsSeederTestCase extends BaseTestCase {
     myConfigurator.setDownloadEnabled(true);
     myConfigurator.setSeedingEnabled(true);
 
-    myDispatcher = new BuildServerListenerEventDispatcher(new SecurityContextImpl());
+    myDispatcher = EventDispatcher.create(BuildServerListener.class);
 
     myTorrentsSeeder = new ServerTorrentsDirectorySeeder(serverPaths,
             serverSettings,
