@@ -1,3 +1,0 @@
-[submodule "torrent"]
-	path = torrent
-	url = https://github.com/JetBrains/ttorrent-lib.git
