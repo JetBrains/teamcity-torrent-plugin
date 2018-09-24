@@ -23,6 +23,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -217,17 +218,19 @@ public class TeamcityTorrentClient {
     TorrentMetadata metadata = metadataProvider.getTorrentMetadata();
     FileCollectionStorage fileCollectionStorage = FileCollectionStorage.create(metadata, destDir);
     PieceStorage pieceStorage = EmptyPieceStorageFactory.INSTANCE.createStorage(metadata, fileCollectionStorage);
-    TorrentManager torrentManager = myCommunicationManager.addTorrent(
-            metadataProvider,
-            pieceStorage
-    );
+
     TorrentDownloader torrentDownloader = new TorrentDownloader(
-            torrentManager,
             metadata,
             fileDownloadProgress,
             minSeedersCount,
             maxTimeoutForConnect,
             downloadTimeoutMs
+    );
+
+    myCommunicationManager.addTorrent(
+            metadataProvider,
+            pieceStorage,
+            Collections.<TorrentListener>singletonList(torrentDownloader)
     );
     Exception exception = null;
     try {

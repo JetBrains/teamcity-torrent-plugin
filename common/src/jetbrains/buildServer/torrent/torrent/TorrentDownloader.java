@@ -19,8 +19,7 @@ package jetbrains.buildServer.torrent.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.PeerInformation;
 import com.turn.ttorrent.client.PieceInformation;
-import com.turn.ttorrent.client.TorrentListenerWrapper;
-import com.turn.ttorrent.client.TorrentManager;
+import com.turn.ttorrent.client.TorrentListener;
 import com.turn.ttorrent.common.TorrentMetadata;
 import jetbrains.buildServer.artifacts.FileProgress;
 import org.jetbrains.annotations.NotNull;
@@ -28,16 +27,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
-public class TorrentDownloader {
+public class TorrentDownloader implements TorrentListener {
 
   private final static Logger LOG = Logger.getInstance(TorrentDownloader.class.getName());
-
-  /**
-   * {@link TorrentManager} instance related with torrent, see {@link com.turn.ttorrent.client.CommunicationManager#addTorrent}
-   */
-  @NotNull
-  private final TorrentManager myTorrentManager;
 
   /**
    * {@link TorrentMetadata} instance related with torrent
@@ -67,83 +61,97 @@ public class TorrentDownloader {
   @NotNull
   private final FileProgress myFileDownloadProgress;
 
-  public TorrentDownloader(@NotNull final TorrentManager torrentManager,
-                           @NotNull final TorrentMetadata metadata,
+  @NotNull
+  private final AtomicInteger myDownloadedPiecesCount;
+
+  @NotNull
+  private final AtomicInteger myConnectedPeersCount;
+
+  @NotNull
+  private final Semaphore mySemaphore;
+
+  @NotNull
+  private final AtomicReference<Throwable> myFailedExceptionHolder;
+
+  public TorrentDownloader(@NotNull final TorrentMetadata metadata,
                            @NotNull final FileProgress fileDownloadProgress,
                            int minPeersCount,
                            int timeoutForFindingPeers,
                            int idleTimeout) {
-    myTorrentManager = torrentManager;
     myTorrentMetadata = metadata;
     myFileDownloadProgress = fileDownloadProgress;
     myMinPeersCount = minPeersCount;
     myTimeoutForFindingPeers = timeoutForFindingPeers;
     myIdleTimeout = idleTimeout;
+    myDownloadedPiecesCount = new AtomicInteger();
+    myConnectedPeersCount = new AtomicInteger();
+    mySemaphore = new Semaphore(0);
+    myFailedExceptionHolder = new AtomicReference<Throwable>();
   }
 
   public void awaitDownload() throws InterruptedException, DownloadException {
-    final Semaphore semaphore = new Semaphore(0);
-    final AtomicInteger connectedPeersCount = new AtomicInteger();
-    final AtomicInteger downloadedPiecesCount = new AtomicInteger();
-    TorrentListenerWrapper listener = new TorrentListenerWrapper() {
-      @Override
-      public void peerConnected(PeerInformation peerInformation) {
-        connectedPeersCount.incrementAndGet();
-        LOG.debug("Connected new peer " + peerInformation);
+
+    //wait setup connection with peers
+    if (mySemaphore.tryAcquire(myTimeoutForFindingPeers, TimeUnit.MILLISECONDS)) {
+      //download was finished in this timeout
+      return;
+    }
+
+    int downloadedPieces = myDownloadedPiecesCount.get();
+    while (true) {
+      int connectedPeers = myConnectedPeersCount.get();
+      if (connectedPeers < myMinPeersCount) {
+        throw new DownloadException("Need " + myMinPeersCount +
+                " peers but right now only " + connectedPeers + " are connected");
       }
-
-      @Override
-      public void peerDisconnected(PeerInformation peerInformation) {
-        connectedPeersCount.decrementAndGet();
-        LOG.debug("Peer " + peerInformation + " is disconnected");
-      }
-
-      @Override
-      public void pieceDownloaded(PieceInformation pieceInformation, PeerInformation peerInformation) {
-        downloadedPiecesCount.incrementAndGet();
-        myFileDownloadProgress.transferred(pieceInformation.getSize());
-      }
-
-      @Override
-      public void downloadComplete() {
-        semaphore.release();
-      }
-    };
-    myTorrentManager.addListener(listener);
-
-    try {
-
-      //wait setup connection with peers
-      if (semaphore.tryAcquire(myTimeoutForFindingPeers, TimeUnit.MILLISECONDS)) {
-        //download was finished in this timeout
+      if (mySemaphore.tryAcquire(myIdleTimeout, TimeUnit.MILLISECONDS)) {
         return;
       }
-
-      int downloadedPieces = downloadedPiecesCount.get();
-      while (true) {
-        int connectedPeers = connectedPeersCount.get();
-        if (connectedPeers < myMinPeersCount) {
-          throw new DownloadException("Need " + myMinPeersCount +
-                  " peers but right now only " + connectedPeers + " are connected");
-        }
-        if (semaphore.tryAcquire(myIdleTimeout, TimeUnit.MILLISECONDS)) {
-          return;
-        }
-        int newDownloadedPieces = downloadedPiecesCount.get();
-        if (newDownloadedPieces <= downloadedPieces) {
-          //no pieces were downloaded
-          throw new DownloadException(String.format(
-                  "No pieces were downloaded in %dms. Downloaded pieces %d/%d, connected peers %d",
-                  myIdleTimeout,
-                  downloadedPieces,
-                  myTorrentMetadata.getPiecesCount(),
-                  connectedPeers));
-        }
-        downloadedPieces = newDownloadedPieces;
-        //continue waiting
+      int newDownloadedPieces = myDownloadedPiecesCount.get();
+      if (newDownloadedPieces <= downloadedPieces) {
+        //no pieces were downloaded
+        throw new DownloadException(String.format(
+                "No pieces were downloaded in %dms. Downloaded pieces %d/%d, connected peers %d",
+                myIdleTimeout,
+                downloadedPieces,
+                myTorrentMetadata.getPiecesCount(),
+                connectedPeers));
       }
-    } finally {
-      myTorrentManager.removeListener(listener);
+      Throwable failedException = myFailedExceptionHolder.get();
+      if (failedException != null) {
+        throw new DownloadException("Downloading was failed, problem: " + failedException.getMessage(),
+                failedException);
+      }
+      downloadedPieces = newDownloadedPieces;
+      //continue waiting
     }
+  }
+
+  @Override
+  public void peerConnected(PeerInformation peerInformation) {
+    myConnectedPeersCount.incrementAndGet();
+    LOG.debug("Connected new peer " + peerInformation);
+  }
+
+  @Override
+  public void peerDisconnected(PeerInformation peerInformation) {
+    myConnectedPeersCount.decrementAndGet();
+    LOG.debug("Peer " + peerInformation + " is disconnected");
+  }
+
+  @Override
+  public void pieceDownloaded(PieceInformation pieceInformation, PeerInformation peerInformation) {
+    myDownloadedPiecesCount.incrementAndGet();
+    myFileDownloadProgress.transferred(pieceInformation.getSize());
+  }
+
+  @Override
+  public void downloadComplete() {
+    mySemaphore.release();
+  }
+
+  @Override
+  public void downloadFailed(Throwable cause) {
+    myFailedExceptionHolder.set(cause);
   }
 }
