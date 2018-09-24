@@ -19,6 +19,7 @@ package jetbrains.buildServer.torrent;
 import com.turn.ttorrent.client.SelectorFactoryImpl;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.client.announce.TrackerClientFactoryImpl;
+import com.turn.ttorrent.common.TorrentLoggerFactory;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.serverSide.TeamCityProperties;
 import jetbrains.buildServer.torrent.seeder.ParentDirConverter;
@@ -37,6 +38,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class AgentTorrentsSeeder {
+
+  static {
+    TorrentLoggerFactory.setStaticLoggersName("jetbrains.torrent.Library");
+  }
 
   private final ScheduledExecutorService myExecutorService;
   private final TorrentsSeeder myTorrentsSeeder;

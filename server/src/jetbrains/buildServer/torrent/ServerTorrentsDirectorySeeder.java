@@ -9,6 +9,7 @@ import com.turn.ttorrent.client.LoadedTorrent;
 import com.turn.ttorrent.client.SharedTorrent;
 import com.turn.ttorrent.client.announce.TrackerClientFactory;
 import com.turn.ttorrent.client.peer.SharingPeer;
+import com.turn.ttorrent.common.TorrentLoggerFactory;
 import com.turn.ttorrent.network.SelectorFactory;
 import jetbrains.buildServer.NetworkUtil;
 import jetbrains.buildServer.log.Loggers;
@@ -44,6 +45,10 @@ import java.util.Set;
  */
 public class ServerTorrentsDirectorySeeder {
   private final static Logger LOG = Logger.getInstance(ServerTorrentsDirectorySeeder.class.getName());
+
+  static {
+    TorrentLoggerFactory.setStaticLoggersName("jetbrains.torrent.Library");
+  }
 
   private volatile TorrentsSeeder myTorrentsSeeder;
   private final TorrentConfigurator myConfigurator;
