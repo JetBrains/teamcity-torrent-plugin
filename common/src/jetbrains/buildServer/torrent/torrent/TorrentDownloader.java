@@ -119,13 +119,13 @@ public class TorrentDownloader {
         return;
       }
 
+      int downloadedPieces = downloadedPiecesCount.get();
       while (true) {
         int connectedPeers = connectedPeersCount.get();
         if (connectedPeers < myMinPeersCount) {
           throw new DownloadException("Need " + myMinPeersCount +
                   " peers but right now only " + connectedPeers + " are connected");
         }
-        int downloadedPieces = downloadedPiecesCount.get();
         if (semaphore.tryAcquire(myIdleTimeout, TimeUnit.MILLISECONDS)) {
           return;
         }
@@ -139,6 +139,7 @@ public class TorrentDownloader {
                   myTorrentMetadata.getPiecesCount(),
                   connectedPeers));
         }
+        downloadedPieces = newDownloadedPieces;
         //continue waiting
       }
     } finally {
