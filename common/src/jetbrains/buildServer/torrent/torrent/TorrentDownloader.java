@@ -65,6 +65,9 @@ public class TorrentDownloader implements TorrentListener {
   private final AtomicInteger myDownloadedPiecesCount;
 
   @NotNull
+  private final AtomicInteger myReceivedPiecesCount;
+
+  @NotNull
   private final AtomicInteger myConnectedPeersCount;
 
   @NotNull
@@ -87,6 +90,7 @@ public class TorrentDownloader implements TorrentListener {
     myConnectedPeersCount = new AtomicInteger();
     mySemaphore = new Semaphore(0);
     myFailedExceptionHolder = new AtomicReference<Throwable>();
+    myReceivedPiecesCount = new AtomicInteger();
   }
 
   public void awaitDownload() throws InterruptedException, DownloadException {
@@ -100,7 +104,8 @@ public class TorrentDownloader implements TorrentListener {
     int downloadedPieces = myDownloadedPiecesCount.get();
     while (true) {
       int connectedPeers = myConnectedPeersCount.get();
-      if (connectedPeers < myMinPeersCount) {
+      boolean allPiecesReceived = myReceivedPiecesCount.get() == myTorrentMetadata.getPiecesCount();
+      if (connectedPeers < myMinPeersCount && !allPiecesReceived) {
         throw new DownloadException("Need " + myMinPeersCount +
                 " peers but right now only " + connectedPeers + " are connected");
       }
@@ -125,6 +130,11 @@ public class TorrentDownloader implements TorrentListener {
       downloadedPieces = newDownloadedPieces;
       //continue waiting
     }
+  }
+
+  @Override
+  public void pieceReceived(PieceInformation pieceInformation, PeerInformation peerInformation) {
+    myReceivedPiecesCount.incrementAndGet();
   }
 
   @Override
