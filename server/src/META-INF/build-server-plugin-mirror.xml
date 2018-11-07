@@ -19,6 +19,7 @@
   <bean class="jetbrains.buildServer.torrent.web.TorrentSettingsAdminPage"/>
   <bean class="jetbrains.buildServer.torrent.web.TorrentLinksExtension"/>
   <bean class="jetbrains.buildServer.torrent.web.TorrentLinksController"/>
+  <bean class="jetbrains.buildServer.torrent.web.ReactOverviewLinksController"/>
   <bean class="jetbrains.buildServer.torrent.web.DownloadTorrentController"/>
   <bean class="jetbrains.buildServer.torrent.web.TrackerController"/>
 </beans>

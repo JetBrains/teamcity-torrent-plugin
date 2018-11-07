@@ -28,13 +28,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.web.servlet.ModelAndView;
 
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class AbstractLinksController extends BaseController {
 
@@ -66,17 +66,10 @@ public abstract class AbstractLinksController extends BaseController {
       if (build != null && myConfigurator.isDownloadEnabled()) {
         Collection<File> torrentFiles = myTorrentsManager.getTorrentFiles(build);
         File baseDir = myTorrentsManager.getTorrentFilesBaseDir(build.getArtifactsDirectory());
-        List<String> paths = getArtifactsWithTorrents(baseDir, torrentFiles);
+        Map<File, String> torrentsAndArtifacts = getArtifactsWithTorrents(baseDir, torrentFiles);
 
-        response.setContentType("text/plain");
-        ServletOutputStream output = response.getOutputStream();
-        try {
-          for (String name : paths) {
-            output.println(name);
-          }
-        } finally {
-          output.close();
-        }
+        writeResponse(response, torrentsAndArtifacts, build);
+        response.setStatus(HttpServletResponse.SC_OK);
       }
     } catch (Exception e) {
       // ignore
@@ -85,15 +78,19 @@ public abstract class AbstractLinksController extends BaseController {
     return null;
   }
 
+  protected abstract void writeResponse(@NotNull HttpServletResponse response,
+                                        Map<File, String> torrentsAndArtifacts,
+                                        @NotNull SBuild build) throws IOException;
+
   @NotNull
-  private List<String> getArtifactsWithTorrents(@NotNull File baseDir, @NotNull Collection<File> torrentFiles) {
-    List<String> names = new ArrayList<String>();
+  private Map<File, String> getArtifactsWithTorrents(@NotNull File baseDir, @NotNull Collection<File> torrentFiles) {
+    Map<File, String> torrentFilesAndArtifactsPath = new HashMap<>();
     for (File f: torrentFiles) {
       String path = FileUtil.getRelativePath(baseDir, f);
       if (path == null) continue;
       path = path.replace('\\', '/');
-      names.add(path.substring(0, path.length() - TorrentUtil.TORRENT_FILE_SUFFIX.length()));
+      torrentFilesAndArtifactsPath.put(f, path.substring(0, path.length() - TorrentUtil.TORRENT_FILE_SUFFIX.length()));
     }
-    return names;
+    return torrentFilesAndArtifactsPath;
   }
 }
