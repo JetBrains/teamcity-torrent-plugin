@@ -69,5 +69,7 @@
       });
     }
   };
-})(jQuery);
 
+  //registering react overview controller
+  ReactUI.store.addPoint('torrent', '/newTorrentLinks.html');
+})(jQuery);
