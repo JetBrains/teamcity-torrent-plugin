@@ -38,7 +38,7 @@ More information is available in the [related TeamCity blogpost](https://blog.je
 
 * For the plugin to work correctly, TCP ports in the 6881-6889 interval should be open on the TeamCity server and agents.
 * Torrent files are created only for large artifact (by default more then 10mb), which means small files cannot be downloaded via BitTorrent.
-* The plugin supports the following configuration parameters allowing you to control the plugin behavior at the project or build configuration level:
+* The plugin supports the following build configuration parameters allowing you to control the plugin behavior at the project or build configuration level:
   * teamcity.torrent.peer.download.enabled (true by default): this parameter controls the usage of the BitTorrent protocol for artifacts downloading on agents
   * teamcity.torrent.peer.seeding.enabled (true by default): this parameter controls seeding of artifacts from agents via the BitTorrent protocol
   * teamcity.torrent.seeder.minFileSize (10M by default): this parameter controls artifacts size threshold; smaller artifacts won't be downloaded via the BitTorrent protocol
