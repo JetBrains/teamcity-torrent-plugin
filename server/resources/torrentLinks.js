@@ -70,8 +70,4 @@
     }
   };
 
-  //registering react overview controller
-  if (ReactUI && ReactUI.store.addPoint) {
-    ReactUI.store.addPoint('torrent', '/newTorrentLinks.html');
-  }
 })(jQuery);
