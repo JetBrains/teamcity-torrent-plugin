@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+        xmlns="http://www.springframework.org/schema/beans"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd"
+        default-autowire="constructor"
+        >
+  <!-- declare all beans you like Spring Dependency Injection to create -->
+  <!-- see http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/html/beans.html -->
+
+  <bean class="jetbrains.buildServer.torrent.TorrentConfigurator"/>
+  <bean class="jetbrains.buildServer.torrent.TorrentTrackerManager"/>
+  <bean class="jetbrains.buildServer.torrent.ServerTorrentsDirectorySeeder"/>
+  <bean class="jetbrains.buildServer.torrent.IpChecker"/>
+  <bean class="jetbrains.buildServer.torrent.TorrentBuildStartProcessor"/>
+  <bean class="jetbrains.buildServer.torrent.ServerSelectorFactory"/>
+  <bean class="jetbrains.buildServer.torrent.ServerTrackerClientFactory"/>
+
+  <bean class="jetbrains.buildServer.torrent.web.TorrentSettingsAdminPage"/>
+  <bean class="jetbrains.buildServer.torrent.web.TorrentLinksExtension"/>
+  <bean class="jetbrains.buildServer.torrent.web.TorrentLinksController"/>
+  <bean class="jetbrains.buildServer.torrent.web.ReactOverviewLinksController"/>
+  <bean class="jetbrains.buildServer.torrent.web.DownloadTorrentController"/>
+  <bean class="jetbrains.buildServer.torrent.web.TrackerController"/>
+</beans>

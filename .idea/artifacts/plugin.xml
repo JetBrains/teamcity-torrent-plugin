@@ -25,7 +25,7 @@
         </element>
         <element id="archive" name="torrent-plugin-resources.jar">
           <element id="directory" name="buildServerResources">
-            <element id="dir-copy" path="$PROJECT_DIR$/server/resources" />
+            <element id="dir-copy" path="$PROJECT_DIR$/server/src/main/resources" />
           </element>
           <element id="library" level="project" name="ttorrent-1.2" />
         </element>
