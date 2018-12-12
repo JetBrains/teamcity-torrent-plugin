@@ -51,9 +51,7 @@
         </executions>
         <configuration>
           <file>${basedir}/../teamcity-plugin.xml</file>
-          <outputFile>${basedir}/target/teamcity-plugin.xml</outputFile>
-          <file>${basedir}/../agent/teamcity-agent-plugin.xml</file>
-          <outputFile>${basedir}/target/teamcity-agent-plugin.xml</outputFile>
+          <outputFile>${basedir}/target/teamcity-plugin.xml</outputFile>          
           <replacements>
             <replacement>
               <token>@Version@</token>
@@ -95,7 +93,7 @@
               <goal>single</goal>
             </goals>
             <configuration>
-              <finalName>teamcity-torrent-plugin</finalName>
+              <finalName>bittorrent-support</finalName>
               <outputDirectory>${project.parent.build.directory}</outputDirectory>
               <appendAssemblyId>false</appendAssemblyId>
               <descriptors>
