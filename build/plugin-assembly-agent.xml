@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<assembly>
+  <id>plugin-assembly-agent</id>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <files>
+    <file>
+      <source>target/teamcity-agent-plugin.xml</source>
+      <outputDirectory>/</outputDirectory>
+      <destName>teamcity-plugin.xml</destName>
+    </file>
+  </files>
+  <moduleSets>
+    <moduleSet>
+      <useAllReactorProjects>true</useAllReactorProjects>
+      <includes>
+        <include>org.jetbrains.teamcity:teamcity-torrent-plugin-agent</include>
+      </includes>
+      <binaries>
+        <outputDirectory>/</outputDirectory>
+        <unpack>false</unpack>
+        <dependencySets>
+          <dependencySet>
+            <includes>
+              <include>com.turn:*</include>
+              <include>org.simpleframework:simple</include>
+              <include>org.jetbrains.teamcity:teamcity-torrent-plugin-common</include>
+            </includes>
+          </dependencySet>
+        </dependencySets>
+      </binaries>
+    </moduleSet>
+  </moduleSets>
+</assembly>
