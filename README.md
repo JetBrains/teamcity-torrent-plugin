@@ -16,10 +16,25 @@
 
  ## 2. Building sources
 
-
- Run the following command in the root of the checked out repository:
+ First clone the repository with submodule:
  
-    `mvn clean package`
+ `git clone --recurse-submodules https://github.com/JetBrains/teamcity-torrent-plugin.git`
+ 
+ if you already clone the repository without submodule you can fix it so:
+ 
+ `git submodule update --init`
+ 
+ Then you should add closed-api dependency to the project.
+ Create lib folder in root project directory and
+ place there `common-impl.jar` file from <teamcity-root>/webapps/ROOT/WEB-INF/lib  
+ 
+ finally run the following command in project directory:
+ 
+    `mvn package`
+    
+ (optionally you can add `-DskipTests` for skipping tests)
+ 
+ After successfully build bittorrent-plugin.zip will be placed in <project-root>/target directory
 
  ## 3. Installing
  
