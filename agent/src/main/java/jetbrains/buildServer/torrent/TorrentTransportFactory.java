@@ -112,13 +112,16 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       return null;
     }
 
+    String serverUrl = myAgentConfig.getServerUrl();
+    HttpClient httpClient = createHttpClient();
     return new TorrentTransport(myAgentTorrentsManager.getTorrentsSeeder(),
-            createHttpClient(),
+            httpClient,
             buildLogger,
-            myAgentConfig.getServerUrl(),
+            serverUrl,
             myAgentTorrentsManager.getTorrentsDownloadStatistic(),
             myLeechSettings,
-            myTorrentFilesFactory);
+            myTorrentFilesFactory,
+            new HttpTransport(httpClient, serverUrl));
   }
 
   private boolean shouldUseTorrentTransport() {
@@ -132,7 +135,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
   protected static class TorrentTransport implements URLContentRetriever, ProgressTrackingURLContentRetriever {
 
     private final HttpClient myHttpClient;
-    private final HttpTransport myDelegate;
+    private final URLContentRetriever myDelegate;
     private final TeamcityTorrentClient myClient;
     private final TorrentsSeeder mySeeder;
     private final BuildProgressLogger myBuildLogger;
@@ -152,8 +155,9 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
                                @NotNull final String serverUrl,
                                @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic,
                                @NotNull final LeechSettings leechSettings,
-                               @NotNull final TorrentFilesFactory torrentFilesFactory) {
-      myDelegate = new HttpTransport(httpClient, serverUrl);
+                               @NotNull final TorrentFilesFactory torrentFilesFactory,
+                               @NotNull final URLContentRetriever httpRetriever) {
+      myDelegate = httpRetriever;
       mySeeder = seeder;
       myLeechSettings = leechSettings;
       myClient = mySeeder.getClient();

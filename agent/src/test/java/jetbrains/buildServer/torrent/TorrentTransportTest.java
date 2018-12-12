@@ -24,6 +24,7 @@ import jetbrains.buildServer.BaseTestCase;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
 import jetbrains.buildServer.agent.BuildProgressLogger;
+import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
@@ -119,6 +120,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myLeechSettings = m.mock(LeechSettings.class);
     final BuildProgressLogger myLogger = new FakeBuildProgressLogger();
     final TorrentFilesFactory torrentFilesFactory = m.mock(TorrentFilesFactory.class);
+    final URLContentRetriever urlContentRetriever = m.mock(URLContentRetriever.class);
     m.checking(new Expectations(){{
       allowing(myBuild).getSharedConfigParameters(); will (returnValue(myAgentParametersMap));
       allowing(myBuild).getBuildTypeId(); will (returnValue("TC_Gaya80x_BuildDist"));
@@ -127,6 +129,7 @@ public class TorrentTransportTest extends BaseTestCase {
       allowing(myLeechSettings).getMaxPieceDownloadTime(); will(returnValue(15));
       allowing(myLeechSettings).getMinSeedersForDownload(); will(returnValue(1));
       allowing(torrentFilesFactory).getTorrentFile(); will(returnValue(createTempFile()));
+      allowing(urlContentRetriever).getDigest(with(any(String.class))); will(returnValue(""));
     }});
 
     BuildAgentConfiguration agentConfiguration = myAgentConfigurationFixture.setUp();
@@ -135,7 +138,7 @@ public class TorrentTransportTest extends BaseTestCase {
     myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder.getTorrentsSeeder(),
                     new HttpClient(), myBuild.getBuildLogger(),
             "http://localhost:12345", new TorrentsDownloadStatistic(),
-            myLeechSettings, torrentFilesFactory){
+            myLeechSettings, torrentFilesFactory, urlContentRetriever){
       @Override
       protected byte[] download(@NotNull String urlString) throws IOException {
         if (myDownloadHonestly) {
