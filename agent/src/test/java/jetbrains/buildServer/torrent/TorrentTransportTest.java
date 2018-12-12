@@ -166,7 +166,7 @@ public class TorrentTransportTest extends BaseTestCase {
 
     final String urlString = SERVER_PATH +  Constants.TEAMCITY_IVY;
 
-    final File teamcityIvyFile = new File("agent/tests/resources/" +  Constants.TEAMCITY_IVY);
+    final File teamcityIvyFile = new File("src/test/resources/" +  Constants.TEAMCITY_IVY);
     myDownloadMap.put("/" + Constants.TEAMCITY_IVY, teamcityIvyFile);
 
     assertNotNull(myTorrentTransport.downloadUrlTo(urlString, ivyFile));
@@ -180,7 +180,7 @@ public class TorrentTransportTest extends BaseTestCase {
     final File file1 = new File(myTempDir, "MyBuild.31.zip");
     final File file2 = new File(myTempDir, "MyBuild.32.zip");
 
-    final File torrentFile = new File("agent/tests/resources/commons-io-cio2.5_40.jar.torrent");
+    final File torrentFile = new File("src/test/resources/commons-io-cio2.5_40.jar.torrent");
     final byte[] torrentBytes = FileUtils.readFileToByteArray(torrentFile);
     myDownloadHacks.put(torrentPath1, torrentBytes);
     myDownloadHacks.put(torrentPath2, torrentBytes);
@@ -216,7 +216,7 @@ public class TorrentTransportTest extends BaseTestCase {
     final File artifactFile = new File(storageDir, fileName);
     createTempFile(20250).renameTo(artifactFile);
 
-    final File teamcityIvyFile = new File("agent/tests/resources/" +  Constants.TEAMCITY_IVY);
+    final File teamcityIvyFile = new File("src/test/resources/" +  Constants.TEAMCITY_IVY);
     myDownloadMap.put("/" + Constants.TEAMCITY_IVY, teamcityIvyFile);
     final String ivyUrl = SERVER_PATH +  Constants.TEAMCITY_IVY;
     final File ivyFile = new File(myTempDir, Constants.TEAMCITY_IVY);
