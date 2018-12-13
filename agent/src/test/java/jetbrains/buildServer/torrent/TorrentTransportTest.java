@@ -28,12 +28,10 @@ import jetbrains.buildServer.artifacts.URLContentRetriever;
 import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
-import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.jetbrains.annotations.NotNull;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.testng.annotations.AfterMethod;
@@ -135,20 +133,29 @@ public class TorrentTransportTest extends BaseTestCase {
     BuildAgentConfiguration agentConfiguration = myAgentConfigurationFixture.setUp();
     mySeeder = new AgentTorrentsSeeder(agentConfiguration, myConfiguration);
 
-    myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder.getTorrentsSeeder(),
-                    new HttpClient(), myBuild.getBuildLogger(),
-            "http://localhost:12345", new TorrentsDownloadStatistic(),
-            myLeechSettings, torrentFilesFactory, urlContentRetriever){
+    HttpDownloader downloader = new HttpDownloader() {
       @Override
-      protected byte[] download(@NotNull String urlString) throws IOException {
+      public byte[] download(String url) throws IOException {
         if (myDownloadHonestly) {
-          return super.download(urlString);
+          String tcbuildStr = "tcbuildid";
+          String reqPath = url.substring(url.indexOf(tcbuildStr) + tcbuildStr.length());
+          myDownloadAttempts.add(reqPath);
+          final File file = myDownloadMap.get(reqPath);
+          if (file == null) {
+            return new byte[0];
+          }
+          return FileUtils.readFileToByteArray(file);
         } else {
-          myDownloadHackAttempts.add(urlString);
-          return myDownloadHacks.get(urlString);
+          myDownloadHackAttempts.add(url);
+          return myDownloadHacks.get(url);
         }
       }
     };
+
+    myTorrentTransport = new TorrentTransportFactory.TorrentTransport(mySeeder.getTorrentsSeeder(),
+                    downloader, myBuild.getBuildLogger(),
+            new TorrentsDownloadStatistic(),
+            myLeechSettings, torrentFilesFactory, urlContentRetriever);
 
     myTempDir = createTempDir();
   }

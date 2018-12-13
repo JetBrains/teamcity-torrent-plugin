@@ -1,7 +1,6 @@
 package jetbrains.buildServer.torrent;
 
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.util.io.StreamUtil;
 import com.turn.ttorrent.common.TorrentFile;
 import com.turn.ttorrent.common.TorrentMetadata;
 import com.turn.ttorrent.common.TorrentParser;
@@ -23,11 +22,9 @@ import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.torrent.TeamcityTorrentClient;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
-import jetbrains.buildServer.util.FileUtil;
 import jetbrains.buildServer.util.StringUtil;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthScope;
-import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -115,9 +112,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     String serverUrl = myAgentConfig.getServerUrl();
     HttpClient httpClient = createHttpClient();
     return new TorrentTransport(myAgentTorrentsManager.getTorrentsSeeder(),
-            httpClient,
+            new HttpDownloaderImpl(httpClient),
             buildLogger,
-            serverUrl,
             myAgentTorrentsManager.getTorrentsDownloadStatistic(),
             myLeechSettings,
             myTorrentFilesFactory,
@@ -134,7 +130,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
   protected static class TorrentTransport implements URLContentRetriever, ProgressTrackingURLContentRetriever {
 
-    private final HttpClient myHttpClient;
+    private final HttpDownloader myHttpDownloader;
     private final URLContentRetriever myDelegate;
     private final TeamcityTorrentClient myClient;
     private final TorrentsSeeder mySeeder;
@@ -150,9 +146,8 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
     private final Map<String, String> myTorrentsForArtifacts;
 
     protected TorrentTransport(@NotNull final TorrentsSeeder seeder,
-                               @NotNull final HttpClient httpClient,
+                               @NotNull final HttpDownloader httpDownloader,
                                @NotNull final BuildProgressLogger buildLogger,
-                               @NotNull final String serverUrl,
                                @NotNull final TorrentsDownloadStatistic torrentsDownloadStatistic,
                                @NotNull final LeechSettings leechSettings,
                                @NotNull final TorrentFilesFactory torrentFilesFactory,
@@ -163,7 +158,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       myClient = mySeeder.getClient();
       myTorrentFilesFactory = torrentFilesFactory;
       myTorrentsDownloadStatistic = torrentsDownloadStatistic;
-      myHttpClient = httpClient;
+      myHttpDownloader = httpDownloader;
       myBuildLogger = buildLogger;
       myTorrentsForArtifacts = new HashMap<String, String>();
       myCurrentDownload = new AtomicReference<Thread>();
@@ -290,7 +285,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
 
     private String parseArtifactsList(@NotNull final String teamcityIvyUrl, @NotNull final File target) {
       try {
-        byte[] ivyData = download(teamcityIvyUrl);
+        byte[] ivyData = myHttpDownloader.download(teamcityIvyUrl);
         XPath xpath = XPathFactory.newInstance().newXPath();
         NodeList artifactList = (NodeList) xpath.evaluate("/ivy-module/publications/artifact",
                 new InputSource(new ByteArrayInputStream(ivyData)), XPathConstants.NODESET);
@@ -342,7 +337,7 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
         return null;
 
       try {
-        byte[] torrentData = download(parsedArtifactUrl.getTorrentUrl());
+        byte[] torrentData = myHttpDownloader.download(parsedArtifactUrl.getTorrentUrl());
         return new TorrentParser().parse((torrentData));
       } catch (IOException e) {
         log2Build(String.format("Unable to download: %s", e.getMessage()));
@@ -352,24 +347,6 @@ public class TorrentTransportFactory implements TransportFactoryExtension {
       Loggers.AGENT.info(msg);
       myTorrentsDownloadStatistic.fileDownloadFailed();
       return null;
-    }
-
-    protected byte[] download(final String urlString) throws IOException {
-      final HttpMethod getMethod = new GetMethod(urlString);
-      InputStream in = null;
-      try {
-        myHttpClient.executeMethod(getMethod);
-        if (getMethod.getStatusCode() != HttpStatus.SC_OK) {
-          throw new IOException(String.format("Problem [%d] while downloading %s: %s", getMethod.getStatusCode(), urlString, getMethod.getStatusText()));
-        }
-        in = getMethod.getResponseBodyAsStream();
-        ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-        StreamUtil.copyStreamContent(in, bOut);
-        return bOut.toByteArray();
-      } finally {
-        FileUtil.close(in);
-        getMethod.releaseConnection();
-      }
     }
   }
 
