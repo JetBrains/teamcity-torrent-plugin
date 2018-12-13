@@ -29,6 +29,7 @@
             <includes>
               <include>com.turn:*</include>
               <include>org.simpleframework:simple</include>
+              <include>commons-io:commons-io</include>
               <include>org.jetbrains.teamcity:teamcity-torrent-plugin-common</include>
             </includes>
             <excludes>
