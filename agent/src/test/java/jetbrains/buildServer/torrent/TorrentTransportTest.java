@@ -29,9 +29,6 @@ import jetbrains.buildServer.torrent.settings.LeechSettings;
 import jetbrains.buildServer.torrent.torrent.TorrentUtil;
 import jetbrains.buildServer.torrent.util.TorrentsDownloadStatistic;
 import org.apache.commons.io.FileUtils;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.testng.annotations.AfterMethod;
@@ -65,7 +62,6 @@ public class TorrentTransportTest extends BaseTestCase {
   private static final String CONTEXT_PATH = "/httpAuth/repository/download/TC_Gaya80x_BuildDist/2063228.tcbuildid";
   public static final String SERVER_PATH = "http://localhost:12345" + CONTEXT_PATH + "/";
   private AgentRunningBuild myBuild;
-  private Server myServer;
   private Map<String, File> myDownloadMap;
   private Map<String, String> myAgentParametersMap;
   private Map<String, byte[]> myDownloadHacks;
@@ -82,34 +78,12 @@ public class TorrentTransportTest extends BaseTestCase {
   @BeforeMethod
   public void setUp() throws Exception {
     super.setUp();
-    myServer = new Server(12345);
-    WebAppContext handler = new WebAppContext();
-    handler.setResourceBase("/");
-    handler.setContextPath(CONTEXT_PATH);
     myDownloadMap = new HashMap<String, File>();
     myDownloadAttempts = new ArrayList<String>();
     myDownloadHonestly = true;
     myConfiguration = new FakeTorrentConfiguration();
     myDownloadHacks = new HashMap<String, byte[]>();
     myDownloadHackAttempts = new ArrayList<String>();
-    handler.addServlet(new ServletHolder(new HttpServlet() {
-      @Override
-      protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        myDownloadAttempts.add(req.getPathInfo());
-        final ServletOutputStream os = resp.getOutputStream();
-        final File file = myDownloadMap.get(req.getPathInfo());
-        if (file == null) {
-          resp.getOutputStream().close();
-        } else {
-          final byte[] bytes = FileUtils.readFileToByteArray(file);
-          os.write(bytes);
-          os.close();
-        }
-      }
-    }),
-            "/*");
-    myServer.setHandler(handler);
-    myServer.start();
 
     myAgentParametersMap = new HashMap<String, String>();
 
@@ -353,7 +327,6 @@ public class TorrentTransportTest extends BaseTestCase {
 
   @AfterMethod
   public void tearDown() throws Exception {
-    myServer.stop();
     mySeeder.dispose();
     myAgentConfigurationFixture.tearDown();
     super.tearDown();
