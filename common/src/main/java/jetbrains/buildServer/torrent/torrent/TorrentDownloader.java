@@ -19,7 +19,7 @@ package jetbrains.buildServer.torrent.torrent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.turn.ttorrent.client.PeerInformation;
 import com.turn.ttorrent.client.PieceInformation;
-import com.turn.ttorrent.client.TorrentListener;
+import com.turn.ttorrent.client.TorrentListenerWrapper;
 import com.turn.ttorrent.common.TorrentMetadata;
 import jetbrains.buildServer.artifacts.FileProgress;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class TorrentDownloader implements TorrentListener {
+public class TorrentDownloader extends TorrentListenerWrapper {
 
   private final static Logger LOG = Logger.getInstance(TorrentDownloader.class.getName());
 
