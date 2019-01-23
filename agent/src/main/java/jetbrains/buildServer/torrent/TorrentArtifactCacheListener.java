@@ -90,12 +90,6 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
       return;
     }
 
-    File createdTorrentFile = publishTorrentFileAndStartSeeding(file);
-
-    if (createdTorrentFile == null) {
-      return;
-    }
-
     File cacheCurrentBuildDir;
     try {
       cacheCurrentBuildDir = getCurrentBuildFolderCache();
@@ -105,6 +99,17 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     }
     if (cacheCurrentBuildDir == null) {
       logWarningThatCacheCurrentBuildNotFound(absolutePath);
+      return;
+    }
+
+    if (!isChildFile(cacheCurrentBuildDir, file)) {
+      //reference to parent in relative path means that it is artifact from other build. We can skip it
+      return;
+    }
+
+    File createdTorrentFile = publishTorrentFileAndStartSeeding(file);
+
+    if (createdTorrentFile == null) {
       return;
     }
 
@@ -126,10 +131,6 @@ public class TorrentArtifactCacheListener implements ArtifactsCacheListener {
     if (artifactDirs == null) {
       LOG.warn(String.format("Unable to find relative path to artifact %s. " +
               "Torrent file was not created for this artifact. Nobody can download the aftifact via bittorrent", file.getAbsolutePath()));
-      return;
-    }
-    if (!isChildFile(cacheCurrentBuildDir, file)) {
-      //reference to parent in relative path means that it is artifact from other build. We can skip it
       return;
     }
     File torrentsTempDirectory = new File(myBuildTracker.getCurrentBuild().getBuildTempDirectory(), Constants.TORRENT_FILE_COPIES_DIR);
