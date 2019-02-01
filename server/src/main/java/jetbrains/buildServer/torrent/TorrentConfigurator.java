@@ -45,6 +45,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+//change
 public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
 
   private final static int DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS = 10000;
