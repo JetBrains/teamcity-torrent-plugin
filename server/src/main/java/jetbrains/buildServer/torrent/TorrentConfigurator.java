@@ -49,7 +49,7 @@ public class TorrentConfigurator implements TorrentConfiguration, SeedSettings {
 
   private final static int DEFAULT_MAX_NUMBER_OF_SEEDED_TORRENTS = 10000;
   public final static String SEEDING_BY_AGENT_ENABLED_STORE_KEY = "teamcity.torrent.agent.seeding.enabled";
-//change
+
   private final ServerPaths myServerPaths;
   @NotNull
   private final RootUrlHolder myRootUrlHolder;
