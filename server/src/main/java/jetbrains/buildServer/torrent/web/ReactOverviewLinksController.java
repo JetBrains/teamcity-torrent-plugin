@@ -24,6 +24,7 @@ import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.torrent.ServerTorrentsDirectorySeeder;
 import jetbrains.buildServer.torrent.TorrentConfigurator;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
+import jetbrains.buildServer.web.util.WebUtil;
 import org.jetbrains.annotations.NotNull;
 
 import javax.servlet.ServletOutputStream;
@@ -82,7 +83,6 @@ public class ReactOverviewLinksController extends AbstractLinksController {
   }
 
   private String getLinkToTorrent(long buildId, String relativePathToArtifact) {
-    //gson will escape suspicious symbols
-    return "/downloadTorrent.html?buildId=" + buildId + "&file=" + relativePathToArtifact;
+    return "/downloadTorrent.html?buildId=" + buildId + "&file=" + WebUtil.encode(relativePathToArtifact);
   }
 }
