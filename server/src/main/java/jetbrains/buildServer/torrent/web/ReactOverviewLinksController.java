@@ -82,6 +82,7 @@ public class ReactOverviewLinksController extends AbstractLinksController {
   }
 
   private String getLinkToTorrent(long buildId, String relativePathToArtifact) {
+    //gson will escape suspicious symbols
     return "/downloadTorrent.html?buildId=" + buildId + "&file=" + relativePathToArtifact;
   }
 }
