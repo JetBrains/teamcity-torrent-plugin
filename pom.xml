@@ -11,13 +11,13 @@
   <repositories>
     <repository>
         <id>JetBrains</id>
-        <url>http://repository.jetbrains.com/all</url>
+        <url>https://repository.jetbrains.com/all</url>
     </repository>
   </repositories>
   <pluginRepositories>
       <pluginRepository>
           <id>JetBrains</id>
-          <url>http://repository.jetbrains.com/all</url>
+          <url>https://repository.jetbrains.com/all</url>
       </pluginRepository>
   </pluginRepositories>
   <build>
