@@ -60,6 +60,10 @@ public class TeamcityTorrentClient {
     } catch (FileNotFoundException e) {
       LOG.debug("File " + srcFile.getName() + " is not found, ", e);
       return false;
+    } catch (IllegalArgumentException e) {
+      //valid case since the library throws this exception when file was removed with parent directory
+      LOG.debug("File " + srcFile.getName() + " is not found, ", e);
+      return false;
     } catch (Exception e) {
       LOG.warn("Failed to seed file: " + srcFile.getName(), e);
       return false;
